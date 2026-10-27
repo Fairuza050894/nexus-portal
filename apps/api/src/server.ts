@@ -5,6 +5,7 @@ import { parseAuthHeader, hasMinimumRole } from './auth.js';
 import { defaultEventStream } from './events.js';
 import { defaultRunManager, type RunManager } from './runs.js';
 import { defaultRegistry } from '@nexus/registry';
+import { renderPortalHtml, createInitialState } from '@nexus/web';
 
 export interface ServerOptions {
   port?: number;
@@ -243,27 +244,96 @@ export function createApiServer(options: ServerOptions = {}): Server {
         return;
       }
 
-      // 9. Static Web App serving (Single-Page App fallback)
-      if (method === 'GET') {
-        const safePath = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-        const targetFile = join(webDist, safePath);
-
-        if (existsSync(targetFile) && statSync(targetFile).isFile()) {
-          const content = manager.getDocContent('', safePath); // helper or stream
-          res.writeHead(200, { 'Content-Type': content?.contentType ?? 'text/html' });
-          createReadStream(targetFile).pipe(res);
+      // 9. Web App & Static serving
+      if (method === 'GET' || method === 'HEAD') {
+        if (pathname === '/' || pathname === '/index.html') {
+          const stepParam = Number(url.searchParams.get('step') || 1);
+          const langParam = url.searchParams.get('lang');
+          const state = createInitialState();
+          state.language = langParam === 'en' ? 'en' : 'id';
+          state.furthestStep = 5;
+          if (stepParam >= 1 && stepParam <= 5) {
+            state.currentStep = stepParam as 1 | 2 | 3 | 4 | 5;
+          }
+          if (state.currentStep === 3) {
+            const plan = manager.buildPlanCases({
+              name: 'Sample Plan',
+              mode: 'sandbox',
+              repo: { localPath: 'fixtures/sample-todo-api' },
+              web: { urls: ['http://127.0.0.1:3100/'] },
+            });
+            state.planCases = plan.cases;
+            state.approvedCaseIds = new Set(plan.cases.filter((c) => c.approved).map((c) => c.id));
+          } else if (state.currentStep === 4) {
+            state.runId = '2026-10-28T00-00-00-000Z_sample';
+            state.stages = {
+              preflight: 'ok',
+              discover: 'ok',
+              'app-map': 'running',
+              lanes: 'pending',
+              correlate: 'pending',
+              document: 'pending',
+            };
+            state.requestsCount = 28;
+            state.liveLogs = [
+              'Stage preflight: ok (45ms)',
+              'Stage discover: ok (320ms) - 2 pages, 3 endpoints found',
+              'Stage app-map: running (inferred 4 edges)',
+            ];
+          } else if (state.currentStep === 5) {
+            state.gate = 'GO WITH RISKS';
+            state.gateReasons = [
+              'Coverage kebutuhan 0.0% (di bawah batas minimum 80%)',
+              '3 kasus pengujian dilewati pada repositori statis',
+              '2 temuan tergolong needs-review',
+            ];
+            state.findings = [
+              {
+                id: 'F-0001',
+                title: 'Missing Content-Security-Policy HTTP header',
+                severity: 'high',
+                confidence: 'auto-discovered',
+                category: 'security',
+                lanes: ['security'],
+                occurrences: 1,
+                evidence: [],
+                status: 'new',
+                evidenceSummary: 'Header CSP tidak terdeteksi pada response root /',
+              },
+              {
+                id: 'F-0002',
+                title: 'Elemen formulir belum memiliki label aksesibilitas',
+                severity: 'medium',
+                confidence: 'verified',
+                category: 'accessibility',
+                lanes: ['a11y'],
+                occurrences: 1,
+                evidence: [],
+                status: 'new',
+                evidenceSummary: 'WCAG 2.1 AA 4.1.2: Name, Role, Value',
+              },
+            ];
+          }
+          const html = renderPortalHtml(state);
+          res.writeHead(200, {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Content-Length': Buffer.byteLength(html),
+            'Access-Control-Allow-Origin': '*',
+          });
+          if (method === 'HEAD') res.end();
+          else res.end(html);
           return;
         }
 
-        // SPA index.html fallback
-        const indexPath = join(webDist, 'index.html');
-        if (existsSync(indexPath)) {
+        const safePath = pathname.replace(/^\//, '');
+        const targetFile = join(webDist, safePath);
+        if (existsSync(targetFile) && statSync(targetFile).isFile()) {
           res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-          createReadStream(indexPath).pipe(res);
+          if (method === 'HEAD') res.end();
+          else createReadStream(targetFile).pipe(res);
           return;
         }
       }
-
       sendError(res, 404, `Endpoint not found: ${method} ${pathname}`);
     } catch (err) {
       sendError(res, 500, `Internal Server Error: ${(err as Error).message}`);
