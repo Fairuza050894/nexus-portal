@@ -30,10 +30,11 @@ Out of scope for Phase 4:
 
 **Phase 4 implementation status (2026-10-27):** the plugin-lane contract is
 specified here; fingerprint v2, FP replay, retest-new, SARIF/JUnit exports,
-external SARIF ingestion, compliance mapping, and deterministic evidence
-summaries are implemented and tested. The `LanePlugin` TypeScript interface (D)
-and the Deep Eye read-only evaluation (C) remain pending. No external tool is
-executed by the pipeline.
+external SARIF ingestion, compliance mapping, deterministic evidence
+summaries, the `LanePlugin` TypeScript contract (D) with strict guards and tests
+(`packages/lanes/src/plugin.ts`, `packages/lanes/tests/plugin.test.ts`), and the
+Deep Eye read-only evaluation (C) (`docs/evaluations/deep-eye.md`) are fully
+implemented and tested. No external tool is executed by the pipeline.
 
 ## 2. Non-negotiable rules
 

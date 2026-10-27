@@ -96,7 +96,7 @@ critical 100%, overall >=95% (ex-quarantine), flaky <=2%, a11y critical/serious 
 
 ## 10. Next
 
-Phase 4 (4.1–4.7) is complete: correlation, classification/dedupe, baseline comparison, confidence-based gate, full document bundle (HTML/MD/CSV/XLSX/PDF/JSON), `docs:verify`, and interactive offline Application Map. Phase 4 additive work: **4.8–4.12 complete** — fingerprint v2 + dedupe, FP replay hook, `retest-new`, SARIF 2.1.0/JUnit exports with verification, external SARIF ingestion, indicative compliance mapping, and deterministic evidence summaries. Deep Eye evaluation (C) and the plugin-lane contract (D) remain pending. The web dashboard remains Phase 5. Activate branch protection and provide Docker rootless in CI/dev before real remote pilots.
+Phase 4 (4.1–4.7) is complete: correlation, classification/dedupe, baseline comparison, confidence-based gate, full document bundle (HTML/MD/CSV/XLSX/PDF/JSON), `docs:verify`, and interactive offline Application Map. Phase 4 additive work: **4.8–4.12 complete** — fingerprint v2 + dedupe, FP replay hook, `retest-new`, SARIF 2.1.0/JUnit exports with verification, external SARIF ingestion, indicative compliance mapping, deterministic evidence summaries, Deep Eye read-only evaluation (C) in `docs/evaluations/deep-eye.md`, and the plugin-lane contract (D) in `packages/lanes`. Phase 4 (Milestone M1) is fully complete. The web dashboard remains Phase 5. Activate branch protection and provide Docker rootless in CI/dev before real remote pilots.
 
 ## 11a. Phase 4 additive implementation decisions (2026-10-27)
 

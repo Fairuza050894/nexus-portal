@@ -9,7 +9,10 @@ repo/API/E2E/a11y/Web Vitals/passive-security lanes, fingerprint v2 dedupe,
 false-positive replay, baseline/`retest-new`, the per-confidence quality gate,
 external SARIF ingestion, and the full documentation bundle (HTML, MD, CSV,
 XLSX, PDF, SARIF, JUnit, JSON) with `docs:verify` are implemented. Optional
-indicative compliance mapping is config-driven and disabled by default.
+indicative compliance mapping is config-driven and disabled by default. The
+plugin-lane contract (`LanePlugin` interface with mandatory forbidden-option
+guards) and read-only third-party tool evaluation (`docs/evaluations/deep-eye.md`)
+are complete; no third-party tool is executed by the pipeline.
 
 Visual baselines, test generation, and the **web dashboard** are not
 implemented yet. The dashboard is Phase 5 (`apps/web` + `apps/api` + worker);
@@ -172,14 +175,14 @@ Everything under `artifacts/` is generated and gitignored.
 | `packages/discover`        | Crawler, robots/rate/circuit policy, OpenAPI importer, repo analyzer, traffic log      |
 | `packages/app-map`         | Application Map builder, edges, and risk scoring                                       |
 | `packages/session`         | Playwright instrumented session: probes, axe, vitals, screenshots, security            |
-| `packages/lanes`           | Lane planning/scheduling, repo/API/E2E/a11y/perf/security lanes, findings              |
+| `packages/lanes`           | Lane planning/scheduling, repo/API/E2E/a11y/perf/security lanes, LanePlugin contract, findings |
 | `packages/correlate`       | Fingerprint/dedupe, FP replay, external SARIF ingestion, confidence labels, baseline    |
 | `packages/gate`            | Per-confidence quality gate (GO / GO WITH RISKS / NO-GO) with rule evidence             |
 | `packages/doc-engine`      | 15 documents + SARIF/JUnit exports, i18n, compliance section, verification, zip bundle  |
 | `compliance/`              | Optional example compliance mapping (disabled by default)                              |
 | `fixtures/sample-todo-api` | Dependency-free sample target used by smoke tests                                      |
 | `run-requests/`            | Example run requests                                                                   |
-| `docs/`                    | Decisions and ADRs                                                                     |
+| `docs/`                    | Decisions, ADRs, and tool evaluations (`docs/evaluations/deep-eye.md`)                 |
 | `ketentuan/`               | Frozen product specification, rules, and roadmap                                       |
 
 ## Safety limitations in this phase

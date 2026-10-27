@@ -19,3 +19,23 @@ export type {
   TestStatus,
 } from './types.js';
 export { LANE_NAMES } from './types.js';
+export {
+  MANDATORY_FORBIDDEN_OPTIONS,
+  PluginRegistry,
+  defaultPluginRegistry,
+  validatePluginManifest,
+  executePlugin,
+  NoopPlugin,
+} from './plugin.js';
+export type {
+  PluginCapability,
+  ForbiddenOption,
+  PluginManifest,
+  RawPluginOutput,
+  PluginPrepareContext,
+  PluginExecutionContext,
+  PluginNormalizeContext,
+  LanePlugin,
+  ExecutePluginOptions,
+  ExecutePluginResult,
+} from './plugin.js';
