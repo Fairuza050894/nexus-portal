@@ -1,4 +1,5 @@
-import type { Finding, RunSummary } from '@nexus/core';
+import type { ComplianceMapping, Finding, RunSummary } from '@nexus/core';
+import { matchCompliance } from '@nexus/core';
 import { t, type DocLanguage } from './i18n.js';
 import {
   badge,
@@ -54,6 +55,7 @@ export interface DocContext {
   appMap?: AppMapView;
   sessionPages?: Array<{ path: string; title?: string; status?: number }>;
   history?: HistoryPoint[];
+  complianceMapping?: ComplianceMapping;
 }
 
 const CONFIDENCE_ORDER = ['verified', 'auto-discovered', 'needs-review'] as const;
@@ -730,12 +732,59 @@ function coverageReportHtml(summary: RunSummary, language: DocLanguage): string 
   return htmlPage(language, t(language, 'doc.coverage'), body);
 }
 
+function complianceSection(
+  summary: RunSummary,
+  language: DocLanguage,
+  ctx: DocContext,
+): string {
+  const mapping = ctx.complianceMapping;
+  if (!mapping) return '';
+  const rows = summary.findings.map((finding) => {
+    const matches = matchCompliance(mapping, finding);
+    const controls =
+      matches.length === 0
+        ? `<span class="muted">${t(language, 'compliance.unmapped')}</span>`
+        : matches
+            .map(
+              (match) =>
+                `<strong>${escapeHtml(match.framework)}</strong>: ${escapeHtml(
+                  match.controls.join(', '),
+                )}`,
+            )
+            .join('<br>');
+    return [
+      `<td>${escapeHtml(finding.id)}</td>`,
+      `<td>${escapeHtml(finding.title)}</td>`,
+      `<td>${escapeHtml(finding.ruleId ?? '—')}</td>`,
+      `<td>${escapeHtml(finding.category)}</td>`,
+      `<td>${controls}</td>`,
+    ];
+  });
+  return `<details class="card">
+    <summary><strong>${t(language, 'compliance.title')}</strong> (${rows.length})</summary>
+    <p class="muted">${escapeHtml(mapping.disclaimer)}</p>
+    <p class="muted">${t(language, 'compliance.help')}</p>
+    ${table(
+      language,
+      [
+        t(language, 'common.id'),
+        t(language, 'common.title'),
+        'Rule',
+        t(language, 'common.category'),
+        t(language, 'compliance.controls'),
+      ],
+      rows,
+    )}
+  </details>`;
+}
+
 function findingsRegisterHtml(summary: RunSummary, language: DocLanguage, ctx: DocContext): string {
   const body = `
   <h1>${t(language, 'doc.findings')}</h1>
   <p class="muted">${t(language, 'findings.help')}</p>
   <p>${t(language, 'common.download')}: <a href="findings-register.csv">CSV</a> · <a href="findings-register.xlsx">XLSX</a> · <a href="findings-register.md">MD</a></p>
-  ${CONFIDENCE_ORDER.map((confidence) => confidenceSection(summary, language, ctx, confidence, summary.findings)).join('')}`;
+  ${CONFIDENCE_ORDER.map((confidence) => confidenceSection(summary, language, ctx, confidence, summary.findings)).join('')}
+  ${complianceSection(summary, language, ctx)}`;
   return htmlPage(language, t(language, 'doc.findings'), body);
 }
 

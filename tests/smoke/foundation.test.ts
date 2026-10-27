@@ -134,6 +134,9 @@ describe('foundation pipeline', () => {
       env: 'test',
       modes: ['sandbox'],
       allowlist: ['127.0.0.1', 'localhost'],
+      docs: {
+        compliance: { enabled: true, mappingPath: 'compliance/mapping.yaml' },
+      },
     });
 
     const result = await runPipeline({
@@ -197,6 +200,9 @@ describe('foundation pipeline', () => {
     const verification = verifyDocs(result.docsDir!, { requirePdf: true });
     expect(verification.errors).toEqual([]);
     expect(verification.ok).toBe(true);
+    expect(
+      readFileSync(join(result.docsDir!, 'findings-register.html'), 'utf8'),
+    ).toContain('Indicative mapping, not an audit conclusion.');
     expect(result.bundlePath && existsSync(result.bundlePath)).toBe(true);
 
     const zip = readFileSync(result.bundlePath!);

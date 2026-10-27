@@ -22,6 +22,13 @@ export const QaConfigSchema = z
       .object({
         language: z.enum(['id', 'en']).default('id'),
         redaction: z.boolean().default(true),
+        compliance: z
+          .object({
+            enabled: z.boolean().default(false),
+            mappingPath: z.string().min(1).optional(),
+          })
+          .strict()
+          .default({}),
       })
       .strict()
       .default({}),

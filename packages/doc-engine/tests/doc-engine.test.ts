@@ -454,6 +454,48 @@ describe('doc engine', () => {
     expect(verifyDocs(docsDir).ok).toBe(true);
   });
 
+  it('renders the optional compliance mapping with its disclaimer', () => {
+    const docsDir = tempDir();
+    generateDocs(
+      summary({
+        findings: [
+          finding({ id: 'F-0001', ruleId: 'missing-security-header:content-security-policy' }),
+          finding({
+            id: 'F-0002',
+            title: 'Unmapped debt',
+            ruleId: 'unknown-rule',
+            category: 'quality-debt',
+            severity: 'low',
+            confidence: 'needs-review',
+          }),
+        ],
+      }),
+      docsDir,
+      {
+        language: 'en',
+        complianceMappingPath: join(process.cwd(), 'compliance', 'mapping.yaml'),
+      },
+    );
+
+    const html = readFileSync(join(docsDir, 'findings-register.html'), 'utf8');
+    expect(html).toContain('Indicative mapping, not an audit conclusion.');
+    expect(html).toContain('PCI-DSS v4');
+    expect(html).toContain('6.4.1');
+    expect(html).toContain('Unmapped');
+    expect(verifyDocs(docsDir).ok).toBe(true);
+  });
+
+  it('rejects an invalid compliance mapping before writing documents', () => {
+    const docsDir = tempDir();
+    const invalid = join(docsDir, 'invalid-mapping.yaml');
+    writeFileSync(invalid, 'version: "1.0"\nmappings: nope\n', 'utf8');
+    expect(() =>
+      generateDocs(summary(), join(docsDir, 'out'), {
+        complianceMappingPath: invalid,
+      }),
+    ).toThrow('mappings must be an array');
+  });
+
   it('creates a readable bundle with docs, stages, and checksums', () => {
     const root = tempDir();
     const docsDir = join(root, 'docs');

@@ -9,7 +9,8 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import type { RunSummary } from '@nexus/core';
+import type { ComplianceMapping, RunSummary } from '@nexus/core';
+import { loadComplianceMapping } from '@nexus/core';
 import { createZip, listZipNames, type ZipEntry } from './zip.js';
 import { renderDocumentSet, type AppMapView, type DocContext, type HistoryPoint } from './documents.js';
 import type { DocLanguage } from './i18n.js';
@@ -33,6 +34,10 @@ export interface DocOptions {
   runDir?: string;
   /** Previous runs, newest first, for trend documents. */
   history?: HistoryPoint[];
+  /** Loaded compliance mapping (already validated). */
+  complianceMapping?: ComplianceMapping;
+  /** Path to a compliance mapping YAML; loaded and validated by generateDocs. */
+  complianceMappingPath?: string;
 }
 
 function readJsonFile<T>(filePath: string): T | undefined {
@@ -165,6 +170,11 @@ export function generateDocs(
   const language = options.language ?? 'id';
   mkdirSync(docsDir, { recursive: true });
 
+  const complianceMapping =
+    options.complianceMapping ??
+    (options.complianceMappingPath
+      ? loadComplianceMapping(options.complianceMappingPath)
+      : undefined);
   const map = appMapView(options.runDir);
   const pages = sessionPages(options.runDir);
   const ctx: DocContext = {
@@ -173,6 +183,7 @@ export function generateDocs(
     ...(map ? { appMap: map } : {}),
     ...(pages ? { sessionPages: pages } : {}),
     ...(options.history ? { history: options.history } : {}),
+    ...(complianceMapping ? { complianceMapping } : {}),
   };
 
   const writtenFiles: string[] = [];

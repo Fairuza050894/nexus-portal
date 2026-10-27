@@ -701,6 +701,12 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
 
   // DOCUMENT + BUNDLE
   const docsDir = join(artifactsRoot, 'artifacts', 'docs', runId);
+  const complianceMappingPath = config.docs.compliance.enabled
+    ? resolve(
+        rootDir,
+        config.docs.compliance.mappingPath ?? 'compliance/mapping.yaml',
+      )
+    : undefined;
   const bundlePath = join(artifactsRoot, 'artifacts', 'bundles', `qa-${runId}.zip`);
 
   const buildSummary = (): RunSummary => {
@@ -783,6 +789,7 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
       language: config.docs.language,
       runDir: store.runDir,
       history: docHistory,
+      ...(complianceMappingPath ? { complianceMappingPath } : {}),
     });
     const pdf = await generatePdfDocs(docsDir, [
       'executive-summary.html',
@@ -886,6 +893,7 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
         language: config.docs.language,
         runDir: store.runDir,
         history: docHistory,
+        ...(complianceMappingPath ? { complianceMappingPath } : {}),
       });
       copyLatestDocs(artifactsRoot, docsDir);
     } catch {

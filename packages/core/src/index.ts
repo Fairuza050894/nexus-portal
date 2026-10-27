@@ -56,3 +56,10 @@ export type { QaConfig, QaConfigInput } from './config.js';
 export { RunStore } from './run-store.js';
 export { loadRequirements, requirementRows } from './requirements.js';
 export type { RequirementDefinition } from './requirements.js';
+export { loadComplianceMapping, matchCompliance } from './compliance.js';
+export type {
+  ComplianceControls,
+  ComplianceMatch,
+  ComplianceMapping,
+  ComplianceRuleMapping,
+} from './compliance.js';

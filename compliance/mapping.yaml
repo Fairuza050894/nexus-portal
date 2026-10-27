@@ -1,0 +1,24 @@
+# Example compliance mapping. The mechanism is generic; these control IDs are
+# illustrative and must be reviewed by the control owner before any audit use.
+version: '1.0'
+disclaimer: 'Indicative mapping, not an audit conclusion.'
+frameworks:
+  - PCI-DSS v4
+  - SOC 2
+  - ISO/IEC 27001:2022
+mappings:
+  - category: security
+    controls:
+      PCI-DSS v4: ['6.3.2', '11.3.1']
+      SOC 2: ['CC7.1']
+      ISO/IEC 27001:2022: ['8.8']
+  - category: accessibility
+    controls:
+      ISO/IEC 27001:2022: ['8.8']
+  - ruleId: repo-license-missing
+    controls:
+      ISO/IEC 27001:2022: ['5.32']
+  - ruleId: missing-security-header:content-security-policy
+    controls:
+      PCI-DSS v4: ['6.4.1']
+      SOC 2: ['CC6.6']

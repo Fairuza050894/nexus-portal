@@ -225,10 +225,17 @@ async function docsCommand(args: ParsedArgs, rootDir: string): Promise<number> {
     throw new Error(`run summary not found for ${runId}`);
   }
   const docsDir = join(rootDir, 'artifacts', 'docs', runId);
+  const complianceMappingPath = config.docs.compliance.enabled
+    ? resolve(
+        rootDir,
+        config.docs.compliance.mappingPath ?? 'compliance/mapping.yaml',
+      )
+    : undefined;
   generateDocs(summary, docsDir, {
     language: config.docs.language,
     runDir: join(rootDir, 'artifacts', 'runs', runId),
     history: historyFor(rootDir, runId),
+    ...(complianceMappingPath ? { complianceMappingPath } : {}),
   });
   const pdf = await generatePdfDocs(docsDir, [
     'executive-summary.html',
