@@ -44,6 +44,7 @@ export interface CorrelationOptions {
 export interface BaselineComparisonOptions {
   baselineFindings?: Finding[];
   baselineRunId?: string;
+  mode?: 'standard' | 'retest-new';
   baselineTotals?: { passed: number; total: number };
   currentTotals?: { passed: number; total: number };
   currentRunId?: string;

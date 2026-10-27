@@ -873,20 +873,33 @@ function applicationMapHtml(summary: RunSummary, language: DocLanguage, ctx: Doc
 
 function runComparisonHtml(summary: RunSummary, language: DocLanguage): string {
   const baseline = summary.baseline;
-  const currentRows = sortedFindings(summary.findings).map((finding) => [
-    `<td>${escapeHtml(finding.id)}</td>`,
-    `<td>${escapeHtml(finding.title)}</td>`,
-    `<td>${escapeHtml(finding.status)}</td>`,
-    `<td>${badge(language, finding.severity)}</td>`,
-    `<td>${badge(language, finding.confidence)}</td>`,
-  ]);
+  const retestNew = baseline?.mode === 'retest-new';
+  const visibleFindings = retestNew
+    ? sortedFindings(summary.findings).filter(
+        (finding) => finding.status === 'new' || finding.status === 'regressed',
+      )
+    : sortedFindings(summary.findings);
+  const recurringFindings = retestNew
+    ? sortedFindings(summary.findings).filter(
+        (finding) => finding.status !== 'new' && finding.status !== 'regressed',
+      )
+    : [];
+  const rowsFor = (findings: typeof summary.findings) =>
+    findings.map((finding) => [
+      `<td>${escapeHtml(finding.id)}</td>`,
+      `<td>${escapeHtml(finding.title)}</td>`,
+      `<td>${escapeHtml(finding.status)}</td>`,
+      `<td>${badge(language, finding.severity)}</td>`,
+      `<td>${badge(language, finding.confidence)}</td>`,
+    ]);
   const body = `
   <h1>${t(language, 'doc.comparison')}</h1>
   <p class="muted">${t(language, 'comparison.help')}</p>
   ${
     baseline
       ? `<div class="card">
-          <p>${t(language, 'comparison.baseline')}: <strong>${escapeHtml(baseline.baselineRunId)}</strong></p>
+          <p>${t(language, 'comparison.baseline')}: <strong>${escapeHtml(baseline.baselineRunId)}</strong> · ${t(language, 'comparison.mode')}: <strong>${escapeHtml(baseline.mode ?? 'standard')}</strong></p>
+          ${retestNew ? `<p class="muted">${t(language, 'comparison.retestHelp')}</p>` : ''}
           <div class="grid">
             <div><div class="muted">${t(language, 'comparison.new')}</div><div class="metric">${baseline.newFindings}</div></div>
             <div><div class="muted">${t(language, 'comparison.recurring')}</div><div class="metric">${baseline.recurringFindings}</div></div>
@@ -898,8 +911,15 @@ function runComparisonHtml(summary: RunSummary, language: DocLanguage): string {
       : `<div class="card"><p>${t(language, 'comparison.empty')}</p></div>`
   }
   <div class="card"><h2>${t(language, 'comparison.findings')}</h2>
-    ${table(language, [t(language, 'common.id'), t(language, 'common.title'), t(language, 'findings.status'), t(language, 'common.severity'), t(language, 'common.confidence')], currentRows)}
-  </div>`;
+    ${table(language, [t(language, 'common.id'), t(language, 'common.title'), t(language, 'findings.status'), t(language, 'common.severity'), t(language, 'common.confidence')], rowsFor(visibleFindings))}
+  </div>
+  ${
+    retestNew && recurringFindings.length > 0
+      ? `<details class="card"><summary>${t(language, 'comparison.recurringAppendix')} (${recurringFindings.length})</summary>
+          ${table(language, [t(language, 'common.id'), t(language, 'common.title'), t(language, 'findings.status'), t(language, 'common.severity'), t(language, 'common.confidence')], rowsFor(recurringFindings))}
+        </details>`
+      : ''
+  }`;
   return htmlPage(language, t(language, 'doc.comparison'), body);
 }
 

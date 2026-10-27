@@ -27,6 +27,7 @@ const KNOWN_FLAGS: Record<string, true> = {
   scope: true,
   name: true,
   resume: true,
+  'retest-new': true,
   run: true,
   root: true,
   allowlist: true,

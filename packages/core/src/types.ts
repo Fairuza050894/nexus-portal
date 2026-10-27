@@ -210,6 +210,7 @@ export interface LaneSummary {
 
 export interface BaselineComparisonSummary {
   baselineRunId: string;
+  mode?: 'standard' | 'retest-new';
   newFindings: number;
   recurringFindings: number;
   fixedFindings: number;

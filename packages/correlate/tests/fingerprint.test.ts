@@ -268,4 +268,16 @@ describe('finding fingerprint v2', () => {
     expect(result.findings[0].status).toBe('new');
     expect(result.summary?.newFindings).toBe(1);
   });
+
+  it('records retest-new mode without changing status semantics', () => {
+    const result = compareWithBaseline([finding()], {
+      baselineFindings: [],
+      baselineRunId: 'run-baseline',
+      mode: 'retest-new',
+      currentRunId: 'run-now',
+    });
+    expect(result.summary?.mode).toBe('retest-new');
+    expect(result.findings[0].status).toBe('new');
+    expect(result.summary?.newFindings).toBe(1);
+  });
 });

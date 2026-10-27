@@ -27,6 +27,7 @@ const USAGE = `Usage:
   qa run --config <run-request.json> [--json]
   qa run --repo <url|local-path> [--url <target>] [--mode sandbox|staging|prod-safe]
   qa run --config <file> --resume <run-id>
+  qa run --config <file> --retest-new <baseline-run-id|latest|previous>
   qa plan --config <run-request.json>
   qa docs [--run <run-id>] [--open]
   qa docs:verify [--run <run-id>]
@@ -148,6 +149,7 @@ async function runCommand(args: ParsedArgs, rootDir: string): Promise<number> {
     requestedBy: 'cli',
     trigger: 'manual',
     resumeRunId: stringFlag(args.flags, 'resume'),
+    retestNew: stringFlag(args.flags, 'retest-new'),
   });
 
   if (booleanFlag(args.flags, 'json')) {

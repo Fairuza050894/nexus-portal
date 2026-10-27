@@ -363,6 +363,39 @@ describe('doc engine', () => {
     expect(verifyDocs(docsDir, { requirePdf: true }).ok).toBe(true);
   });
 
+  it('renders retest-new with recurring findings kept in an appendix', () => {
+    const docsDir = tempDir();
+    const newFinding = finding({ id: 'F-0001', title: 'New checkout bug', status: 'new' });
+    const recurring = finding({
+      id: 'F-0002',
+      title: 'Recurring old bug',
+      status: 'recurring',
+      severity: 'low',
+    });
+    generateDocs(
+      summary({
+        findings: [newFinding, recurring],
+        baseline: {
+          baselineRunId: 'run-baseline',
+          mode: 'retest-new',
+          newFindings: 1,
+          recurringFindings: 1,
+          fixedFindings: 0,
+          regressedFindings: 0,
+        },
+      }),
+      docsDir,
+      { language: 'en' },
+    );
+
+    const html = readFileSync(join(docsDir, 'run-comparison.html'), 'utf8');
+    expect(html).toContain('retest-new');
+    expect(html).toContain('New checkout bug');
+    expect(html).toContain('Recurring old bug');
+    expect(html.indexOf('Recurring old bug')).toBeGreaterThan(html.indexOf('<details'));
+    expect(verifyDocs(docsDir).ok).toBe(true);
+  });
+
   it('creates a readable bundle with docs, stages, and checksums', () => {
     const root = tempDir();
     const docsDir = join(root, 'docs');

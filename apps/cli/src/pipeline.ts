@@ -91,6 +91,8 @@ export interface PipelineOptions {
   requestedBy?: string;
   trigger?: string;
   resumeRunId?: string;
+  /** Baseline run id (or "latest"/"previous") for retest-new reporting. */
+  retestNew?: string;
   sandboxStarter?: typeof startSandbox;
   probe?: typeof probeUrl;
 }
@@ -567,21 +569,50 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
   await runStage('analyze', () => {
     const runIds = RunStore.listRunIds(artifactsRoot).filter((id) => id !== runId);
     const prevRunId = runIds[0];
-    const previousSummaries = runIds
-      .slice(0, 31)
+    const requestedBaseline = options.retestNew?.trim();
+    const retestMode = Boolean(requestedBaseline);
+    let baselineRunId = prevRunId;
+    let baselineSummaryForRun = prevRunId
+      ? RunStore.readSummaryById(artifactsRoot, prevRunId)
+      : undefined;
+    let historyRunIds = runIds.slice(1, 31);
+
+    if (requestedBaseline) {
+      const targetId =
+        requestedBaseline === 'latest' || requestedBaseline === 'previous'
+          ? prevRunId
+          : requestedBaseline;
+      if (!targetId) throw new Error('retest-new requires a baseline run id');
+      if (targetId === runId) throw new Error('retest-new baseline must be a different run');
+      const targetSummary = RunStore.readSummaryById(artifactsRoot, targetId);
+      if (!targetSummary) throw new Error(`retest-new baseline not found: ${targetId}`);
+      baselineRunId = targetId;
+      baselineSummaryForRun = targetSummary;
+      const targetIndex = runIds.indexOf(targetId);
+      historyRunIds = targetIndex >= 0 ? runIds.slice(targetIndex + 1, targetIndex + 31) : [];
+    } else {
+      baselineSummaryForRun = prevRunId
+        ? RunStore.readSummaryById(artifactsRoot, prevRunId)
+        : undefined;
+    }
+
+    const previousSummaries = historyRunIds
       .map((id) => RunStore.readSummaryById(artifactsRoot, id))
       .filter((item): item is RunSummary => item !== undefined);
-
-    const baselineFindings = previousSummaries[0]?.findings;
+    const baselineFindings = baselineSummaryForRun?.findings;
     const baselineComparison = compareWithBaseline(findings, {
       ...(baselineFindings ? { baselineFindings } : {}),
-      ...(prevRunId ? { baselineRunId: prevRunId } : {}),
+      ...(baselineRunId ? { baselineRunId } : {}),
+      mode: retestMode ? 'retest-new' : 'standard',
       currentRunId: runId,
-      baselineTotals: previousSummaries[0]?.totals
-        ? { passed: previousSummaries[0].totals.passed, total: previousSummaries[0].totals.tests }
+      baselineTotals: baselineSummaryForRun?.totals
+        ? {
+            passed: baselineSummaryForRun.totals.passed,
+            total: baselineSummaryForRun.totals.tests,
+          }
         : undefined,
       currentTotals: { passed: laneTotals.passed, total: laneTotals.tests },
-      history: previousSummaries.slice(1).map((item) => ({
+      history: previousSummaries.map((item) => ({
         runId: item.run.id,
         findings: item.findings,
       })),
@@ -608,7 +639,10 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
       limitations.push(`requirements could not be loaded: ${(error as Error).message}`);
     }
 
-    docHistory = previousSummaries
+    docHistory = runIds
+      .slice(0, 31)
+      .map((id) => RunStore.readSummaryById(artifactsRoot, id))
+      .filter((item): item is RunSummary => item !== undefined)
       .map((item) => ({
         runId: item.run.id,
         startedAt: item.run.startedAt,
@@ -626,7 +660,8 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
       .reverse();
 
     return {
-      baselineRunId: prevRunId ?? 'none',
+      baselineRunId: baselineRunId ?? 'none',
+      baselineMode: baselineSummary?.mode ?? (retestMode ? 'retest-new' : 'standard'),
       newFindings: baselineSummary?.newFindings ?? findings.length,
       recurringFindings: baselineSummary?.recurringFindings ?? 0,
       fixedFindings: baselineSummary?.fixedFindings ?? 0,

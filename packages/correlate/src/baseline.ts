@@ -147,6 +147,7 @@ export function compareWithBaseline(
 
   const summary: BaselineComparisonSummary = {
     baselineRunId: options.baselineRunId ?? 'previous',
+    mode: options.mode ?? 'standard',
     newFindings: newCount,
     recurringFindings: recurringCount,
     fixedFindings: fixedFindings.length,
