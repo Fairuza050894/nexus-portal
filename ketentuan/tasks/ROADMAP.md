@@ -65,15 +65,21 @@ Status: MVP met on the sample pilots (repo+URL, URL-only, API-only): 1 crawl, 1 
 
 ## Phase 4 — Correlation, Gate & Unified Docs  (≈ 2 weeks)  → **M1**
 
-- [ ] 4.1 Normalized `run-summary.json` v2 (findings, lanes, request, mode, baseline).
-- [ ] 4.2 Correlation engine + classification + confidence labels + dedupe.
-- [ ] 4.3 Baseline comparison (new/recurring/fixed/regressed).
-- [ ] 4.4 Quality gate with per-confidence rules; GO / GO WITH RISKS / NO-GO + reasons.
-- [ ] 4.5 Doc engine: all documents in `03-DOC-GENERATION.md` §3 and §10; i18n id/en; offline HTML; PDF; XLSX.
-- [ ] 4.6 `docs:verify` (links, placeholders, secret/PII scan, PDF opens) and bundling.
-- [ ] 4.7 Doc engine tests with fixtures (all-pass, failures, flaky, incomplete, missing metadata, zero tests, multi-lane correlations).
+- [x] 4.1 Normalized `run-summary.json` v2 (findings, lanes, request, mode, baseline).
+- [x] 4.2 Correlation engine + classification + confidence labels + dedupe.
+- [x] 4.3 Baseline comparison (new/recurring/fixed/regressed).
+- [x] 4.4 Quality gate with per-confidence rules; GO / GO WITH RISKS / NO-GO + reasons.
+- [x] 4.5 Doc engine: all documents in `03-DOC-GENERATION.md` §3 and §10; i18n id/en; offline HTML; PDF; XLSX.
+- [x] 4.6 `docs:verify` (links, placeholders, secret/PII scan, PDF opens) and bundling.
+- [x] 4.7 Doc engine tests with fixtures (all-pass, failures, flaky, incomplete, missing metadata, zero tests, multi-lane correlations).
+- [x] 4.8 Finding fingerprint v2 + dedupe (stable hash over category, rule/check id, normalized page/endpoint/component; volatile fields excluded; false-merge tests).
+- [ ] 4.9 FP replay hook: `replayFinding()` → `confirmed | not-reproduced | inconclusive` for e2e/api; other lanes `inconclusive`; replay evidence stored; no automatic `verified` promotion without an assertion source.
+- [ ] 4.10 Baseline `retest-new` mode in `qa run` + Run Comparison; reporting-only, never a gate bypass; statuses remain new/recurring/fixed/regressed.
+- [ ] 4.11 Machine-readable exports: SARIF 2.1.0, JUnit XML, CSV/XLSX; schema/XML validation; included in bundle and `docs:verify`.
+- [ ] 4.12 External-findings ingestion (`ExternalFindingsAdapter` + SARIF importer, `security-external`, redaction), optional compliance mapping (PCI-DSS v4, SOC 2, ISO 27001:2022, labelled indicative), and deterministic evidence summaries.
 
-**Acceptance:** from a single `qa run` command on a pilot, the full bundle is produced in ≤ 60 s after execution; correlation example (UI failure + API 500 + changed file) yields one finding with all evidence; no `auto-discovered` finding is shown as verified; injected fake secret fails `docs:verify`; QA lead signs off readability.
+**Acceptance:** existing 4.1–4.7 criteria stay green (single `qa run` bundle ≤ 60 s; correlation example yields one finding with all evidence; no `auto-discovered` shown as verified; injected secret fails `docs:verify`; QA-lead readability sign-off). Additive tasks 4.8–4.12 keep gate thresholds unchanged, add no execution of third-party tools, and cite `ketentuan/docs/09-EXTERNAL-TOOLS-INTEGRATION.md` in their tests/evidence.
+Status: 4.1–4.8 met on the sample pilot; 4.9–4.12 pending. Evidence: `packages/correlate/tests` (fingerprint/dedupe/legacy fallback), `packages/gate/tests`, `packages/doc-engine/tests`, `tests/smoke/foundation.test.ts` (15-document set, PDF/XLSX, `verifyDocs`, bundle). Sample smoke run: complete in ~3 s; correlation example is unit-proven because the fixture app does not produce a UI+API+code failure simultaneously. Real-pilot execution and the QA-lead readability sign-off remain pending.
 
 ---
 
@@ -118,7 +124,14 @@ Status: MVP met on the sample pilots (repo+URL, URL-only, API-only): 1 crawl, 1 
 
 - [ ] 8.1 Visual regression with baseline management in the UI.
 - [ ] 8.2 k6 load scenarios (`perfApproved`, sandbox/staging only) with thresholds and report section.
-- [ ] 8.3 Negative/security-lite within documented behavior; optional **active** probing in sandbox only (explicit opt-in).
+- [ ] 8.3 Negative/security-lite within documented behavior; optional **active** probing in sandbox only, explicit opt-in, `approver`-signed and audited.
+  - Contract is `LanePlugin` (Phase 4, interface-only, disabled by default); Phase 4 does **not** execute Deep Eye, ZAP, Nuclei, or any active scanner.
+  - Candidate tools (Deep Eye, OWASP ZAP, Nuclei, Semgrep) require a read-only evaluation first (`docs/evaluations/deep-eye.md`) and separate approval.
+  - Pin version + commit/digest, check licence/dependencies, run only in the isolated sandbox with deny-by-default egress limited to the app under test.
+  - Force off CAPTCHA solving, TLS/JA3 fingerprint evasion, WAF-bypass payloads, credential brute force, destructive actions, and autonomous attack planning against non-sandbox targets.
+  - Disable AI, telemetry, update checks, and remote rule downloads; no target data leaves the platform.
+  - Outputs normalize to the Finding model (`security-external`) with redaction, provenance, and confidence mapping; scanner claims never auto-promote to `verified`.
+  - Any execution spike against an intentionally vulnerable local app requires product-owner approval after the evaluation report is reviewed.
 - [ ] 8.4 Cross-browser matrix, mobile viewports, optional mobile app lane (Appium/Maestro).
 - [ ] 8.5 Additional framework route extractors (as pilots expand).
 

@@ -64,6 +64,7 @@ export function runSecurityLane(
   for (const [header, pages] of missing) {
     drafts.push({
       title: `Missing security header: ${header}`,
+      ruleId: `missing-security-header:${header}`,
       severity: SEVERITY_BY_HEADER[header] ?? 'low',
       confidence: 'auto-discovered',
       category: 'security',
@@ -77,6 +78,7 @@ export function runSecurityLane(
   for (const [cookie, pages] of insecureCookies) {
     drafts.push({
       title: `Cookie ${cookie} missing Secure/HttpOnly`,
+      ruleId: `insecure-cookie:${cookie}`,
       severity: 'medium',
       confidence: 'auto-discovered',
       category: 'security',
@@ -89,6 +91,7 @@ export function runSecurityLane(
   for (const [url, pages] of mixedContent) {
     drafts.push({
       title: 'Mixed content request',
+      ruleId: 'mixed-content',
       severity: 'high',
       confidence: 'auto-discovered',
       category: 'security',
@@ -102,6 +105,7 @@ export function runSecurityLane(
   for (const server of serverHeaders) {
     drafts.push({
       title: `Server header discloses technology: ${server}`,
+      ruleId: 'server-header-disclosure',
       severity: 'low',
       confidence: 'needs-review',
       category: 'security',

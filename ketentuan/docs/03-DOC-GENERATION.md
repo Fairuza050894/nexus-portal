@@ -34,6 +34,12 @@ All outputs go to `artifacts/docs/<run-id>/` and are mirrored to `artifacts/docs
 | 9 | **Run Manifest** | JSON | Machines | `run-summary.json`, run id, git SHA, build version, env, tool versions, gate results |
 | 10 | **Raw evidence** | traces, screenshots, videos, JUnit, Allure | Dev | Linked from reports with relative paths |
 
+Machine-readable exports (Phase 4) accompany the human documents: **SARIF 2.1.0**
+(findings, file-only by default), **JUnit XML** (test results), and CSV/XLSX for
+tabular documents. Exports are included in the bundle and checked by `docs:verify`.
+External scanner results follow the external-findings and compliance-mapping rules
+in §10.
+
 Optional (config flag): Allure report, Confluence/SharePoint publish, Teams/Slack notification.
 
 ## 4. Normalized data model (`run-summary.json`)
@@ -70,12 +76,13 @@ Validate with a Zod/JSON schema on write and on read. Schema changes bump `schem
 collect → normalize → enrich → analyze → gate → render → bundle → (publish) → (notify)
 ```
 
-1. **collect**: read Playwright JSON, JUnit, k6 summary, axe results, Git info, env info.
+1. **collect**: read Playwright JSON, JUnit, k6 summary, axe results, Git info, env info, and any approved external SARIF output.
 2. **normalize**: map to `run-summary.json`; fail loudly on missing mandatory metadata (list offending tests in the report instead of crashing).
+2a. **external-findings** (optional): import approved SARIF 2.1.0 into the unified Finding model (`security-external` lane), redact evidence, dedupe by fingerprint v2, and label confidence. No external tool is executed by the doc engine.
 3. **enrich**: join requirements; compute coverage; load history; compute trends.
 4. **analyze**: classify failures with deterministic heuristics (see §6).
 5. **gate**: evaluate thresholds, produce decision + reasons.
-6. **render**: Nunjucks templates → MD/HTML → PDF (Playwright `page.pdf()`); CSV/XLSX for tabular docs.
+6. **render**: Nunjucks templates → MD/HTML → PDF (Playwright `page.pdf()`); CSV/XLSX for tabular docs; SARIF 2.1.0 and JUnit XML exports.
 7. **bundle**: zip + checksum file.
 8. **publish / notify**: only if enabled and approved in `docs/DECISIONS.md`.
 
@@ -120,12 +127,20 @@ docs: {
 - Timestamps in ISO 8601 with timezone (default `Asia/Jakarta`, configurable).
 - i18n through `docs-engine/i18n/*.json`; no hard-coded strings in templates.
 - Deterministic ordering (by feature, then ID).
+- Machine-readable exports are deterministic for the same run data (stable ordering,
+  stable fingerprints; no wall-clock-only fields).
+- SARIF exports validate against SARIF 2.1.0 and include `partialFingerprints`.
+- External findings carry tool/provenance metadata and point to redacted evidence.
+- The optional compliance-mapping section is labelled **“indicative mapping, not an
+  audit conclusion”**; it never states control compliance.
 
 ## 9. Testing the doc engine itself
 
-- Unit tests with fixture results (`docs-engine/__fixtures__/`): all-pass, with failures, with flaky, incomplete run, missing metadata, zero tests.
+- Unit tests with fixture results (`docs-engine/__fixtures__/`): all-pass, with failures, with flaky, incomplete run, missing metadata, zero tests, multi-lane correlations, external SARIF findings.
+- Schema tests: SARIF 2.1.0 output validates against the official schema; JUnit XML is well-formed; CSV/XLSX open and contain expected headers.
+- External-findings fixtures (e.g. Semgrep-style SARIF) map to the Finding model with the documented severity/confidence rules; false merges are covered.
 - Snapshot tests on rendered HTML structure (not on timestamps).
-- A `docs:verify` step checks: all links resolve, all required files exist, PDF opens, no template placeholders left (`{{`), no secrets matched by redaction patterns.
+- A `docs:verify` step checks: all links resolve, all required files exist, PDF opens, no template placeholders left (`{{`), no secrets/PII matched by redaction patterns, SARIF files validate, and JUnit XML parses.
 
 ## 10. Unified additions (see `06-UNIFIED-PIPELINE.md`)
 
@@ -138,6 +153,9 @@ The doc engine consumes **Findings** (not only test results) and adds these docu
 | 13 | **Run Comparison** | HTML | New / fixed / regressed findings, pass-rate and vitals deltas, newly discovered pages/endpoints |
 | 14 | **Plan & Approval Record** | HTML, PDF | Generated plan, who approved/rejected what and when, sources of each case |
 | 15 | **Not Covered & Skipped** | section in Execution Report + Executive Summary | Everything skipped or reduced and why (mode, budget, missing input, failure) |
+| 16 | **External Findings** | HTML section + XLSX/CSV | Findings imported from approved external tools (SARIF); provenance, severity/confidence mapping, redacted evidence |
+| 17 | **Machine-readable exports** | SARIF 2.1.0, JUnit XML, CSV/XLSX | Findings and test results for CI/code scanning and audit; file-only by default |
+| 18 | **Compliance mapping** (optional) | HTML section | Indicative mapping of findings to control IDs for PCI-DSS v4, SOC 2, ISO 27001:2022 |
 
 Rules:
 - Executive Summary shows the gate decision, counts **by confidence label**, top correlated findings, and the "not covered" headline.
@@ -145,3 +163,44 @@ Rules:
 - Repo-lane results (developer test results, coverage, static findings, dependency/license audit, secret scan) appear in the Execution Report as their own section and feed Findings.
 - Every finding page links to its raw evidence and to the affected nodes in the Application Map.
 - `run-summary.json` gains: `request` (sanitized Run Request), `mode`, `scope`, `authorization` (who approved), `lanes[]` (status, duration, skipped reasons), `findings[]`, `appMap` reference, `baseline` reference.
+
+### 10.1 External findings
+
+External tools contribute findings; they do not bypass correlation or the gate.
+
+- Input is SARIF 2.1.0 (Phase 4) produced outside the run or by an approved plugin;
+  the doc engine itself never executes a scanner.
+- Every imported result carries `lane: "security-external"` and provenance
+  (`tool.name`, `tool.version`, `ruleId`, raw severity).
+- Confidence mapping: objective rule + precise location → `auto-discovered`;
+  heuristic/code-flow/inferred → `needs-review`; `verified` only when linked to a
+  requirement/spec/user row and confirmed by replay or human review.
+- Severity mapping: `critical|high|medium|low|info`; unknown → `info` +
+  `needs-review`.
+- Redaction runs before storage; raw SARIF is kept only as redacted evidence.
+- Invalid SARIF rejects the import with a reason; partial unlabelled results are
+  never emitted.
+- External findings use fingerprint v2 (see `06-UNIFIED-PIPELINE.md` §5) so the same
+  issue from different tools does not duplicate.
+
+### 10.2 SARIF and JUnit exports
+
+- SARIF 2.1.0, file-only by default (no upload to GitHub/GitLab in Phase 4).
+- `runs[].tool.driver` records the platform name/version; each result has `ruleId`,
+  `level`, `message`, `locations`, and `partialFingerprints`.
+- Partial fingerprints use the finding fingerprint v2 so retest-new and code
+  scanning can correlate across runs.
+- JUnit XML exports test cases and failures; XML is well-formed and deterministic.
+- `docs:verify` validates SARIF against the official 2.1.0 schema, parses JUnit,
+  and rejects secrets/PII in either export.
+- Exports are included in the bundle and checksums.
+
+### 10.3 Compliance mapping (optional, config-driven)
+
+- YAML maps `category` and/or `ruleId` to control IDs.
+- Default example frameworks: PCI-DSS v4, SOC 2, ISO/IEC 27001:2022.
+- Section title and footer state: **“indicative mapping, not an audit conclusion”**.
+- No control is marked compliant/non-compliant; unmapped findings are listed as
+  unmapped. Missing mappings are never inferred.
+- The mapping config is versioned, reviewed, and validated; an invalid mapping fails
+  `docs:verify` rather than rendering partial claims.

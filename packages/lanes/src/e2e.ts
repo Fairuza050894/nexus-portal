@@ -63,6 +63,7 @@ export function runE2eLane(context: LaneContext, session: SessionResult | undefi
     if (page.error) {
       drafts.push({
         title: `Page ${page.path} failed to load`,
+        ruleId: 'e2e-page-load',
         severity: 'high',
         confidence: 'auto-discovered',
         category: 'app-bug',
@@ -78,6 +79,7 @@ export function runE2eLane(context: LaneContext, session: SessionResult | undefi
     for (const [errorIndex, error] of page.pageErrors.entries()) {
       drafts.push({
         title: `Uncaught JavaScript error on ${page.path}`,
+        ruleId: 'e2e-uncaught-js-error',
         severity: 'high',
         confidence: 'auto-discovered',
         category: 'app-bug',
@@ -90,6 +92,7 @@ export function runE2eLane(context: LaneContext, session: SessionResult | undefi
     for (const [errorIndex, error] of page.consoleErrors.entries()) {
       drafts.push({
         title: `Console error on ${page.path}`,
+        ruleId: 'e2e-console-error',
         severity: 'medium',
         confidence: 'auto-discovered',
         category: 'app-bug',
@@ -103,6 +106,7 @@ export function runE2eLane(context: LaneContext, session: SessionResult | undefi
       if (!firstParty(failure.url, page.url)) continue;
       drafts.push({
         title: `First-party request failed on ${page.path}`,
+        ruleId: 'e2e-first-party-request-failed',
         severity: 'medium',
         confidence: 'auto-discovered',
         category: 'app-bug',
@@ -115,6 +119,7 @@ export function runE2eLane(context: LaneContext, session: SessionResult | undefi
     for (const failure of page.serverErrors) {
       drafts.push({
         title: `Server error ${failure.status} on ${page.path}`,
+        ruleId: 'e2e-server-error',
         severity: 'high',
         confidence: 'auto-discovered',
         category: 'app-bug',

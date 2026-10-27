@@ -131,12 +131,37 @@ export interface AuditRecord {
   reason?: string;
 }
 
+export type FindingSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
+export type FindingConfidence = 'verified' | 'auto-discovered' | 'needs-review';
+export type FindingCategory =
+  | 'app-bug'
+  | 'test-bug'
+  | 'environment'
+  | 'data'
+  | 'flaky'
+  | 'security'
+  | 'accessibility'
+  | 'performance'
+  | 'quality-debt'
+  | 'unknown';
+export type FindingStatus =
+  | 'new'
+  | 'recurring'
+  | 'fixed'
+  | 'regressed'
+  | 'known-defect'
+  | 'accepted-risk';
+
 export interface Finding {
   id: string;
   title: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  confidence: 'verified' | 'auto-discovered' | 'needs-review';
-  category: string;
+  severity: FindingSeverity;
+  confidence: FindingConfidence;
+  category: FindingCategory | string;
+  /** Stable rule/check identifier used for fingerprinting and dedupe. */
+  ruleId?: string;
+  /** Fingerprint v2: sha256 over category, rule id, and normalized targets. */
+  fingerprint?: string;
   lanes: string[];
   occurrences: number;
   affected?: Array<Record<string, unknown>>;
@@ -146,7 +171,9 @@ export interface Finding {
   actual?: string;
   codeRefs?: Array<{ file: string; line?: number; commit?: string }>;
   requirements?: string[];
-  status: string;
+  status: FindingStatus | string;
+  firstSeenRun?: string;
+  lastSeenRun?: string;
   suggestedOwner?: string;
   suggestedFix?: string;
 }
@@ -158,11 +185,59 @@ export interface LaneSummary {
   passed: number;
   failed: number;
   skipped: number;
+  durationMs?: number;
   reason?: string;
 }
 
+export interface BaselineComparisonSummary {
+  baselineRunId: string;
+  newFindings: number;
+  recurringFindings: number;
+  fixedFindings: number;
+  regressedFindings: number;
+  passRateDelta?: number;
+  vitalsDelta?: Record<string, number>;
+}
+
+export interface CoverageSummary {
+  requirementsTotal: number;
+  requirementsCovered: number;
+  featureCoverage?: Record<string, { total: number; passed: number; covered: boolean }>;
+  uncovered: string[];
+}
+
+export interface RunTestSummary {
+  id: string;
+  lane: string;
+  title: string;
+  feature?: string;
+  status: 'passed' | 'failed' | 'skipped' | 'flaky';
+  durationMs: number;
+  requirements?: string[];
+  expected?: string;
+  actual?: string;
+  reason?: string;
+  evidence?: Array<Record<string, unknown>>;
+}
+
+export interface RequirementRow {
+  id: string;
+  title: string;
+  area?: string;
+  severity?: string;
+  acceptance: string[];
+  tests: string[];
+  covered: boolean;
+}
+
+export interface ConfidenceTotals {
+  verified: number;
+  autoDiscovered: number;
+  needsReview: number;
+}
+
 export interface RunSummary {
-  schemaVersion: '1.0';
+  schemaVersion: '1.0' | '2.0';
   run: {
     id: string;
     status: 'rejected' | 'incomplete' | 'complete';
@@ -178,8 +253,10 @@ export interface RunSummary {
     baseUrl?: string;
     apiUrl?: string;
     gitSha: string;
+    gitBranch?: string;
     nodeVersion: string;
     platform: string;
+    browsers?: string[];
   };
   request: unknown;
   audit: AuditRecord;
@@ -189,8 +266,10 @@ export interface RunSummary {
     passed: number;
     failed: number;
     skipped: number;
+    flaky?: number;
     lanes: string[];
   };
+  confidenceTotals?: ConfidenceTotals;
   gate: {
     decision: 'GO' | 'GO WITH RISKS' | 'NO-GO';
     reasons: string[];
@@ -198,6 +277,10 @@ export interface RunSummary {
   findings: Finding[];
   limitations: string[];
   lanes?: LaneSummary[];
+  tests?: RunTestSummary[];
+  requirements?: RequirementRow[];
+  baseline?: BaselineComparisonSummary;
+  coverage?: CoverageSummary;
   session?: { pages: number; browserVersion: string };
   appMap?: {
     path: string;

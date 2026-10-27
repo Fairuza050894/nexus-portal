@@ -12,7 +12,14 @@ import {
   type QaConfigInput,
   type RunRequest,
 } from '@nexus/core';
-import { copyLatestDocs, generateDocs, relativeTo } from '@nexus/doc-engine';
+import {
+  copyLatestDocs,
+  generateDocs,
+  generatePdfDocs,
+  relativeTo,
+  verifyDocs,
+  type HistoryPoint,
+} from '@nexus/doc-engine';
 import { booleanFlag, listFlag, parseArgs, stringFlag, type ParsedArgs } from './args.js';
 import { runPipeline } from './pipeline.js';
 
@@ -22,6 +29,7 @@ const USAGE = `Usage:
   qa run --config <file> --resume <run-id>
   qa plan --config <run-request.json>
   qa docs [--run <run-id>] [--open]
+  qa docs:verify [--run <run-id>]
   qa replay <run-id>
   qa clean
 
@@ -99,11 +107,13 @@ function printPlan(request: RunRequest, config: QaConfig): void {
         'model (Application Map)',
         'plan (lane selection)',
         'execute (repo, API, E2E, a11y, Web Vitals, passive security)',
+        'correlate (dedupe, classify, Application Map correlation)',
+        'analyze (baseline comparison)',
         'gate',
-        'document',
+        'document (15 documents, PDF/XLSX, verify)',
         'bundle',
       ],
-      notImplemented: ['visual baseline', 'correlation/analyze'],
+      notImplemented: ['visual baseline', 'test generation'],
     },
   };
   process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`);
@@ -179,6 +189,29 @@ async function planCommand(args: ParsedArgs, rootDir: string): Promise<number> {
   return 0;
 }
 
+function historyFor(rootDir: string, runId: string): HistoryPoint[] {
+  return RunStore.listRunIds(rootDir)
+    .filter((id) => id !== runId)
+    .slice(0, 30)
+    .map((id) => RunStore.readSummaryById(rootDir, id))
+    .filter((item): item is NonNullable<typeof item> => item !== undefined)
+    .map((item) => ({
+      runId: item.run.id,
+      startedAt: item.run.startedAt,
+      passRate:
+        item.totals.passed + item.totals.failed > 0
+          ? (item.totals.passed / (item.totals.passed + item.totals.failed)) * 100
+          : 100,
+      tests: item.totals.tests,
+      passed: item.totals.passed,
+      failed: item.totals.failed,
+      skipped: item.totals.skipped,
+      durationMs: item.run.durationMs,
+      gate: item.gate.decision,
+    }))
+    .reverse();
+}
+
 async function docsCommand(args: ParsedArgs, rootDir: string): Promise<number> {
   const config = await loadConfig(rootDir, args.flags);
   const runId = stringFlag(args.flags, 'run') ?? RunStore.latestRunId(rootDir);
@@ -190,12 +223,41 @@ async function docsCommand(args: ParsedArgs, rootDir: string): Promise<number> {
     throw new Error(`run summary not found for ${runId}`);
   }
   const docsDir = join(rootDir, 'artifacts', 'docs', runId);
-  generateDocs(summary, docsDir, { language: config.docs.language });
+  generateDocs(summary, docsDir, {
+    language: config.docs.language,
+    runDir: join(rootDir, 'artifacts', 'runs', runId),
+    history: historyFor(rootDir, runId),
+  });
+  const pdf = await generatePdfDocs(docsDir, [
+    'executive-summary.html',
+    'execution-report.html',
+    'plan-approval.html',
+    'failure-analysis.html',
+  ]);
+  for (const warning of pdf.warnings) process.stderr.write(`warning: ${warning}\n`);
   copyLatestDocs(rootDir, docsDir);
-  const indexPath = join(docsDir, 'index.html');
-  process.stdout.write(`Docs: ${relativeTo(rootDir, indexPath)}\n`);
-  if (booleanFlag(args.flags, 'open')) openPath(indexPath);
-  return 0;
+  const verification = verifyDocs(docsDir, { requirePdf: pdf.generated.length > 0 });
+  process.stdout.write(`Docs: ${relativeTo(rootDir, join(docsDir, 'index.html'))}\n`);
+  process.stdout.write(
+    `PDF: ${pdf.generated.length} file(s) · Verification: ${verification.ok ? 'ok' : 'FAILED'}\n`,
+  );
+  for (const error of verification.errors) process.stderr.write(`error: ${error}\n`);
+  if (booleanFlag(args.flags, 'open')) openPath(join(docsDir, 'index.html'));
+  return verification.ok ? 0 : 1;
+}
+
+function verifyDocsCommand(args: ParsedArgs, rootDir: string): number {
+  const runId = stringFlag(args.flags, 'run') ?? RunStore.latestRunId(rootDir);
+  if (!runId) throw new Error('no runs found under artifacts/runs');
+  const docsDir = join(rootDir, 'artifacts', 'docs', runId);
+  const verification = verifyDocs(docsDir);
+  process.stdout.write(
+    `Verified ${verification.verifiedFiles.length} file(s) in ${relativeTo(rootDir, docsDir)}\n`,
+  );
+  for (const warning of verification.warnings) process.stdout.write(`warning: ${warning}\n`);
+  for (const error of verification.errors) process.stderr.write(`error: ${error}\n`);
+  process.stdout.write(`Result: ${verification.ok ? 'ok' : 'FAILED'}\n`);
+  return verification.ok ? 0 : 1;
 }
 
 async function replayCommand(args: ParsedArgs, rootDir: string): Promise<number> {
@@ -254,6 +316,8 @@ async function main(): Promise<number> {
       return planCommand(parsed, rootDir);
     case 'docs':
       return docsCommand(parsed, rootDir);
+    case 'docs:verify':
+      return verifyDocsCommand(parsed, rootDir);
     case 'replay':
       return replayCommand(parsed, rootDir);
     case 'clean':

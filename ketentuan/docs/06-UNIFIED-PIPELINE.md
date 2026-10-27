@@ -115,6 +115,9 @@ Examples:
   "requirements": ["REQ-CHK-02"],
   "status": "new|recurring|fixed|regressed|known-defect|accepted-risk",
   "firstSeenRun": "", "lastSeenRun": "",
+  "fingerprint": "v2:<sha256>",
+  "replay": { "result": "confirmed|not-reproduced|inconclusive", "runId": "", "evidence": [] },
+  "provenance": { "tool": "", "version": "", "ruleId": "", "rawSeverity": "" },
   "suggestedOwner": "from CODEOWNERS / git history",
   "suggestedFix": "direction only, never auto-applied"
 }
@@ -129,6 +132,61 @@ Examples:
 | `needs-review` | Heuristic or inferred; may be a false positive | "Form accepted empty required-looking field", layout diff, suspicious copy, inferred code mapping |
 
 Reports must never present `auto-discovered` or `needs-review` items as confirmed defects, and the gate counts them differently (configurable; default: only `verified` and high-severity `auto-discovered` can produce NO-GO).
+
+### 5.1 Fingerprint and dedupe
+
+Finding identity is a **fingerprint v2**:
+
+```
+sha256(category | rule-or-check-id | normalized-target | component)
+```
+
+Normalization removes volatile data before hashing:
+
+- lowercase and trim; keep the target path, drop the Run Request host when it matches
+  the configured target;
+- drop query strings, fragments, and volatile parameters;
+- replace numeric path/query IDs with `:id`, UUIDs with `:uuid`, and tokens with
+  `:token`;
+- exclude timestamps, run IDs, request IDs, ephemeral ports, scanner instance IDs,
+  and retry counts;
+- repository findings use repo-relative file + normalized rule ID.
+
+Rules:
+
+- Same rule on different endpoints/pages must **not** merge.
+- Different rule IDs on the same target must **not** merge.
+- Repeated occurrences of the same fingerprint collapse into one finding with
+  `occurrences` and a deduplicated `affected[]`.
+- False-merge tests are mandatory.
+- Historical summaries using the pre-v2 fingerprint are matched with a legacy
+  fallback for one schema transition; statuses are not silently rewritten.
+
+### 5.2 False-positive replay
+
+`replayFinding(finding)` returns:
+
+| Result | Meaning |
+|---|---|
+| `confirmed` | Stored reproduction steps executed and the same expected-vs-actual mismatch was observed. |
+| `not-reproduced` | Steps executed and the mismatch did not occur. The finding is not deleted; it is flagged for human triage. |
+| `inconclusive` | The lane has no executable replay (e.g. repo/static/security-external), inputs are missing, or the environment cannot reproduce safely. |
+
+- Phase 4 implements replay for e2e and api findings; other lanes return `inconclusive`.
+- The replay result and its evidence are recorded on the finding.
+- `confirmed` replay is evidence, not business intent. It does **not** by itself
+  promote an `auto-discovered` finding to `verified`; `verified` still requires a
+  requirement, spec, approved test row, or human-approved assertion.
+- A scanner/tool claim is never treated as replay or verification.
+
+### 5.3 External findings
+
+Findings from approved external tools enter the same model with lane
+`security-external` and provenance (`tool`, `version`, `ruleId`, raw severity).
+Severity/confidence mapping, SARIF import, forbidden options, and sandbox rules are
+defined in `09-EXTERNAL-TOOLS-INTEGRATION.md`. External findings are deduped with the
+same fingerprint v2 and are never presented as `verified` without an assertion
+source plus replay/human confirmation.
 
 ## 6. Test generation rules
 
@@ -149,6 +207,15 @@ Reports must never present `auto-discovered` or `needs-review` items as confirme
 - Each run can be compared to a baseline (previous successful run, or a chosen run).
 - Findings get status `new | recurring | fixed | regressed`.
 - Report section "What changed since baseline": new/fixed/regressed findings, pass-rate delta, performance deltas (vitals p75), new a11y violations, new endpoints/pages discovered.
+- **`retest-new`** keeps/report only findings that are new or regressed relative to
+  the selected baseline. It is a reporting/selection mode, not a gate bypass:
+  - recurring verified findings remain in an appendix and still count in the gate;
+  - fixed findings are counted but not deleted from history;
+  - the run summary records `baselineRunId`, mode `retest-new`, and the filtered
+    counts so the report cannot hide the rest.
+- Fingerprint v2 (see §5.1) determines identity; legacy fallback applies for old
+  summaries.
+- `retest-new` never changes quality-gate thresholds.
 
 ## 9. Learning loop
 
@@ -164,3 +231,5 @@ When a locator fails but a clear candidate exists (same role/name, moved element
 - All evidence passes through redaction before storage.
 - Every skipped or reduced item is recorded with the reason (mode, budget, missing input, failure).
 - Deterministic where possible: seeds and ordering recorded in the run manifest so a run can be replayed (`qa replay <run-id>`).
+- External/plugin lanes are disabled by default, sandbox-only, opt-in, approver-signed, audited, pinned, egress-restricted, and fail closed. Forbidden evasion/CAPTCHA/TLS/WAF/brute-force/autonomous-attack options are forced off (`09-EXTERNAL-TOOLS-INTEGRATION.md`).
+- No target data leaves the platform; external AI/telemetry/update checks are disabled unless an endpoint is approved in `docs/DECISIONS.md`.

@@ -3,15 +3,19 @@ import { isAbsolute, join, relative, resolve } from 'node:path';
 import {
   createRunId,
   finishAudit,
+  loadRequirements,
   newAuditRecord,
   redactValue,
+  requirementRows,
   RunStore,
   targetsOf,
   type AuditRecord,
   type QaConfig,
+  type RequirementRow,
   type RunRequest,
   type RunResult,
   type RunSummary,
+  type RunTestSummary,
   type StageSummary,
 } from '@nexus/core';
 import { startSandbox, type SandboxResult, type SandboxSession } from '@nexus/sandbox';
@@ -31,7 +35,17 @@ import {
   type LaneRunResult,
 } from '@nexus/lanes';
 import type { SessionResult } from '@nexus/session';
-import { copyLatestDocs, createBundle, generateDocs, relativeTo } from '@nexus/doc-engine';
+import {
+  copyLatestDocs,
+  createBundle,
+  generateDocs,
+  generatePdfDocs,
+  relativeTo,
+  verifyDocs,
+  type HistoryPoint,
+} from '@nexus/doc-engine';
+import { correlateSignals, compareWithBaseline, type RawSignal } from '@nexus/correlate';
+import { evaluateGate } from '@nexus/gate';
 import { probeUrl } from './http.js';
 
 export const STAGE_ORDER = [
@@ -160,7 +174,7 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
   const runStartedMs = Date.parse(audit.startedAt);
   const stages: Record<string, StageSummary> = {};
   const limitations: string[] = [
-    'phase 3: visual baseline comparison (Phase 8) and correlation/analyze (Phase 4) are not implemented yet',
+    'visual baseline comparison (Phase 8) is not implemented yet; visual lanes collect screenshots only',
   ];
   let incomplete = false;
   let gateDecision: RunSummary['gate']['decision'] = 'GO WITH RISKS';
@@ -178,6 +192,9 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
     lanes: [],
   };
   let findings: RunSummary['findings'] = [];
+  let testSummaries: RunTestSummary[] = [];
+  let requirementSummary: RequirementRow[] | undefined;
+  let coverageSummary: RunSummary['coverage'];
 
   const stageRecord = (
     name: StageName,
@@ -441,6 +458,21 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
       laneResults = laneRun.lanes;
       laneTotals = laneRun.totals;
       findings = laneRun.findings;
+      testSummaries = laneRun.lanes.flatMap((lane) =>
+        lane.tests.map((test) => ({
+          id: test.id,
+          lane: test.lane,
+          title: test.name,
+          ...(test.feature ? { feature: test.feature } : {}),
+          status: test.status,
+          durationMs: test.durationMs,
+          ...(test.requirements ? { requirements: test.requirements } : {}),
+          ...(test.expected ? { expected: test.expected } : {}),
+          ...(test.actual ? { actual: test.actual } : {}),
+          ...(test.reason ? { reason: test.reason } : {}),
+          ...(test.evidence ? { evidence: test.evidence } : {}),
+        })),
+      );
       sessionResult = laneRun.session;
       store.writeArtifact(
         'lanes.json',
@@ -486,40 +518,150 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
     }
   }
 
-  skipStage('correlate', 'correlation engine is not implemented yet (Phase 4)');
-  skipStage('analyze', 'analysis/classification is not implemented yet (Phase 4)');
+  let correlatedResult: ReturnType<typeof correlateSignals> = {
+    findings: [],
+    confidenceTotals: { verified: 0, autoDiscovered: 0, needsReview: 0 },
+    categoryTotals: {},
+    severityTotals: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
+  };
+
+  await runStage('correlate', () => {
+    const rawSignals: RawSignal[] = [];
+    for (const f of findings) {
+      rawSignals.push({
+        id: f.id,
+        lane: f.lanes[0] ?? 'lane',
+        title: f.title,
+        ...(f.ruleId ? { ruleId: f.ruleId } : {}),
+        severity: f.severity,
+        confidence: f.confidence,
+        category: f.category,
+        expected: f.expected,
+        actual: f.actual,
+        ...(f.affected ? { affected: f.affected } : {}),
+        occurrences: f.occurrences,
+        evidence: f.evidence,
+        reproduction: f.reproduction,
+        requirements: f.requirements,
+        suggestedOwner: f.suggestedOwner,
+        suggestedFix: f.suggestedFix,
+      });
+    }
+
+    correlatedResult = correlateSignals(rawSignals, {
+      appMap: builtAppMap,
+      currentRunId: runId,
+    });
+    findings = correlatedResult.findings;
+    store.writeArtifact('findings.json', redactValue(findings));
+
+    return {
+      correlatedFindings: findings.length,
+      confidenceTotals: correlatedResult.confidenceTotals,
+      categoryTotals: correlatedResult.categoryTotals,
+    };
+  });
+
+  let baselineSummary: RunSummary['baseline'];
+  let docHistory: HistoryPoint[] = [];
+  await runStage('analyze', () => {
+    const runIds = RunStore.listRunIds(artifactsRoot).filter((id) => id !== runId);
+    const prevRunId = runIds[0];
+    const previousSummaries = runIds
+      .slice(0, 31)
+      .map((id) => RunStore.readSummaryById(artifactsRoot, id))
+      .filter((item): item is RunSummary => item !== undefined);
+
+    const baselineFindings = previousSummaries[0]?.findings;
+    const baselineComparison = compareWithBaseline(findings, {
+      ...(baselineFindings ? { baselineFindings } : {}),
+      ...(prevRunId ? { baselineRunId: prevRunId } : {}),
+      currentRunId: runId,
+      baselineTotals: previousSummaries[0]?.totals
+        ? { passed: previousSummaries[0].totals.passed, total: previousSummaries[0].totals.tests }
+        : undefined,
+      currentTotals: { passed: laneTotals.passed, total: laneTotals.tests },
+      history: previousSummaries.slice(1).map((item) => ({
+        runId: item.run.id,
+        findings: item.findings,
+      })),
+    });
+
+    findings = baselineComparison.findings;
+    baselineSummary = baselineComparison.summary;
+    store.writeArtifact('findings.json', redactValue(findings));
+
+    const requirementsLocation =
+      request.requirements?.location ?? join(rootDir, 'requirements', 'requirements.yaml');
+    const requirementsPath = isAbsolute(requirementsLocation)
+      ? requirementsLocation
+      : resolve(rootDir, requirementsLocation);
+    try {
+      const definitions = loadRequirements(requirementsPath);
+      if (definitions) {
+        const joined = requirementRows(definitions, testSummaries, findings);
+        requirementSummary = joined.rows;
+        coverageSummary = joined.coverage;
+        store.writeArtifact('requirements.json', redactValue(joined.rows));
+      }
+    } catch (error) {
+      limitations.push(`requirements could not be loaded: ${(error as Error).message}`);
+    }
+
+    docHistory = previousSummaries
+      .map((item) => ({
+        runId: item.run.id,
+        startedAt: item.run.startedAt,
+        passRate:
+          item.totals.passed + item.totals.failed > 0
+            ? (item.totals.passed / (item.totals.passed + item.totals.failed)) * 100
+            : 100,
+        tests: item.totals.tests,
+        passed: item.totals.passed,
+        failed: item.totals.failed,
+        skipped: item.totals.skipped,
+        durationMs: item.run.durationMs,
+        gate: item.gate.decision,
+      }))
+      .reverse();
+
+    return {
+      baselineRunId: prevRunId ?? 'none',
+      newFindings: baselineSummary?.newFindings ?? findings.length,
+      recurringFindings: baselineSummary?.recurringFindings ?? 0,
+      fixedFindings: baselineSummary?.fixedFindings ?? 0,
+      regressedFindings: baselineSummary?.regressedFindings ?? 0,
+      requirementsLoaded: requirementSummary?.length ?? 0,
+    };
+  });
 
   // GATE
   await runStage('gate', () => {
-    const reasons: string[] = [];
-    const laneErrors = laneResults.filter((lane) => lane.status === 'error');
-    const skippedLanes = laneResults.filter((lane) => lane.status === 'skipped');
-    if (incomplete) reasons.push('run is incomplete: one or more stages failed or were skipped');
-    if (laneTotals.failed > 0) reasons.push(`${laneTotals.failed} test case(s) failed`);
-    if (laneErrors.length > 0) {
-      reasons.push(
-        `lane error(s): ${laneErrors.map((lane) => `${lane.lane}: ${lane.reason ?? 'error'}`).join('; ')}`,
-      );
-    }
-    if (lanePlan?.unsupported.length) {
-      reasons.push(`unsupported requested lanes: ${lanePlan.unsupported.join(', ')}`);
-    }
-    if (laneResults.length === 0 && !incomplete) {
-      reasons.push('no automated lanes were executed');
-    } else if (skippedLanes.length > 0) {
-      reasons.push(`skipped lane(s): ${skippedLanes.map((lane) => lane.lane).join(', ')}`);
-    }
-    if (laneTotals.skipped > 0) {
-      reasons.push(`${laneTotals.skipped} test case(s) skipped`);
-    }
-    gateDecision =
-      incomplete || laneTotals.failed > 0 || laneErrors.length > 0
-        ? 'NO-GO'
-        : laneTotals.tests === 0 || laneTotals.skipped > 0 || skippedLanes.length > 0
-          ? 'GO WITH RISKS'
-          : 'GO';
-    gateReasons = [...new Set(reasons)];
-    return { decision: gateDecision, reasons: gateReasons };
+    const reqCoveragePercent =
+      coverageSummary && coverageSummary.requirementsTotal > 0
+        ? (coverageSummary.requirementsCovered / coverageSummary.requirementsTotal) * 100
+        : undefined;
+    const gateEval = evaluateGate({
+      totals: {
+        ...laneTotals,
+        flaky: findings.filter((finding) => finding.category === 'flaky').length,
+      },
+      findings,
+      lanes: laneResults,
+      incomplete,
+      limitations,
+      ...(reqCoveragePercent !== undefined ? { reqCoveragePercent } : {}),
+    });
+
+    gateDecision = gateEval.decision;
+    gateReasons = gateEval.reasons;
+
+    return {
+      decision: gateDecision,
+      reasons: gateReasons,
+      rules: gateEval.rules,
+      confidenceCounts: gateEval.confidenceCounts,
+    };
   });
 
   // DOCUMENT + BUNDLE
@@ -535,7 +677,7 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
       finishAudit(audit, incomplete ? 'run incomplete' : undefined),
     );
     return {
-      schemaVersion: '1.0',
+      schemaVersion: '2.0',
       run: {
         id: runId,
         status,
@@ -551,13 +693,23 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
         baseUrl: request.web?.urls[0] ?? config.baseUrl,
         apiUrl: request.api?.baseUrl ?? config.apiUrl,
         gitSha: process.env.GITHUB_SHA ?? 'local',
+        ...(process.env.GITHUB_REF_NAME ? { gitBranch: process.env.GITHUB_REF_NAME } : {}),
         nodeVersion: process.version,
         platform: process.platform,
+        ...(sessionResult ? { browsers: ['chromium'] } : {}),
       },
       request: redactValue(request),
       audit: finishedAudit,
       stages: orderedStages,
-      totals: laneTotals,
+      totals: {
+        ...laneTotals,
+        flaky: findings.filter((finding) => finding.category === 'flaky').length,
+      },
+      confidenceTotals: correlatedResult.confidenceTotals,
+      baseline: baselineSummary,
+      ...(coverageSummary ? { coverage: coverageSummary } : {}),
+      ...(requirementSummary ? { requirements: requirementSummary } : {}),
+      ...(testSummaries.length > 0 ? { tests: testSummaries } : {}),
       gate: { decision: gateDecision, reasons: gateReasons },
       findings: redactValue(findings),
       limitations: [...new Set(limitations)],
@@ -586,32 +738,80 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
     };
   };
 
-  stages.document = stageRecord('document', 'ok', Date.now(), {
-    output: { dir: relativeTo(artifactsRoot, docsDir) },
-  });
-  stages.bundle = stageRecord('bundle', 'ok', Date.now(), {
-    output: { path: relativeTo(artifactsRoot, bundlePath) },
-  });
-  store.writeStage(stages.document);
-  store.writeStage(stages.bundle);
-
   let summary = buildSummary();
   store.writeSummary(summary);
 
   let docsGenerated = false;
-  try {
-    generateDocs(summary, docsDir, { language: config.docs.language });
+  let pdfGenerated = 0;
+  const renderDocs = async (): Promise<void> => {
+    generateDocs(summary, docsDir, {
+      language: config.docs.language,
+      runDir: store.runDir,
+      history: docHistory,
+    });
+    const pdf = await generatePdfDocs(docsDir, [
+      'executive-summary.html',
+      'execution-report.html',
+      'plan-approval.html',
+      'failure-analysis.html',
+    ]);
+    pdfGenerated = pdf.generated.length;
+    for (const warning of pdf.warnings) {
+      if (!limitations.includes(warning)) limitations.push(warning);
+    }
     copyLatestDocs(artifactsRoot, docsDir);
+  };
+
+  const docsStartedMs = Date.now();
+  let docsVerified = false;
+  let verifiedCount = 0;
+  try {
+    await renderDocs();
     docsGenerated = true;
+    const verification = verifyDocs(docsDir, { requirePdf: pdfGenerated > 0 });
+    verifiedCount = verification.verifiedFiles.length;
+    for (const warning of verification.warnings) {
+      if (!limitations.includes(warning)) limitations.push(warning);
+    }
+    if (!verification.ok) {
+      incomplete = true;
+      for (const error of verification.errors) {
+        if (!limitations.includes(`docs verification: ${error}`)) {
+          limitations.push(`docs verification: ${error}`);
+        }
+      }
+    } else {
+      docsVerified = true;
+    }
+    stages.document = stageRecord('document', docsVerified ? 'ok' : 'failed', docsStartedMs, {
+      ...(docsVerified
+        ? { output: { dir: relativeTo(artifactsRoot, docsDir), pdf: pdfGenerated, files: verifiedCount } }
+        : { reason: 'docs verification failed' }),
+    });
+    store.writeStage(stages.document);
   } catch (error) {
-    stages.document = stageRecord('document', 'failed', Date.now(), {
+    stages.document = stageRecord('document', 'failed', docsStartedMs, {
       error: (error as Error).message,
       reason: 'document generation failed',
     });
     store.writeStage(stages.document);
     incomplete = true;
+  }
+
+  if (incomplete) {
+    gateDecision = 'NO-GO';
+    if (!gateReasons.some((reason) => reason.startsWith('run is incomplete'))) {
+      gateReasons = [...gateReasons, 'run is incomplete'];
+    }
     summary = buildSummary();
     store.writeSummary(summary);
+    if (docsGenerated) {
+      try {
+        await renderDocs();
+      } catch {
+        // keep the previous report; the failure is already recorded
+      }
+    }
   }
 
   let bundleSha256: string | undefined;
@@ -626,6 +826,10 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
     });
     bundleSha256 = bundle.sha256;
     bundleCreated = true;
+    stages.bundle = stageRecord('bundle', 'ok', Date.now(), {
+      output: { path: relativeTo(artifactsRoot, bundlePath) },
+    });
+    store.writeStage(stages.bundle);
   } catch (error) {
     stages.bundle = stageRecord('bundle', 'failed', Date.now(), {
       error: (error as Error).message,
@@ -633,32 +837,24 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
     });
     store.writeStage(stages.bundle);
     incomplete = true;
-    summary = buildSummary();
-    store.writeSummary(summary);
-    if (docsGenerated) {
-      try {
-        generateDocs(summary, docsDir, { language: config.docs.language });
-        copyLatestDocs(artifactsRoot, docsDir);
-      } catch {
-        // document stage already recorded; keep the original report
-      }
-    }
   }
 
-  if (incomplete) {
+  if (incomplete && docsGenerated) {
     gateDecision = 'NO-GO';
     if (!gateReasons.some((reason) => reason.startsWith('run is incomplete'))) {
       gateReasons = [...gateReasons, 'run is incomplete'];
     }
     summary = buildSummary();
     store.writeSummary(summary);
-    if (docsGenerated) {
-      try {
-        generateDocs(summary, docsDir, { language: config.docs.language });
-        copyLatestDocs(artifactsRoot, docsDir);
-      } catch {
-        // keep existing report
-      }
+    try {
+      generateDocs(summary, docsDir, {
+        language: config.docs.language,
+        runDir: store.runDir,
+        history: docHistory,
+      });
+      copyLatestDocs(artifactsRoot, docsDir);
+    } catch {
+      // keep existing report
     }
   }
 

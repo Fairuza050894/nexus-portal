@@ -23,7 +23,16 @@ export type {
   StageSummary,
   AuditRecord,
   Finding,
+  FindingSeverity,
+  FindingConfidence,
+  FindingCategory,
+  FindingStatus,
   LaneSummary,
+  BaselineComparisonSummary,
+  CoverageSummary,
+  RunTestSummary,
+  RequirementRow,
+  ConfidenceTotals,
   RunSummary,
   RunResult,
 } from './types.js';
@@ -42,3 +51,5 @@ export { redact, redactString, redactValue } from './redaction.js';
 export { QaConfigSchema, DEFAULT_QA_CONFIG, defineConfig } from './config.js';
 export type { QaConfig, QaConfigInput } from './config.js';
 export { RunStore } from './run-store.js';
+export { loadRequirements, requirementRows } from './requirements.js';
+export type { RequirementDefinition } from './requirements.js';

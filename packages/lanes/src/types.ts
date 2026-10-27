@@ -14,6 +14,8 @@ export interface LaneTestCase {
   name: string;
   status: TestStatus;
   durationMs: number;
+  feature?: string;
+  requirements?: string[];
   expected?: string;
   actual?: string;
   reason?: string;
@@ -22,6 +24,7 @@ export interface LaneTestCase {
 
 export interface FindingDraft {
   title: string;
+  ruleId?: string;
   severity: Finding['severity'];
   confidence: Finding['confidence'];
   category: Finding['category'];

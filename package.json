@@ -15,11 +15,12 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:smoke": "vitest run tests/smoke",
-    "qa": "npm run lint && npm run typecheck && npm test && npm run qa:smoke",
+    "qa": "npm run lint && npm run typecheck && npm test && npm run qa:smoke && npm run docs:verify",
     "qa:smoke": "node --import tsx apps/cli/src/index.ts run --config run-requests/smoke.json",
     "qa:plan": "node --import tsx apps/cli/src/index.ts plan --config run-requests/smoke.json",
     "docs": "node --import tsx apps/cli/src/index.ts docs",
     "docs:open": "node --import tsx apps/cli/src/index.ts docs --open",
+    "docs:verify": "node --import tsx apps/cli/src/index.ts docs:verify",
     "clean": "node --import tsx apps/cli/src/index.ts clean --yes"
   },
   "devDependencies": {

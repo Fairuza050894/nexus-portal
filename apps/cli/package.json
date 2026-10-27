@@ -7,8 +7,10 @@
   "dependencies": {
     "@nexus/app-map": "0.1.0",
     "@nexus/core": "0.1.0",
+    "@nexus/correlate": "0.1.0",
     "@nexus/discover": "0.1.0",
     "@nexus/doc-engine": "0.1.0",
+    "@nexus/gate": "0.1.0",
     "@nexus/sandbox": "0.1.0"
   }
 }

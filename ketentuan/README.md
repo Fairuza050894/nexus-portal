@@ -23,7 +23,8 @@ Paket aturan dan spesifikasi agar agent AI membangun **satu platform QA terpadu*
 | **`docs/05-TARGET-INTAKE-AND-MODES.md`** | Input (repo/URL/spec), 3 mode, otorisasi, sandbox untuk kode tidak tepercaya, deteksi stack |
 | **`docs/06-UNIFIED-PIPELINE.md`** | Pipeline terpadu: Application Map, lane, korelasi, generator tes, baseline |
 | **`docs/07-TEST-BUILDER-UI.md`** | Web app, tombol jenis tes, form dan tabel dinamis (registry), plan review, API, CLI |
-| **`docs/08-UI-FLOW-REFERENCE.md`** | Alur UI 5 langkah dari prototipe, skenario acceptance yang bisa diuji, contoh Run Request |
+| `docs/08-UI-FLOW-REFERENCE.md` | Alur UI 5 langkah dari prototipe, skenario acceptance yang bisa diuji, contoh Run Request |
+| **`docs/09-EXTERNAL-TOOLS-INTEGRATION.md`** | Kontrak plugin-lane, aturan integrasi tool pihak ketiga (Deep Eye, ZAP, Nuclei, Semgrep), forbidden options, sandbox/egress, pinning, normalisasi output, confidence mapping |
 | `rules/coding-standards.md` | Standar kode, locator, Page Object |
 | `rules/security-and-data.md` | Mode, otorisasi, secrets, sandbox, keamanan web app |
 | `tasks/ROADMAP.md` | 10 fase (0–9) dengan acceptance criteria; milestone M1/M2/M3 |

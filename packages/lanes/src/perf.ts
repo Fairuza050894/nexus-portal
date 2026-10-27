@@ -42,6 +42,7 @@ export function runPerfLane(_context: LaneContext, session: SessionResult | unde
     if (lcpMs !== undefined && lcpMs > LCP_LIMIT_MS) {
       drafts.push({
         title: `Slow LCP on ${page.path}: ${lcpMs}ms`,
+        ruleId: 'vitals-lcp',
         severity: 'medium',
         confidence: 'auto-discovered',
         category: 'performance',
@@ -54,6 +55,7 @@ export function runPerfLane(_context: LaneContext, session: SessionResult | unde
     if (ttfbMs !== undefined && ttfbMs > TTFB_LIMIT_MS) {
       drafts.push({
         title: `Slow TTFB on ${page.path}: ${ttfbMs}ms`,
+        ruleId: 'vitals-ttfb',
         severity: 'medium',
         confidence: 'auto-discovered',
         category: 'performance',
@@ -66,6 +68,7 @@ export function runPerfLane(_context: LaneContext, session: SessionResult | unde
     if (cls !== undefined && cls > CLS_LIMIT) {
       drafts.push({
         title: `High layout shift on ${page.path}: ${cls}`,
+        ruleId: 'vitals-cls',
         severity: 'medium',
         confidence: 'auto-discovered',
         category: 'performance',

@@ -3,14 +3,16 @@
 Unified QA automation platform. One run request discovers a target, executes the
 applicable lanes, correlates results, and produces a documentation bundle.
 
-**Current status: Phase 3 (instrumented session & lane MVP).** Intake, mode
-guard, sandbox, discovery, Application Map, one Playwright session per run, and
-repo/API/E2E/a11y/Web Vitals/passive-security lanes are implemented, with
-per-lane isolation, findings, gate scaffolding, docs, and bundle.
+**Current status: Phase 4 (correlation, gate & unified docs) — M1.** Intake, mode
+guard, sandbox, discovery, Application Map, one Playwright session per run,
+repo/API/E2E/a11y/Web Vitals/passive-security lanes, correlation with dedupe and
+confidence labels, baseline comparison, the per-confidence quality gate, and
+the full documentation bundle (HTML, MD, CSV, XLSX, PDF, JSON) with
+`docs:verify` are implemented.
 
-Correlation/analysis, visual baselines, and the **web dashboard** are not
+Visual baselines, test generation, and the **web dashboard** are not
 implemented yet. The dashboard is Phase 5 (`apps/web` + `apps/api` + worker);
-Phases 2–4 build the data it will display. Unimplemented stages are recorded as
+Phases 0–4 built the data it will display. Unimplemented stages are recorded as
 `skipped` with a reason — the platform never reports fabricated results.
 
 The product specification and phase plan live in [`ketentuan/`](ketentuan/README.md).
@@ -50,6 +52,7 @@ qa run --config run-requests/smoke.json
 qa run --repo https://git.example.com/team/app.git --url https://staging.example.com --mode staging
 qa plan --config run-requests/smoke.json
 qa docs --run <run-id>
+qa docs:verify [--run <run-id>]
 qa replay <run-id>
 qa clean --yes
 ```
@@ -60,8 +63,13 @@ Use the CLI through the package scripts or with the local TypeScript runtime:
 node --import tsx apps/cli/src/index.ts run --config run-requests/smoke.json
 ```
 
-Exit codes: `0` ok, `1` test failures, `2` quality gate failed, `3`
+Exit codes: `0` ok, `1` test failures (or failed docs verification), `2` quality gate failed, `3`
 infrastructure/config/incomplete (also used for rejected requests).
+
+`qa docs` regenerates a run's documentation and PDFs; `qa docs:verify` checks
+required files, link resolution, unrendered placeholders, missing metadata,
+secret/PII leaks, and PDF headers. A failing verification makes the run
+`INCOMPLETE` and the bundle carries the verification errors in its limitations.
 
 Staging and prod-safe requests need `authorization.ownerConfirmed`; prod-safe
 also needs a named `approvedBy` and is observe-only. Every target host — web,
@@ -121,9 +129,9 @@ artifacts/
 │   ├── evidence/session/*.png # screenshots
 │   ├── run-summary.json
 │   └── stages/*.json          # resumable stage outputs
-├── docs/<run-id>/             # run-summary.json, report.md, index.html
+├── docs/<run-id>/             # 15 documents + defects/, evidence/, PDFs, XLSX
 ├── docs/latest/               # copy of the latest run
-└── bundles/qa-<run-id>.zip    # docs + stages + checksums.txt
+└── bundles/qa-<run-id>.zip    # docs + stages + evidence + checksums.txt
 ```
 
 Everything under `artifacts/` is generated and gitignored.
@@ -139,7 +147,9 @@ Everything under `artifacts/` is generated and gitignored.
 | `packages/app-map`         | Application Map builder, edges, and risk scoring                                       |
 | `packages/session`         | Playwright instrumented session: probes, axe, vitals, screenshots, security            |
 | `packages/lanes`           | Lane planning/scheduling, repo/API/E2E/a11y/perf/security lanes, findings              |
-| `packages/doc-engine`      | Markdown/HTML reports, JSON manifest, deterministic zip bundle                         |
+| `packages/correlate`       | Signal correlation/dedupe/classification, confidence labels, baseline comparison       |
+| `packages/gate`            | Per-confidence quality gate (GO / GO WITH RISKS / NO-GO) with rule evidence             |
+| `packages/doc-engine`      | 15 documents (HTML/MD/CSV/XLSX/PDF/JSON), i18n, verification, deterministic zip bundle  |
 | `fixtures/sample-todo-api` | Dependency-free sample target used by smoke tests                                      |
 | `run-requests/`            | Example run requests                                                                   |
 | `docs/`                    | Decisions and ADRs                                                                     |
@@ -157,6 +167,8 @@ Everything under `artifacts/` is generated and gitignored.
   Test Builder rows and journey scripting land with the UI in Phase 5.
 - Repo developer tests are discovered but not executed yet; the repo lane is
   static analysis only.
-- Visual baselines, load testing, correlation/analyze, and the web dashboard
-  remain later phases (4, 5, 8). Requested visual lanes mark the run
+- Visual baselines, load testing, test generation, and the web dashboard
+  remain later phases (5–8). Requested visual lanes mark the run
   `INCOMPLETE` (exit 3) instead of pretending to pass.
+- Requirement coverage is reported as `uncovered` unless a test or finding
+  references the requirement ID; the sample fixture has no such links yet.

@@ -153,6 +153,7 @@ export async function runApiLane(context: LaneContext): Promise<LaneResult> {
       if (!passed) {
         drafts.push({
           title: `${method} ${path} did not match the expected contract`,
+          ruleId: `api-contract:${method}:${path}`,
           severity: response.status >= 500 ? 'high' : 'medium',
           confidence: expectedStatuses.length > 0 ? 'verified' : 'auto-discovered',
           category: 'app-bug',
@@ -181,6 +182,7 @@ export async function runApiLane(context: LaneContext): Promise<LaneResult> {
       });
       drafts.push({
         title: `API request failed: ${method} ${path}`,
+        ruleId: 'api-request-failed',
         severity: 'high',
         confidence: 'auto-discovered',
         category: 'environment',
@@ -209,6 +211,7 @@ export async function runApiLane(context: LaneContext): Promise<LaneResult> {
         if (!rejected) {
           drafts.push({
             title: `Authentication bypass suspected on ${method} ${path}`,
+            ruleId: 'auth-bypass',
             severity: 'high',
             confidence: 'auto-discovered',
             category: 'security',

@@ -96,4 +96,17 @@ critical 100%, overall >=95% (ex-quarantine), flaky <=2%, a11y critical/serious 
 
 ## 10. Next
 
-Phase 4: correlation engine, classification/dedupe, baseline comparison, quality gates by confidence, full 15-document bundle (PDF/XLSX), and `docs:verify`. The web dashboard remains Phase 5. Activate branch protection and provide Docker rootless in CI/dev before real remote pilots.
+Phase 4 (4.1–4.7) is complete: correlation, classification/dedupe, baseline comparison, confidence-based gate, full document bundle (HTML/MD/CSV/XLSX/PDF/JSON), `docs:verify`, and interactive offline Application Map. Phase 4 additive work: **4.8 complete** (fingerprint v2 + dedupe in `packages/correlate`, strict legacy + one-transition loose fallback, false-merge/volatile-data tests); 4.9–4.12 pending. The web dashboard remains Phase 5. Activate branch protection and provide Docker rootless in CI/dev before real remote pilots.
+
+## 11. External tools, AI & compliance decisions (2026-10-27)
+
+- **Active scanning on staging:** never. Active/plugin scanning is sandbox-only, explicit opt-in, `approver`-signed, and audited. `staging` and `prod-safe` remain unchanged.
+- **AI endpoint:** none approved. All target data stays inside the platform. AI-assisted summaries remain off; Phase 4 summaries are deterministic/template-based.
+- **Compliance frameworks for indicative mapping:** PCI-DSS v4, SOC 2, ISO/IEC 27001:2022 (mechanism only; labelled "indicative mapping, not an audit conclusion").
+- **SARIF destination:** file-only in Phase 4. No GitHub/GitLab code-scanning upload.
+- **Deep Eye:** read-only evaluation only in Phase 4 (`ketentuan/docs/evaluations/deep-eye.md`). No execution, installation, or adapter. Any execution spike requires product-owner approval and belongs to Phase 8.3.
+- **Plugin contract:** `LanePlugin` is interface-only, disabled by default, sandbox-only. Activation fails closed until sandbox egress enforcement exists. Forbidden options (CAPTCHA solving, TLS/JA3 evasion, WAF bypass, credential brute force, destructive actions, autonomous attack planning) are declared and forced off.
+- **Replay vs confidence:** replay `confirmed` is evidence, not business intent. It never promotes `auto-discovered` to `verified` without a requirement/spec/user-approved assertion.
+- **Fingerprint migration:** fingerprint v2 with a one-transition legacy fallback; existing baseline statuses are not silently rewritten.
+- **SARIF validation dependency:** `ajv` (MIT, already used by `packages/lanes`) will be declared in `doc-engine` to validate against the bundled SARIF 2.1.0 schema. No network access at validation time.
+- **Workflow:** local Conventional Commit per package; push/PR only after explicit approval.

@@ -30,11 +30,12 @@ export function runRepoLane(_context: LaneContext, repo: RepoAnalysis | undefine
   for (const finding of repo.secretFindings) {
     drafts.push({
       title: `Possible ${finding.kind} in ${finding.file}`,
+      ruleId: `secret:${finding.kind}`,
       severity: 'critical',
       confidence: 'auto-discovered',
       category: 'security',
       lane: 'repo',
-      affected: [{ file: finding.file, line: finding.line }],
+      affected: [{ component: finding.file, file: finding.file, line: finding.line }],
       expected: 'no hardcoded secret',
       actual: `${finding.kind} pattern`,
       evidence: [{ type: 'scan', file: finding.file, line: finding.line, kind: finding.kind }],
@@ -66,6 +67,7 @@ export function runRepoLane(_context: LaneContext, repo: RepoAnalysis | undefine
   if (repo.licenseFiles.length === 0) {
     drafts.push({
       title: 'Repository has no license file',
+      ruleId: 'repo-license-missing',
       severity: 'low',
       confidence: 'needs-review',
       category: 'quality-debt',
@@ -88,6 +90,7 @@ export function runRepoLane(_context: LaneContext, repo: RepoAnalysis | undefine
   if (repo.testFiles.length === 0) {
     drafts.push({
       title: 'Repository has no discovered developer tests',
+      ruleId: 'repo-tests-missing',
       severity: 'info',
       confidence: 'needs-review',
       category: 'quality-debt',

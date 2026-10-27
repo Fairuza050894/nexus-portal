@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import { QaConfigSchema, RunRequestSchema } from '@nexus/core';
-import { listZipNames } from '@nexus/doc-engine';
+import { listZipNames, verifyDocs } from '@nexus/doc-engine';
 import type { SandboxSession } from '@nexus/sandbox';
 import { runPipeline } from '../../apps/cli/src/pipeline.js';
 
@@ -192,7 +192,12 @@ describe('foundation pipeline', () => {
     expect(report).toContain('Application Map');
     expect(report).toContain('## Lane');
     expect(report).toContain('## Temuan');
-    expect(result.bundlePath && existsSync(join(result.bundlePath))).toBe(true);
+    expect(existsSync(join(result.docsDir!, 'executive-summary.pdf'))).toBe(true);
+    expect(existsSync(join(result.docsDir!, 'test-catalogue.xlsx'))).toBe(true);
+    const verification = verifyDocs(result.docsDir!, { requirePdf: true });
+    expect(verification.errors).toEqual([]);
+    expect(verification.ok).toBe(true);
+    expect(result.bundlePath && existsSync(result.bundlePath)).toBe(true);
 
     const zip = readFileSync(result.bundlePath!);
     expect(zip.subarray(0, 2).toString()).toBe('PK');
@@ -224,6 +229,11 @@ describe('foundation pipeline', () => {
     expect(summary.findings.length).toBeGreaterThan(0);
     expect(summary.appMap).toMatchObject({ pages: 1, endpoints: 4, path: 'app-map.json' });
     expect(summary.appMap.edges).toBeGreaterThanOrEqual(3);
+    expect(summary.tests.length).toBe(summary.totals.tests);
+    expect(summary.coverage).toMatchObject({ requirementsTotal: 4, requirementsCovered: 0 });
+    expect(summary.findings.every((finding: { firstSeenRun?: string }) => finding.firstSeenRun)).toBe(
+      true,
+    );
     expect(
       existsSync(
         join(artifactsRoot, 'artifacts', 'runs', result.runId, 'evidence', 'session', 'root.png'),

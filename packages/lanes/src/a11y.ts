@@ -64,6 +64,7 @@ export function runA11yLane(context: LaneContext, session: SessionResult | undef
     for (const violation of page.a11y.violations) {
       drafts.push({
         title: `axe ${violation.id}: ${violation.help}`,
+        ruleId: violation.id,
         severity: severityForImpact(violation.impact),
         confidence: 'auto-discovered',
         category: 'accessibility',
