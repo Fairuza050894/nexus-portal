@@ -1,4 +1,5 @@
 import { redactString, redactValue, type Finding, type ReplayResult } from '@nexus/core';
+import { withEvidenceSummary } from './evidence-summary.js';
 
 export interface ReplayObservation {
   /** Observed HTTP status for API findings. */
@@ -193,7 +194,7 @@ export function applyReplayOutcome(
   outcome: ReplayOutcome,
   options: { runId?: string; checkedAt?: string } = {},
 ): Finding {
-  return {
+  return withEvidenceSummary({
     ...finding,
     replay: {
       result: outcome.result,
@@ -202,7 +203,7 @@ export function applyReplayOutcome(
       ...(options.runId ? { runId: options.runId } : {}),
       ...(outcome.reason ? { reason: outcome.reason } : {}),
     },
-  };
+  });
 }
 
 /**
@@ -213,7 +214,7 @@ export function applyReplayOutcome(
 export function promoteConfirmedFinding(finding: Finding): Finding {
   const hasAssertionSource = (finding.requirements?.length ?? 0) > 0;
   if (finding.replay?.result === 'confirmed' && hasAssertionSource && finding.confidence !== 'verified') {
-    return { ...finding, confidence: 'verified' };
+    return withEvidenceSummary({ ...finding, confidence: 'verified' });
   }
   return finding;
 }

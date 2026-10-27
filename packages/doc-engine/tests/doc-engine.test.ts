@@ -202,7 +202,9 @@ describe('doc engine', () => {
 
   it('renders failures, defect drafts, and multi-lane correlation evidence', () => {
     const docsDir = tempDir();
-    const multi = finding();
+    const multi = finding({
+      evidenceSummary: 'high app-bug; rule e2e-page-load; evidence screenshot',
+    });
     const data = summary({
       totals: { tests: 3, passed: 2, failed: 1, skipped: 0, lanes: ['e2e', 'api'] },
       gate: { decision: 'NO-GO', reasons: ['1 verified defect(s)'] },
@@ -245,6 +247,10 @@ describe('doc engine', () => {
     expect(register).toContain('verified (1)');
     expect(register).toContain('auto-discovered (1)');
     expect(register).toContain('needs-review (0)');
+    expect(register).toContain('high app-bug; rule e2e-page-load');
+    expect(
+      readFileSync(join(docsDir, 'findings-register.csv'), 'utf8'),
+    ).toContain('high app-bug; rule e2e-page-load');
     expect(verifyDocs(docsDir).ok).toBe(true);
   });
 

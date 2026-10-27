@@ -1,5 +1,6 @@
 import { redactValue, type Finding, type FindingCategory } from '@nexus/core';
 import { dedupeFindings, findingFingerprint } from './fingerprint.js';
+import { withEvidenceSummary } from './evidence-summary.js';
 
 export interface ExternalFindingsAdapter<Raw = unknown> {
   id: string;
@@ -227,7 +228,7 @@ export function importSarifFindings(sarif: unknown): Finding[] {
       findings.push(importResult(result, run, index));
     }
   }
-  return dedupeFindings(findings);
+  return dedupeFindings(findings).map(withEvidenceSummary);
 }
 
 export const sarifFindingsAdapter: ExternalFindingsAdapter = {
@@ -240,5 +241,5 @@ export function ingestExternalFindings<Raw>(
   adapter: ExternalFindingsAdapter<Raw>,
   raw: Raw,
 ): Finding[] {
-  return dedupeFindings(adapter.import(raw));
+  return dedupeFindings(adapter.import(raw)).map(withEvidenceSummary);
 }

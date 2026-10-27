@@ -100,7 +100,7 @@ export function deriveRuleId(input: RuleIdentityInput): string {
   return normalizeRuleText(input.title) || 'unknown';
 }
 
-function normalizedTargets(finding: Finding): string[] {
+export function findingTargets(finding: Finding): string[] {
   const targets = new Set<string>();
   for (const item of finding.affected ?? []) {
     if (typeof item.page === 'string') targets.add(`page:${normalizeTarget(item.page)}`);
@@ -126,7 +126,7 @@ export function fingerprintPayload(finding: Finding): string {
     ...(finding.ruleId ? { ruleId: finding.ruleId } : {}),
     evidence: finding.evidence,
   });
-  return [category, ruleId, normalizedTargets(finding).join(',')].join('|');
+  return [category, ruleId, findingTargets(finding).join(',')].join('|');
 }
 
 /** Fingerprint v2: sha256 over category, rule/check id, and normalized targets. */

@@ -1,6 +1,7 @@
 import type { Finding, FindingSeverity } from '@nexus/core';
 import { classifySignal, determineConfidence, determineSeverity } from './classify.js';
 import { dedupeFindings, deriveRuleId, findingFingerprint } from './fingerprint.js';
+import { withEvidenceSummary } from './evidence-summary.js';
 import type { CorrelationOptions, CorrelationResult, RawSignal } from './types.js';
 
 function normalizeTarget(str: string): string {
@@ -266,7 +267,7 @@ export function correlateSignals(
     findings.push(finding);
   }
 
-  findings = dedupeFindings(findings);
+  findings = dedupeFindings(findings).map(withEvidenceSummary);
 
   // Tally totals
   const confidenceTotals = {

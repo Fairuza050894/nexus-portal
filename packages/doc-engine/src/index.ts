@@ -134,6 +134,7 @@ function workbookSheets(summary: RunSummary): XlsxSheet[] {
       [
         'ID',
         'Title',
+        'EvidenceSummary',
         'Severity',
         'Confidence',
         'Category',
@@ -147,6 +148,7 @@ function workbookSheets(summary: RunSummary): XlsxSheet[] {
       ...summary.findings.map((finding) => [
         finding.id,
         finding.title,
+        finding.evidenceSummary ?? '',
         finding.severity,
         finding.confidence,
         finding.category,

@@ -89,6 +89,7 @@ function findingRows(summary: RunSummary, language: DocLanguage, ctx: DocContext
   return findings.map((finding) => [
     `<td><strong>${escapeHtml(finding.id)}</strong></td>`,
     `<td>${escapeHtml(finding.title)}</td>`,
+    `<td>${escapeHtml(finding.evidenceSummary ?? '—')}</td>`,
     `<td>${badge(language, finding.severity)}</td>`,
     `<td>${escapeHtml(finding.category)}</td>`,
     `<td>${escapeHtml(finding.lanes.join(', '))}</td>`,
@@ -125,6 +126,7 @@ function confidenceSection(
             [
               t(language, 'common.id'),
               t(language, 'common.title'),
+              t(language, 'findings.evidenceSummary'),
               t(language, 'common.severity'),
               t(language, 'common.category'),
               t(language, 'common.lanes'),
@@ -188,6 +190,7 @@ function executiveSummaryHtml(summary: RunSummary, language: DocLanguage, ctx: D
   const riskRows = risks.map((finding) => [
     `<td>${escapeHtml(finding.id)}</td>`,
     `<td>${escapeHtml(finding.title)}</td>`,
+    `<td>${escapeHtml(finding.evidenceSummary ?? '—')}</td>`,
     `<td>${badge(language, finding.severity)}</td>`,
     `<td>${badge(language, finding.confidence)}</td>`,
     `<td>${escapeHtml(finding.category)}</td>`,
@@ -241,6 +244,7 @@ function executiveSummaryHtml(summary: RunSummary, language: DocLanguage, ctx: D
             [
               t(language, 'common.id'),
               t(language, 'common.title'),
+              t(language, 'findings.evidenceSummary'),
               t(language, 'common.severity'),
               t(language, 'common.confidence'),
               t(language, 'common.category'),
@@ -792,6 +796,7 @@ function findingsRegisterMd(summary: RunSummary, language: DocLanguage): string 
   const rows = summary.findings.map((finding) => [
     finding.id,
     finding.title,
+    finding.evidenceSummary ?? '',
     finding.severity,
     finding.confidence,
     finding.category,
@@ -808,6 +813,7 @@ function findingsRegisterMd(summary: RunSummary, language: DocLanguage): string 
           [
             'ID',
             'title',
+            'evidenceSummary',
             'severity',
             'confidence',
             'category',
@@ -1194,6 +1200,7 @@ export function renderDocumentSet(
         summary.findings.map((finding) => [
           finding.id,
           finding.title,
+          finding.evidenceSummary ?? '',
           finding.severity,
           finding.confidence,
           finding.category,
@@ -1207,6 +1214,7 @@ export function renderDocumentSet(
         [
           'id',
           'title',
+          'evidenceSummary',
           'severity',
           'confidence',
           'category',
