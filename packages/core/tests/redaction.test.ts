@@ -24,4 +24,15 @@ describe('redaction', () => {
     expect(output.auth.ref).toBe('vault:qa/user');
     expect(input.note).toBe('token=abc123');
   });
+
+  it('redacts provider tokens even without key=value syntax', () => {
+    const text =
+      'failed with ghp_123456789012345678901234567890123456 and AKIA1234567890ABCDEF and Bearer abcdefghijklmnopqrstuvwx';
+    const redacted = redactString(text);
+    expect(redacted).not.toContain('ghp_123456789012345678901234567890123456');
+    expect(redacted).not.toContain('AKIA1234567890ABCDEF');
+    expect(redacted).not.toContain('abcdefghijklmnopqrstuvwx');
+    expect(redacted).toContain('[TOKEN_REDACTED]');
+    expect(redacted).toContain('[AWS_KEY_REDACTED]');
+  });
 });

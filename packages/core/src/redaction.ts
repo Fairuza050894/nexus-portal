@@ -2,6 +2,9 @@ import { PIIPattern } from './types.js';
 
 export function redactString(text: string): string {
   return text
+    .replace(/\bgh[pousr]_[0-9A-Za-z]{36}\b/g, '[TOKEN_REDACTED]')
+    .replace(/\bAKIA[0-9A-Z]{16}\b/g, '[AWS_KEY_REDACTED]')
+    .replace(/\bBearer\s+[A-Za-z0-9._-]{20,}/gi, 'Bearer [TOKEN_REDACTED]')
     .replace(
       /(password|secret|token|api[_-]?key|private[_-]?key|access[_-]?token|bearer)\s*[:=]\s*\S+/gi,
       '$1=[REDACTED]',

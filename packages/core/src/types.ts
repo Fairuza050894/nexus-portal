@@ -152,6 +152,23 @@ export type FindingStatus =
   | 'known-defect'
   | 'accepted-risk';
 
+export type ReplayResult = 'confirmed' | 'not-reproduced' | 'inconclusive';
+
+export interface FindingReplay {
+  result: ReplayResult;
+  checkedAt: string;
+  evidence: Array<Record<string, unknown>>;
+  runId?: string;
+  reason?: string;
+}
+
+export interface FindingProvenance {
+  tool: string;
+  version?: string;
+  ruleId?: string;
+  rawSeverity?: string;
+}
+
 export interface Finding {
   id: string;
   title: string;
@@ -174,6 +191,8 @@ export interface Finding {
   status: FindingStatus | string;
   firstSeenRun?: string;
   lastSeenRun?: string;
+  replay?: FindingReplay;
+  provenance?: FindingProvenance;
   suggestedOwner?: string;
   suggestedFix?: string;
 }
