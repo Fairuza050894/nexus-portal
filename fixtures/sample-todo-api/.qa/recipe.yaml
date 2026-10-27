@@ -1,0 +1,8 @@
+stack: node
+install: []
+build: []
+start:
+  - node server.js
+healthUrl: http://127.0.0.1:3100/health
+envNames:
+  - PORT

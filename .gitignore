@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env*
+!.env.example
+artifacts/
+storageState*.json
+*.har
+coverage/
+*.log
+.DS_Store
+*.local

@@ -1,0 +1,34 @@
+# Requirements for the foundation sample app (Phase 0.4).
+# Lanes that verify these requirements land in Phase 3; no test currently claims them.
+version: '1.0'
+app: sample-todo-api
+language: id
+requirements:
+  - id: REQ-HEALTH-01
+    title: Health endpoint melaporkan aplikasi siap
+    area: HEALTH
+    severity: critical
+    acceptance:
+      - 'GET /health -> 200 + body {ok:true}'
+    covers: []
+  - id: REQ-TODOS-01
+    title: Daftar todo dapat dibaca
+    area: TODOS
+    severity: high
+    acceptance:
+      - 'GET /api/todos -> 200 + array'
+    covers: []
+  - id: REQ-TODOS-02
+    title: Membuat todo valid mengembalikan 201
+    area: TODOS
+    severity: high
+    acceptance:
+      - 'POST /api/todos {text} -> 201 + todo dengan id dan done=false'
+    covers: []
+  - id: REQ-TODOS-03
+    title: Todo tanpa teks ditolak 422
+    area: TODOS
+    severity: high
+    acceptance:
+      - 'POST /api/todos {} -> 422 + error terstruktur'
+    covers: []

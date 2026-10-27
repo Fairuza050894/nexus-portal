@@ -1,0 +1,389 @@
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { chromium, type Browser, type BrowserContext, type Page, type Response } from 'playwright';
+import axe from 'axe-core';
+import { isHostAllowed, resolveHost } from '@nexus/core';
+
+export interface SessionPageTarget {
+  url: string;
+  path: string;
+}
+
+export interface AxeViolation {
+  id: string;
+  impact: string | null;
+  description: string;
+  help: string;
+  helpUrl: string;
+  nodes: Array<{ target: string[]; failureSummary?: string }>;
+}
+
+export interface SessionPageResult {
+  url: string;
+  path: string;
+  title: string;
+  status?: number;
+  forms: number;
+  error?: string;
+  consoleErrors: string[];
+  pageErrors: string[];
+  failedRequests: Array<{ url: string; reason: string }>;
+  serverErrors: Array<{ url: string; status: number }>;
+  a11y: {
+    violations: AxeViolation[];
+    critical: number;
+    serious: number;
+    total: number;
+    error?: string;
+  };
+  vitals: {
+    lcpMs?: number;
+    cls?: number;
+    ttfbMs?: number;
+  };
+  security: {
+    headers: Record<string, string>;
+    missingHeaders: string[];
+    insecureCookies: string[];
+    mixedContent: string[];
+    server?: string;
+  };
+  screenshot?: string;
+  durationMs: number;
+}
+
+export interface SessionResult {
+  pages: SessionPageResult[];
+  browserVersion: string;
+  warnings: string[];
+  durationMs: number;
+}
+
+export interface SessionOptions {
+  pages: SessionPageTarget[];
+  allowlist: string[];
+  artifactDir: string;
+  authHeaders?: Record<string, string>;
+  authHost?: string;
+  headless?: boolean;
+  navigationTimeoutMs?: number;
+  maxPages?: number;
+}
+
+interface RawAxeResult {
+  violations?: Array<{
+    id?: unknown;
+    impact?: unknown;
+    description?: unknown;
+    help?: unknown;
+    helpUrl?: unknown;
+    nodes?: Array<{ target?: unknown; failureSummary?: unknown }>;
+  }>;
+}
+
+const SECURITY_HEADERS = [
+  'content-security-policy',
+  'strict-transport-security',
+  'x-content-type-options',
+  'x-frame-options',
+  'referrer-policy',
+];
+
+const A11Y_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+
+function screenshotName(path: string): string {
+  const normalized = path.replace(/^\/+/, '').replace(/[^a-zA-Z0-9_-]+/g, '_');
+  return `${normalized || 'root'}.png`;
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : [];
+}
+
+function parseAxe(result: unknown): AxeViolation[] {
+  const raw = result as RawAxeResult;
+  if (!raw || !Array.isArray(raw.violations)) return [];
+  return raw.violations.flatMap((violation) => {
+    if (typeof violation.id !== 'string' || typeof violation.description !== 'string') return [];
+    return [
+      {
+        id: violation.id,
+        impact: typeof violation.impact === 'string' ? violation.impact : null,
+        description: violation.description,
+        help: typeof violation.help === 'string' ? violation.help : violation.id,
+        helpUrl: typeof violation.helpUrl === 'string' ? violation.helpUrl : '',
+        nodes: (violation.nodes ?? []).map((node) => ({
+          target: asStringArray(node.target),
+          failureSummary: typeof node.failureSummary === 'string' ? node.failureSummary : undefined,
+        })),
+      },
+    ];
+  });
+}
+
+async function injectVitalsObserver(context: BrowserContext): Promise<void> {
+  await context.addInitScript(() => {
+    const target = window as unknown as {
+      __qaVitals?: { lcp: number; cls: number };
+    };
+    target.__qaVitals = { lcp: 0, cls: 0 };
+    try {
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          target.__qaVitals!.lcp = entry.startTime;
+        }
+      }).observe({ type: 'largest-contentful-paint', buffered: true });
+    } catch {
+      // browser does not support LCP
+    }
+    try {
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          const shift = entry as PerformanceEntry & {
+            value?: number;
+            hadRecentInput?: boolean;
+          };
+          if (!shift.hadRecentInput) {
+            target.__qaVitals!.cls += shift.value ?? 0;
+          }
+        }
+      }).observe({ type: 'layout-shift', buffered: true });
+    } catch {
+      // browser does not support CLS
+    }
+  });
+}
+
+async function readVitals(page: Page): Promise<SessionPageResult['vitals']> {
+  return page.evaluate(() => {
+    const target = window as unknown as { __qaVitals?: { lcp: number; cls: number } };
+    const navigation = performance.getEntriesByType('navigation')[0] as
+      PerformanceNavigationTiming | undefined;
+    return {
+      ...(target.__qaVitals?.lcp ? { lcpMs: Math.round(target.__qaVitals.lcp) } : {}),
+      ...(target.__qaVitals?.cls !== undefined
+        ? { cls: Math.round(target.__qaVitals.cls * 1000) / 1000 }
+        : {}),
+      ...(navigation
+        ? { ttfbMs: Math.max(0, Math.round(navigation.responseStart - navigation.requestStart)) }
+        : {}),
+    };
+  });
+}
+
+async function collectSecurity(
+  context: BrowserContext,
+  url: string,
+  response: Response | null,
+  mixedContent: string[],
+): Promise<SessionPageResult['security']> {
+  const headers: Record<string, string> = {};
+  if (response) {
+    for (const [name, value] of Object.entries(await response.allHeaders())) {
+      headers[name.toLowerCase()] = value;
+    }
+  }
+  const missingHeaders = SECURITY_HEADERS.filter((name) => !headers[name]);
+  const cookies = await context.cookies(url);
+  const insecureCookies = cookies
+    .filter((cookie) => !cookie.secure || !cookie.httpOnly)
+    .map((cookie) => cookie.name);
+  return {
+    headers,
+    missingHeaders,
+    insecureCookies: [...new Set(insecureCookies)],
+    mixedContent: [...new Set(mixedContent)],
+    ...(headers.server ? { server: headers.server } : {}),
+  };
+}
+
+async function probePage(
+  context: BrowserContext,
+  target: SessionPageTarget,
+  options: SessionOptions,
+): Promise<SessionPageResult> {
+  const startedAt = Date.now();
+  const page = await context.newPage();
+  const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
+  const failedRequests: SessionPageResult['failedRequests'] = [];
+  const serverErrors: SessionPageResult['serverErrors'] = [];
+  const mixedContent: string[] = [];
+
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('requestfailed', (request) => {
+    failedRequests.push({
+      url: request.url(),
+      reason: request.failure()?.errorText ?? 'request failed',
+    });
+  });
+  page.on('response', (response) => {
+    if (response.status() >= 500) {
+      serverErrors.push({ url: response.url(), status: response.status() });
+    }
+  });
+  page.on('request', (request) => {
+    if (target.url.startsWith('https://') && request.url().startsWith('http://')) {
+      mixedContent.push(request.url());
+    }
+  });
+
+  let response: Response | null = null;
+  let status: number | undefined;
+  let title = '';
+  let error: string | undefined;
+  try {
+    response = await page.goto(target.url, {
+      waitUntil: 'domcontentloaded',
+      timeout: options.navigationTimeoutMs ?? 20_000,
+    });
+    status = response?.status();
+    await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => undefined);
+    title = await page.title();
+  } catch (navigationError) {
+    error = (navigationError as Error).message;
+  }
+
+  let vitals: SessionPageResult['vitals'] = {};
+  let violations: AxeViolation[] = [];
+  let a11yError: string | undefined;
+  let forms = 0;
+  const security = await collectSecurity(context, target.url, response, mixedContent);
+
+  if (!error) {
+    forms = await page.evaluate(() => document.forms.length).catch(() => 0);
+    vitals = await readVitals(page).catch(() => ({}));
+    try {
+      await page.addScriptTag({ content: axe.source });
+      const axeResult = await page.evaluate(async (tags) => {
+        const api = (
+          window as unknown as {
+            axe: {
+              run: (context: Document, options: unknown) => Promise<unknown>;
+            };
+          }
+        ).axe;
+        return api.run(document, { runOnly: { type: 'tag', values: tags } });
+      }, A11Y_TAGS);
+      violations = parseAxe(axeResult);
+    } catch (error) {
+      violations = [];
+      a11yError = (error as Error).message;
+    }
+  }
+
+  let screenshot: string | undefined;
+  try {
+    mkdirSync(options.artifactDir, { recursive: true });
+    screenshot = join(options.artifactDir, screenshotName(target.path));
+    await page.screenshot({ path: screenshot, fullPage: true });
+  } catch {
+    screenshot = undefined;
+  }
+
+  const critical = violations.filter((violation) => violation.impact === 'critical').length;
+  const serious = violations.filter((violation) => violation.impact === 'serious').length;
+  await page.close();
+
+  return {
+    url: target.url,
+    path: target.path,
+    title,
+    forms,
+    ...(status !== undefined ? { status } : {}),
+    ...(error ? { error } : {}),
+    consoleErrors,
+    pageErrors,
+    failedRequests,
+    serverErrors,
+    a11y: {
+      violations,
+      critical,
+      serious,
+      total: violations.length,
+      ...(a11yError ? { error: a11yError } : {}),
+    },
+    vitals,
+    security,
+    ...(screenshot ? { screenshot } : {}),
+    durationMs: Date.now() - startedAt,
+  };
+}
+
+export async function runInstrumentedSession(options: SessionOptions): Promise<SessionResult> {
+  const startedAt = Date.now();
+  const warnings: string[] = [];
+  const targets = options.pages
+    .filter((target) => {
+      const host = resolveHost(target.url);
+      if (!host || !isHostAllowed(host, options.allowlist)) {
+        warnings.push(`skipped non-allowlisted session target: ${target.url}`);
+        return false;
+      }
+      return true;
+    })
+    .slice(0, options.maxPages ?? options.pages.length);
+
+  let browser: Browser | undefined;
+  let context: BrowserContext | undefined;
+  try {
+    browser = await chromium.launch({ headless: options.headless ?? true });
+    context = await browser.newContext({
+      viewport: { width: 1366, height: 768 },
+      ignoreHTTPSErrors: false,
+    });
+    await injectVitalsObserver(context);
+
+    if (options.authHeaders && options.authHost) {
+      await context.route('**/*', async (route) => {
+        const request = route.request();
+        const host = resolveHost(request.url());
+        if (!host || !isHostAllowed(host, options.allowlist)) {
+          if (request.isNavigationRequest()) {
+            await route.abort('blockedbyclient');
+            return;
+          }
+        }
+        if (host === options.authHost) {
+          await route.continue({
+            headers: { ...request.headers(), ...options.authHeaders },
+          });
+          return;
+        }
+        await route.continue();
+      });
+    } else {
+      await context.route('**/*', async (route) => {
+        const request = route.request();
+        const host = resolveHost(request.url());
+        if (!host || !isHostAllowed(host, options.allowlist)) {
+          if (request.isNavigationRequest()) {
+            await route.abort('blockedbyclient');
+            return;
+          }
+        }
+        await route.continue();
+      });
+    }
+
+    const pages: SessionPageResult[] = [];
+    for (const target of targets) {
+      pages.push(await probePage(context, target, options));
+    }
+
+    return {
+      pages,
+      browserVersion: browser.version(),
+      warnings,
+      durationMs: Date.now() - startedAt,
+    };
+  } finally {
+    await context?.close().catch(() => undefined);
+    await browser?.close().catch(() => undefined);
+  }
+}

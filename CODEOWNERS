@@ -1,0 +1,10 @@
+/docs/ @qa-lead
+/packages/core/** @qa-lead
+/packages/sandbox/** @qa-lead
+/packages/discover/** @qa-lead
+/packages/app-map/** @qa-lead
+/packages/session/** @qa-lead
+/packages/lanes/** @qa-lead
+/packages/doc-engine/** @qa-lead
+/apps/cli/** @qa-lead
+/.github/workflows/** @qa-lead

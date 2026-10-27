@@ -1,0 +1,39 @@
+{
+  "name": "nexus-portal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Unified QA automation platform (monorepo)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "setup": "npm ci && playwright install chromium",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:smoke": "vitest run tests/smoke",
+    "qa": "npm run lint && npm run typecheck && npm test && npm run qa:smoke",
+    "qa:smoke": "node --import tsx apps/cli/src/index.ts run --config run-requests/smoke.json",
+    "qa:plan": "node --import tsx apps/cli/src/index.ts plan --config run-requests/smoke.json",
+    "docs": "node --import tsx apps/cli/src/index.ts docs",
+    "docs:open": "node --import tsx apps/cli/src/index.ts docs --open",
+    "clean": "node --import tsx apps/cli/src/index.ts clean --yes"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.17.6",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.3.3",
+    "tsx": "^4.20.4",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
