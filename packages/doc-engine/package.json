@@ -12,6 +12,7 @@
     "@nexus/core": "0.1.0",
     "@nexus/correlate": "0.1.0",
     "@nexus/gate": "0.1.0",
+    "ajv": "^8.20.0",
     "playwright": "^1.48.2"
   }
 }

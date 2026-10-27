@@ -159,6 +159,8 @@ describe('doc engine', () => {
       'findings-register.csv',
       'findings-register.md',
       'findings-register.xlsx',
+      'findings.sarif',
+      'junit.xml',
       'application-map.html',
       'run-comparison.html',
       'plan-approval.html',
@@ -361,6 +363,16 @@ describe('doc engine', () => {
     );
     writeFileSync(join(docsDir, 'executive-summary.pdf'), '%PDF-1.7\n', 'utf8');
     expect(verifyDocs(docsDir, { requirePdf: true }).ok).toBe(true);
+
+    writeFileSync(join(docsDir, 'findings.sarif'), '{"version":"2.0","runs":[]}', 'utf8');
+    expect(
+      verifyDocs(docsDir).errors.some((error) => error.includes('SARIF validation failed')),
+    ).toBe(true);
+
+    writeFileSync(join(docsDir, 'junit.xml'), '<testsuites><testsuite>', 'utf8');
+    expect(
+      verifyDocs(docsDir).errors.some((error) => error.includes('JUnit XML is not well-formed')),
+    ).toBe(true);
   });
 
   it('renders retest-new with recurring findings kept in an appendix', () => {
@@ -393,6 +405,52 @@ describe('doc engine', () => {
     expect(html).toContain('New checkout bug');
     expect(html).toContain('Recurring old bug');
     expect(html.indexOf('Recurring old bug')).toBeGreaterThan(html.indexOf('<details'));
+    expect(verifyDocs(docsDir).ok).toBe(true);
+  });
+
+  it('exports schema-valid SARIF 2.1.0 and deterministic JUnit XML', () => {
+    const docsDir = tempDir();
+    generateDocs(
+      summary({
+        totals: { tests: 2, passed: 1, failed: 1, skipped: 0, lanes: ['api'] },
+        gate: { decision: 'NO-GO', reasons: ['1 verified defect(s)'] },
+        findings: [finding({ ruleId: 'e2e-page-load' })],
+        confidenceTotals: { verified: 1, autoDiscovered: 0, needsReview: 0 },
+        tests: [
+          {
+            id: 'TC-1',
+            lane: 'api',
+            title: 'GET /orders',
+            status: 'failed',
+            durationMs: 25,
+            expected: '200',
+            actual: '500',
+            reason: 'status mismatch',
+          },
+          {
+            id: 'TC-2',
+            lane: 'api',
+            title: 'GET /health',
+            status: 'passed',
+            durationMs: 5,
+          },
+        ],
+      }),
+      docsDir,
+      { language: 'en' },
+    );
+
+    const sarif = JSON.parse(readFileSync(join(docsDir, 'findings.sarif'), 'utf8'));
+    expect(sarif.version).toBe('2.1.0');
+    expect(sarif.runs[0].tool.driver.name).toBe('nexus-portal');
+    expect(sarif.runs[0].results[0].ruleId).toBe('e2e-page-load');
+    expect(sarif.runs[0].results[0].level).toBe('error');
+    expect(sarif.runs[0].results[0].partialFingerprints.nexusFingerprintV2).toHaveLength(64);
+
+    const junit = readFileSync(join(docsDir, 'junit.xml'), 'utf8');
+    expect(junit).toContain('<testsuites');
+    expect(junit).toContain('tests="2"');
+    expect(junit).toContain('<failure message="500"');
     expect(verifyDocs(docsDir).ok).toBe(true);
   });
 

@@ -1,5 +1,11 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
+import AjvModule from 'ajv';
+import type { ValidateFunction } from 'ajv';
+
+const Ajv = AjvModule as unknown as new (options?: Record<string, unknown>) => {
+  compile: (schema: object) => ValidateFunction;
+};
 
 export interface DocVerificationResult {
   ok: boolean;
@@ -33,6 +39,8 @@ export const REQUIRED_DOC_FILES = [
   'findings-register.csv',
   'findings-register.md',
   'findings-register.xlsx',
+  'findings.sarif',
+  'junit.xml',
   'application-map.html',
   'run-comparison.html',
   'plan-approval.html',
@@ -59,6 +67,61 @@ const PII_PATTERN = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
 
 const PLACEHOLDER_PATTERNS = [/\{\{/, /\}\}/, /\bTODO\b/, /\bFIXME\b/, /lorem ipsum/i];
 
+const SARIF_SCHEMA = JSON.parse(
+  readFileSync(new URL('../schemas/sarif-2.1.0.json', import.meta.url), 'utf8'),
+) as Record<string, unknown>;
+
+let sarifValidator: ValidateFunction | undefined;
+
+function validateSarif(content: string): string[] {
+  try {
+    if (!sarifValidator) {
+      // The official SARIF 2.1.0 schema contains a legacy language pattern that
+      // is invalid only when Ajv enforces the `u` flag. Validation semantics are
+      // unchanged for this schema.
+      const ajv = new Ajv({
+        allErrors: true,
+        strict: false,
+        validateFormats: false,
+        unicodeRegExp: false,
+      });
+      sarifValidator = ajv.compile(SARIF_SCHEMA);
+    }
+    const parsed = JSON.parse(content) as unknown;
+    if (sarifValidator(parsed)) return [];
+    return (sarifValidator.errors ?? []).slice(0, 10).map(
+      (error) => `${error.instancePath || '/'} ${error.message ?? 'invalid'}`,
+    );
+  } catch (error) {
+    return [`invalid SARIF JSON: ${(error as Error).message}`];
+  }
+}
+
+function xmlStructureError(content: string): string | undefined {
+  if (!content.trimStart().startsWith('<?xml')) return 'missing XML declaration';
+  const body = content
+    .replace(/<\?[\s\S]*?\?>/g, '')
+    .replace(/<!--[\s\S]*?-->/g, '');
+  if (/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)/.test(body)) {
+    return 'unescaped ampersand';
+  }
+  const stack: string[] = [];
+  const tag = /<(\/?)([A-Za-z_][\w:.-]*)([^>]*?)(\/?)>/g;
+  let match: RegExpExecArray | null;
+  while ((match = tag.exec(body)) !== null) {
+    const closing = match[1] === '/';
+    const name = match[2]!;
+    const selfClosing = match[4] === '/';
+    if (closing) {
+      const open = stack.pop();
+      if (open !== name) return `unexpected closing tag </${name}>`;
+    } else if (!selfClosing) {
+      stack.push(name);
+    }
+  }
+  return stack.length > 0 ? `unclosed tag <${stack[stack.length - 1]}>` : undefined;
+}
+
 const TEXT_EXTENSIONS: Record<string, true> = {
   '.html': true,
   '.htm': true,
@@ -66,6 +129,8 @@ const TEXT_EXTENSIONS: Record<string, true> = {
   '.csv': true,
   '.json': true,
   '.txt': true,
+  '.sarif': true,
+  '.xml': true,
 };
 const JSON_EXTENSIONS: Record<string, true> = { '.json': true };
 
@@ -175,6 +240,15 @@ export function verifyDocs(
     const content = readFileSync(file, 'utf8');
     verifiedFiles.push(file);
     const relativeFile = file.slice(docsDir.length + 1);
+    if (relativeFile === 'findings.sarif') {
+      for (const problem of validateSarif(content)) {
+        errors.push(`SARIF validation failed: ${problem}`);
+      }
+    }
+    if (relativeFile === 'junit.xml') {
+      const problem = xmlStructureError(content);
+      if (problem) errors.push(`JUnit XML is not well-formed: ${problem}`);
+    }
 
     for (const pattern of PLACEHOLDER_PATTERNS) {
       if (pattern.test(content)) {

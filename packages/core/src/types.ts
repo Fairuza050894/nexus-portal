@@ -193,6 +193,8 @@ export interface Finding {
   lastSeenRun?: string;
   replay?: FindingReplay;
   provenance?: FindingProvenance;
+  /** Deterministic, template-based evidence summary (no AI). */
+  evidenceSummary?: string;
   suggestedOwner?: string;
   suggestedFix?: string;
 }

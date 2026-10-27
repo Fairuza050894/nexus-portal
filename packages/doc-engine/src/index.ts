@@ -14,6 +14,8 @@ import { createZip, listZipNames, type ZipEntry } from './zip.js';
 import { renderDocumentSet, type AppMapView, type DocContext, type HistoryPoint } from './documents.js';
 import type { DocLanguage } from './i18n.js';
 import { createXlsx, type XlsxSheet } from './xlsx.js';
+import { createSarif } from './sarif.js';
+import { createJUnit } from './junit.js';
 
 export * from './verify.js';
 export * from './documents.js';
@@ -22,6 +24,8 @@ export * from './ui.js';
 export { generatePdfDocs } from './pdf.js';
 export { createXlsx } from './xlsx.js';
 export type { XlsxSheet } from './xlsx.js';
+export { createSarif, serializeSarif } from './sarif.js';
+export { createJUnit } from './junit.js';
 
 export interface DocOptions {
   language?: DocLanguage;
@@ -187,6 +191,8 @@ export function generateDocs(
   writeDoc('test-catalogue.xlsx', createXlsx([sheets[0]!]));
   writeDoc('traceability-matrix.xlsx', createXlsx([sheets[1]!]));
   writeDoc('findings-register.xlsx', createXlsx([sheets[2]!]));
+  writeDoc('findings.sarif', `${JSON.stringify(createSarif(summary), null, 2)}\n`);
+  writeDoc('junit.xml', createJUnit(summary));
 
   if (options.runDir) {
     const appMapPath = join(options.runDir, 'app-map.json');
