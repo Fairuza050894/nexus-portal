@@ -1,0 +1,81 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cs01/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Semgrep",
+          "version": "1.90.0",
+          "rules": [
+            {
+              "id": "javascript.lang.security.audit.hardcoded-secret",
+              "shortDescription": { "text": "Hardcoded secret detected" },
+              "properties": {
+                "category": "security",
+                "security-severity": "9.1",
+                "precision": "high"
+              },
+              "defaultConfiguration": { "level": "error" }
+            },
+            {
+              "id": "typescript.react.best-practice.no-dangerous-html",
+              "shortDescription": { "text": "Avoid dangerous HTML rendering" },
+              "properties": {
+                "category": "security",
+                "precision": "medium"
+              },
+              "defaultConfiguration": { "level": "warning" }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "javascript.lang.security.audit.hardcoded-secret",
+          "level": "error",
+          "message": {
+            "text": "Hardcoded token ghp_123456789012345678901234567890123456 found in config"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "src/config.ts" },
+                "region": { "startLine": 12 }
+              }
+            }
+          ],
+          "properties": { "category": "security" }
+        },
+        {
+          "ruleId": "javascript.lang.security.audit.hardcoded-secret",
+          "level": "error",
+          "message": { "text": "Hardcoded token found in another line" },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "src/config.ts" },
+                "region": { "startLine": 20 }
+              }
+            }
+          ],
+          "properties": { "category": "security" }
+        },
+        {
+          "ruleId": "typescript.react.best-practice.no-dangerous-html",
+          "level": "warning",
+          "kind": "review",
+          "message": { "text": "Dangerously set innerHTML may be unsafe" },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "src/components/RawHtml.tsx" },
+                "region": { "startLine": 3 }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
