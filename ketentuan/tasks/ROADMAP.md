@@ -73,13 +73,13 @@ Status: MVP met on the sample pilots (repo+URL, URL-only, API-only): 1 crawl, 1 
 - [x] 4.6 `docs:verify` (links, placeholders, secret/PII scan, PDF opens) and bundling.
 - [x] 4.7 Doc engine tests with fixtures (all-pass, failures, flaky, incomplete, missing metadata, zero tests, multi-lane correlations).
 - [x] 4.8 Finding fingerprint v2 + dedupe (stable hash over category, rule/check id, normalized page/endpoint/component; volatile fields excluded; false-merge tests).
-- [ ] 4.9 FP replay hook: `replayFinding()` → `confirmed | not-reproduced | inconclusive` for e2e/api; other lanes `inconclusive`; replay evidence stored; no automatic `verified` promotion without an assertion source.
-- [ ] 4.10 Baseline `retest-new` mode in `qa run` + Run Comparison; reporting-only, never a gate bypass; statuses remain new/recurring/fixed/regressed.
-- [ ] 4.11 Machine-readable exports: SARIF 2.1.0, JUnit XML, CSV/XLSX; schema/XML validation; included in bundle and `docs:verify`.
-- [ ] 4.12 External-findings ingestion (`ExternalFindingsAdapter` + SARIF importer, `security-external`, redaction), optional compliance mapping (PCI-DSS v4, SOC 2, ISO 27001:2022, labelled indicative), and deterministic evidence summaries.
+- [x] 4.9 FP replay hook: `replayFinding()` → `confirmed | not-reproduced | inconclusive` for e2e/api; other lanes `inconclusive`; replay evidence stored; no automatic `verified` promotion without an assertion source.
+- [x] 4.10 Baseline `retest-new` mode in `qa run` + Run Comparison; reporting-only, never a gate bypass; statuses remain new/recurring/fixed/regressed.
+- [x] 4.11 Machine-readable exports: SARIF 2.1.0, JUnit XML, CSV/XLSX; schema/XML validation; included in bundle and `docs:verify`.
+- [x] 4.12 External-findings ingestion (`ExternalFindingsAdapter` + SARIF importer, `security-external`, redaction), optional compliance mapping (PCI-DSS v4, SOC 2, ISO 27001:2022, labelled indicative), and deterministic evidence summaries.
 
 **Acceptance:** existing 4.1–4.7 criteria stay green (single `qa run` bundle ≤ 60 s; correlation example yields one finding with all evidence; no `auto-discovered` shown as verified; injected secret fails `docs:verify`; QA-lead readability sign-off). Additive tasks 4.8–4.12 keep gate thresholds unchanged, add no execution of third-party tools, and cite `ketentuan/docs/09-EXTERNAL-TOOLS-INTEGRATION.md` in their tests/evidence.
-Status: 4.1–4.8 met on the sample pilot; 4.9–4.12 pending. Evidence: `packages/correlate/tests` (fingerprint/dedupe/legacy fallback), `packages/gate/tests`, `packages/doc-engine/tests`, `tests/smoke/foundation.test.ts` (15-document set, PDF/XLSX, `verifyDocs`, bundle). Sample smoke run: complete in ~3 s; correlation example is unit-proven because the fixture app does not produce a UI+API+code failure simultaneously. Real-pilot execution and the QA-lead readability sign-off remain pending.
+Status: 4.1–4.12 implemented and tested on the sample pilot. Evidence: `packages/correlate/tests` (fingerprint/dedupe/replay/external/evidence summary), `packages/core/tests/compliance.test.ts`, `packages/doc-engine/tests` (SARIF/JUnit/retest-new/compliance), `tests/smoke/foundation.test.ts` (pipeline, 25-document set, PDF/XLSX, `verifyDocs`, bundle). Sample smoke run: complete in ~3–4 s. Real-pilot execution, Deep Eye evaluation (C) and the plugin-lane contract (D) remain pending; QA-lead readability sign-off remains human-pending.
 
 ---
 

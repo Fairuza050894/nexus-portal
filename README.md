@@ -5,10 +5,11 @@ applicable lanes, correlates results, and produces a documentation bundle.
 
 **Current status: Phase 4 (correlation, gate & unified docs) — M1.** Intake, mode
 guard, sandbox, discovery, Application Map, one Playwright session per run,
-repo/API/E2E/a11y/Web Vitals/passive-security lanes, correlation with dedupe and
-confidence labels, baseline comparison, the per-confidence quality gate, and
-the full documentation bundle (HTML, MD, CSV, XLSX, PDF, JSON) with
-`docs:verify` are implemented.
+repo/API/E2E/a11y/Web Vitals/passive-security lanes, fingerprint v2 dedupe,
+false-positive replay, baseline/`retest-new`, the per-confidence quality gate,
+external SARIF ingestion, and the full documentation bundle (HTML, MD, CSV,
+XLSX, PDF, SARIF, JUnit, JSON) with `docs:verify` are implemented. Optional
+indicative compliance mapping is config-driven and disabled by default.
 
 Visual baselines, test generation, and the **web dashboard** are not
 implemented yet. The dashboard is Phase 5 (`apps/web` + `apps/api` + worker);
@@ -49,6 +50,7 @@ The examples below use `qa` as shorthand for
 
 ```bash
 qa run --config run-requests/smoke.json
+qa run --config run-requests/smoke.json --retest-new latest
 qa run --repo https://git.example.com/team/app.git --url https://staging.example.com --mode staging
 qa plan --config run-requests/smoke.json
 qa docs --run <run-id>
@@ -66,10 +68,18 @@ node --import tsx apps/cli/src/index.ts run --config run-requests/smoke.json
 Exit codes: `0` ok, `1` test failures (or failed docs verification), `2` quality gate failed, `3`
 infrastructure/config/incomplete (also used for rejected requests).
 
-`qa docs` regenerates a run's documentation and PDFs; `qa docs:verify` checks
-required files, link resolution, unrendered placeholders, missing metadata,
-secret/PII leaks, and PDF headers. A failing verification makes the run
-`INCOMPLETE` and the bundle carries the verification errors in its limitations.
+`qa docs` regenerates a run's documentation, PDFs, SARIF and JUnit exports;
+`qa docs:verify` checks required files, link resolution, unrendered
+placeholders, missing metadata, secret/PII leaks, PDF headers, SARIF 2.1.0
+schema validity, and JUnit well-formedness. A failing verification makes the
+run `INCOMPLETE` and the bundle carries the verification errors in its
+limitations.
+
+`retest-new` compares against an explicit baseline, highlights new/regressed
+findings, and keeps recurring findings in an appendix. It never bypasses the
+gate. External SARIF from approved tools can be imported into the
+`security-external` lane with `importSarifFindings`; no third-party tool is
+executed by the platform.
 
 Staging and prod-safe requests need `authorization.ownerConfirmed`; prod-safe
 also needs a named `approvedBy` and is observe-only. Every target host — web,
@@ -115,6 +125,20 @@ Lanes run in parallel where possible; a lane error does not abort the others.
 Findings carry `confidence` labels; docs never present inferred items as
 verified defects.
 
+## Findings, exports & compliance
+
+- Fingerprint v2 (`category + ruleId + normalized targets`) dedupes findings and
+  drives baseline statuses; pre-v2 baselines use a one-transition fallback.
+- `replayFinding()` supports e2e/api findings with injected executors; a
+  confirmed replay alone never promotes `auto-discovered` to `verified`.
+- Exports: `findings.sarif` (SARIF 2.1.0), `junit.xml`, CSV/XLSX, and the human
+  reports. SARIF is file-only by default.
+- External SARIF (e.g. Semgrep output) is imported as `security-external` with
+  provenance, severity/confidence mapping, redaction, and fingerprint dedupe.
+- Optional `compliance/mapping.yaml` maps categories/rules to PCI-DSS v4, SOC 2,
+  or ISO 27001:2022 control IDs. The report labels it **“indicative mapping, not
+  an audit conclusion”**; enable via `docs.compliance.enabled`.
+
 ## Run artifacts
 
 ```
@@ -129,7 +153,9 @@ artifacts/
 │   ├── evidence/session/*.png # screenshots
 │   ├── run-summary.json
 │   └── stages/*.json          # resumable stage outputs
-├── docs/<run-id>/             # 15 documents + defects/, evidence/, PDFs, XLSX
+├── docs/<run-id>/             # 15 documents + defects/, evidence/, PDFs, XLSX, SARIF, JUnit
+│   ├── findings.sarif         # SARIF 2.1.0 (file-only)
+│   └── junit.xml              # JUnit XML for CI
 ├── docs/latest/               # copy of the latest run
 └── bundles/qa-<run-id>.zip    # docs + stages + evidence + checksums.txt
 ```
@@ -147,9 +173,10 @@ Everything under `artifacts/` is generated and gitignored.
 | `packages/app-map`         | Application Map builder, edges, and risk scoring                                       |
 | `packages/session`         | Playwright instrumented session: probes, axe, vitals, screenshots, security            |
 | `packages/lanes`           | Lane planning/scheduling, repo/API/E2E/a11y/perf/security lanes, findings              |
-| `packages/correlate`       | Signal correlation/dedupe/classification, confidence labels, baseline comparison       |
+| `packages/correlate`       | Fingerprint/dedupe, FP replay, external SARIF ingestion, confidence labels, baseline    |
 | `packages/gate`            | Per-confidence quality gate (GO / GO WITH RISKS / NO-GO) with rule evidence             |
-| `packages/doc-engine`      | 15 documents (HTML/MD/CSV/XLSX/PDF/JSON), i18n, verification, deterministic zip bundle  |
+| `packages/doc-engine`      | 15 documents + SARIF/JUnit exports, i18n, compliance section, verification, zip bundle  |
+| `compliance/`              | Optional example compliance mapping (disabled by default)                              |
 | `fixtures/sample-todo-api` | Dependency-free sample target used by smoke tests                                      |
 | `run-requests/`            | Example run requests                                                                   |
 | `docs/`                    | Decisions and ADRs                                                                     |

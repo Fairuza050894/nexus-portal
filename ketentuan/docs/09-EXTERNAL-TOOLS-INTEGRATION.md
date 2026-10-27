@@ -28,6 +28,13 @@ Out of scope for Phase 4:
   brute force, or autonomous attack planning.
 - Sending target data to external AI providers.
 
+**Phase 4 implementation status (2026-10-27):** the plugin-lane contract is
+specified here; fingerprint v2, FP replay, retest-new, SARIF/JUnit exports,
+external SARIF ingestion, compliance mapping, and deterministic evidence
+summaries are implemented and tested. The `LanePlugin` TypeScript interface (D)
+and the Deep Eye read-only evaluation (C) remain pending. No external tool is
+executed by the pipeline.
+
 ## 2. Non-negotiable rules
 
 1. **Mode guard is unchanged.** Active probing is `sandbox` only, explicit opt-in,

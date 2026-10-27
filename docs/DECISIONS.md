@@ -96,9 +96,18 @@ critical 100%, overall >=95% (ex-quarantine), flaky <=2%, a11y critical/serious 
 
 ## 10. Next
 
-Phase 4 (4.1–4.7) is complete: correlation, classification/dedupe, baseline comparison, confidence-based gate, full document bundle (HTML/MD/CSV/XLSX/PDF/JSON), `docs:verify`, and interactive offline Application Map. Phase 4 additive work: **4.8 complete** (fingerprint v2 + dedupe in `packages/correlate`, strict legacy + one-transition loose fallback, false-merge/volatile-data tests); 4.9–4.12 pending. The web dashboard remains Phase 5. Activate branch protection and provide Docker rootless in CI/dev before real remote pilots.
+Phase 4 (4.1–4.7) is complete: correlation, classification/dedupe, baseline comparison, confidence-based gate, full document bundle (HTML/MD/CSV/XLSX/PDF/JSON), `docs:verify`, and interactive offline Application Map. Phase 4 additive work: **4.8–4.12 complete** — fingerprint v2 + dedupe, FP replay hook, `retest-new`, SARIF 2.1.0/JUnit exports with verification, external SARIF ingestion, indicative compliance mapping, and deterministic evidence summaries. Deep Eye evaluation (C) and the plugin-lane contract (D) remain pending. The web dashboard remains Phase 5. Activate branch protection and provide Docker rootless in CI/dev before real remote pilots.
 
-## 11. External tools, AI & compliance decisions (2026-10-27)
+## 11a. Phase 4 additive implementation decisions (2026-10-27)
+
+- Replay uses injected executors; it never opens a network/browser session by itself. `confirmed` is stored as evidence and only promotes to `verified` when a requirement/spec/user assertion source also exists.
+- `retest-new` is `qa run --retest-new <run-id|latest|previous>`. It highlights new/regressed findings and keeps recurring findings in an appendix; the gate is unchanged.
+- SARIF export is file-only, bundled with the official SARIF 2.1.0 schema and validated with `ajv` (`unicodeRegExp:false` for the schema's legacy pattern). JUnit XML is validated structurally by `docs:verify`.
+- External ingestion maps SARIF to lane `security-external` with provenance, severity/confidence mapping, redaction and fingerprint dedupe. No third-party tool is executed.
+- Compliance mapping is optional and disabled by default (`docs.compliance.enabled=false`). The example `compliance/mapping.yaml` is illustrative; the report says "Indicative mapping, not an audit conclusion."
+- Evidence summaries are deterministic templates; no AI or external calls.
+
+## 12. External tools, AI & compliance decisions (2026-10-27)
 
 - **Active scanning on staging:** never. Active/plugin scanning is sandbox-only, explicit opt-in, `approver`-signed, and audited. `staging` and `prod-safe` remain unchanged.
 - **AI endpoint:** none approved. All target data stays inside the platform. AI-assisted summaries remain off; Phase 4 summaries are deterministic/template-based.
