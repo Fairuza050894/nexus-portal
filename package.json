@@ -21,7 +21,8 @@
     "docs": "node --import tsx apps/cli/src/index.ts docs",
     "docs:open": "node --import tsx apps/cli/src/index.ts docs --open",
     "docs:verify": "node --import tsx apps/cli/src/index.ts docs:verify",
-    "clean": "node --import tsx apps/cli/src/index.ts clean --yes"
+    "clean": "node --import tsx apps/cli/src/index.ts clean --yes",
+    "api": "node --import tsx apps/api/src/index.ts"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

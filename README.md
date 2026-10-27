@@ -3,21 +3,19 @@
 Unified QA automation platform. One run request discovers a target, executes the
 applicable lanes, correlates results, and produces a documentation bundle.
 
-**Current status: Phase 4 (correlation, gate & unified docs) — M1.** Intake, mode
+**Current status: Phase 5 (Web App & Test Builder) — Milestone M2.** Intake, mode
 guard, sandbox, discovery, Application Map, one Playwright session per run,
 repo/API/E2E/a11y/Web Vitals/passive-security lanes, fingerprint v2 dedupe,
 false-positive replay, baseline/`retest-new`, the per-confidence quality gate,
-external SARIF ingestion, and the full documentation bundle (HTML, MD, CSV,
-XLSX, PDF, SARIF, JUnit, JSON) with `docs:verify` are implemented. Optional
-indicative compliance mapping is config-driven and disabled by default. The
-plugin-lane contract (`LanePlugin` interface with mandatory forbidden-option
-guards) and read-only third-party tool evaluation (`docs/evaluations/deep-eye.md`)
-are complete; no third-party tool is executed by the pipeline.
+external SARIF ingestion, full documentation bundle, **REST API server**
+(`apps/api`), **data-driven Test Builder registry** (`packages/registry`), and
+the **engineering web dashboard** (`apps/web`) with live SSE progress and plan
+review are implemented and dogfooded.
 
-Visual baselines, test generation, and the **web dashboard** are not
-implemented yet. The dashboard is Phase 5 (`apps/web` + `apps/api` + worker);
-Phases 0–4 built the data it will display. Unimplemented stages are recorded as
-`skipped` with a reason — the platform never reports fabricated results.
+The platform provides full parity between the `qa` CLI and the web console.
+Visual baselines and automated test generation remain later phases (6–8).
+Unimplemented stages are recorded as `skipped` with an explicit reason —
+the platform never reports fabricated results.
 
 The product specification and phase plan live in [`ketentuan/`](ketentuan/README.md).
 
@@ -176,6 +174,9 @@ Everything under `artifacts/` is generated and gitignored.
 | `packages/app-map`         | Application Map builder, edges, and risk scoring                                       |
 | `packages/session`         | Playwright instrumented session: probes, axe, vitals, screenshots, security            |
 | `packages/lanes`           | Lane planning/scheduling, repo/API/E2E/a11y/perf/security lanes, LanePlugin contract, findings |
+| `apps/api`                 | REST API server, OIDC/role auth, run lifecycle, live SSE streaming, bundle download    |
+| `apps/web`                 | 5-step engineering console (Target, Test Builder, Plan Review, Live Run, Results)      |
+| `packages/registry`        | Dynamic test type catalogue (`e2e`, `api`, `a11y`, `perf`, `visual`, `security-passive`) |
 | `packages/correlate`       | Fingerprint/dedupe, FP replay, external SARIF ingestion, confidence labels, baseline    |
 | `packages/gate`            | Per-confidence quality gate (GO / GO WITH RISKS / NO-GO) with rule evidence             |
 | `packages/doc-engine`      | 15 documents + SARIF/JUnit exports, i18n, compliance section, verification, zip bundle  |

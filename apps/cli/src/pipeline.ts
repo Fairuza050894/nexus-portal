@@ -95,6 +95,8 @@ export interface PipelineOptions {
   retestNew?: string;
   sandboxStarter?: typeof startSandbox;
   probe?: typeof probeUrl;
+  onStageChange?: (stage: StageSummary) => void;
+  onLog?: (line: string) => void;
 }
 
 export interface PipelineResult extends RunResult {
@@ -215,6 +217,8 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
   const writeStage = (record: StageSummary): void => {
     stages[record.name] = record;
     store.writeStage(record);
+    options.onStageChange?.(record);
+    options.onLog?.(`Stage ${record.name}: ${record.status} (${record.durationMs}ms)`);
   };
 
   const skipStage = (name: StageName, reason: string): void => {

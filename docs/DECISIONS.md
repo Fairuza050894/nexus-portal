@@ -119,3 +119,11 @@ Phase 4 (4.1–4.7) is complete: correlation, classification/dedupe, baseline co
 - **Fingerprint migration:** fingerprint v2 with a one-transition legacy fallback; existing baseline statuses are not silently rewritten.
 - **SARIF validation dependency:** `ajv` (MIT, already used by `packages/lanes`) will be declared in `doc-engine` to validate against the bundled SARIF 2.1.0 schema. No network access at validation time.
 - **Workflow:** local Conventional Commit per package; push/PR only after explicit approval.
+
+## 13. Phase 5 implementation decisions (2026-10-28)
+
+- **UI design standard:** High-density, professional, dark-mode engineering console (`apps/web`). Avoid generic AI slop, decorative gradients, or bloated cards. Clean typography, monospace metrics, accessible contrast (WCAG 2.1 AA), and internal horizontal scrolling for data tables.
+- **Test Builder registry (`packages/registry`):** Data-driven test types (`e2e`, `api`, `a11y`, `perf`, `visual`, `security-passive`). Mode compatibility strictly enforced (performance testing with load is blocked in `prod-safe`).
+- **API server (`apps/api`):** Lightweight, zero-bloat Node HTTP server. Provides run lifecycle, dry-run estimation, SSE real-time event streaming (`/api/runs/:id/events`), ZIP bundle streaming, and single-page app static serving.
+- **Auth & Role matrix:** Role hierarchy (`viewer` < `runner` < `approver` < `admin`). `viewer` has read-only access; `runner` can create sandbox runs; `approver` and `admin` are required for `staging`, `prod-safe`, and active-scan plans.
+- **Dogfooding validation:** 26 automated acceptance scenarios covering all steps in `docs/08-UI-FLOW-REFERENCE.md` (validation, mode guards, secret rejection, builder persistence, plan review, live SSE, and results).

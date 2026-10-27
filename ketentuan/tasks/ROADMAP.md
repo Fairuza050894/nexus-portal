@@ -85,15 +85,15 @@ Status: 4.1–4.12 fully implemented and tested on the sample pilot. Evidence: `
 
 ## Phase 5 — Web App & Test Builder  (≈ 2–3 weeks)  → **M2**
 
-- [ ] 5.1 `apps/api` (auth via OIDC, roles, run lifecycle, SSE, bundle download) + queue + worker wiring.
-- [ ] 5.2 `packages/registry` + initial type definitions (e2e, api, a11y, perf, visual, security-passive) per `07-TEST-BUILDER-UI.md` §2.
-- [ ] 5.3 UI: New Run (modes, scope, authorization, dry run), Test Builder (dynamic forms/tables, import/export, validation, mode-aware), Live Run, Results.
-- [ ] 5.4 Plan Review screen and approval flow (`planApproval=review|auto`).
-- [ ] 5.5 History & Trends, Settings (allowlist, thresholds, branding, roles).
-- [ ] 5.6 Dogfooding: platform e2e + a11y suite for the UI itself, covering every scenario in `docs/08-UI-FLOW-REFERENCE.md`.
+- [x] 5.1 `apps/api` (auth via OIDC, roles, run lifecycle, SSE, bundle download) + queue + worker wiring.
+- [x] 5.2 `packages/registry` + initial type definitions (e2e, api, a11y, perf, visual, security-passive) per `07-TEST-BUILDER-UI.md` §2.
+- [x] 5.3 UI: New Run (modes, scope, authorization, dry run), Test Builder (dynamic forms/tables, import/export, validation, mode-aware), Live Run, Results.
+- [x] 5.4 Plan Review screen and approval flow (`planApproval=review|auto`).
+- [x] 5.5 History & Trends, Settings (allowlist, thresholds, branding, roles).
+- [x] 5.6 Dogfooding: platform e2e + a11y suite for the UI itself, covering every scenario in `docs/08-UI-FLOW-REFERENCE.md`.
 
 **Acceptance:** a non-technical user completes New Run → Run everything → Download bundle using only the UI; forbidden type/mode combinations are blocked with a visible reason; raw secrets rejected; UI passes its own a11y lane (0 critical/serious).
-
+Status: 5.1–5.6 implemented and tested. Evidence: `apps/api/tests/api.test.ts` (OIDC/roles, lifecycle, dry-run, SSE, bundle stream, document download), `packages/registry/tests/registry.test.ts` (6 registered types, mode blocking, secret rejection, scenario suggester), `apps/web/tests/ui-flow.test.ts` (26 dogfooding acceptance scenarios covering 08-UI-FLOW-REFERENCE steps 1-5 and cross-cutting quality rules).
 ---
 
 ## Phase 6 — Test Generation & Promotion  (≈ 2 weeks)

@@ -1,0 +1,18 @@
+{
+  "name": "@nexus/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@nexus/core": "0.1.0",
+    "@nexus/registry": "0.1.0",
+    "@nexus/app-map": "0.1.0",
+    "@nexus/correlate": "0.1.0",
+    "@nexus/discover": "0.1.0",
+    "@nexus/doc-engine": "0.1.0",
+    "@nexus/gate": "0.1.0",
+    "@nexus/lanes": "0.1.0",
+    "@nexus/sandbox": "0.1.0"
+  }
+}
