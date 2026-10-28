@@ -151,3 +151,10 @@ Phase 4 (4.1–4.7) is complete: correlation, classification/dedupe, baseline co
 - **Full-Stack Data Lineage & Topology Graph (`packages/app-map/src/lineage.ts`):** Connects 4 tiers: `Page (UI) -> calls -> Endpoint (API) -> handled-by -> Controller -> queries -> Database Table`. Automatically infers database operations (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) based on HTTP verbs. Reflects defect and gate failure status onto affected topology nodes.
 - **Web Console Step 6 (`apps/web`):** Interactive SVG Topology Graph with cascading node relationships, Live Security Sandbox Monitor (Host Allowlist Radar, Egress Boundary, Real-Time Data Redaction), and Data Lineage catalog table.
 - **Lineage API (`apps/api`):** Exposes `GET /api/lineage` and `GET /api/runs/:id/lineage`.
+
+## 17. Phase 8 Extended Lanes implementation decisions (2026-10-28)
+
+- **Visual Regression Lane (`packages/lanes/src/visual.ts` & `apps/web`):** Baseline image management, tolerance percentage comparison, byte-level pixel drift detection, and interactive Before/After split slider in Step 5 of the web console.
+- **k6 Load Testing (`packages/lanes/src/k6.ts`):** Standalone load execution generating k6 scripts with p95 latency and error rate SLA thresholds. Mode guard strictly enforces prohibition in `prod-safe` and requires `authorization.perfApproved: true` in `staging`.
+- **Cross-Browser & Viewports (`packages/session/src/index.ts`):** Multi-browser support (`chromium`, `firefox`, `webkit`) and `STANDARD_VIEWPORTS` (`desktop`: 1366x768, `tablet`: 820x1180, `mobile`: 390x844).
+- **Extended Route Extractors (`packages/discover/src/repo-analyzer.ts`):** Automated AST route extractors for Laravel PHP (`routes/web.php`, `routes/api.php`), FastAPI Python (`@app.get`, `@router.post`), and Spring Boot Java (`@GetMapping`, `@PostMapping`).

@@ -3,20 +3,20 @@
 Unified QA automation platform. One run request discovers a target, executes the
 applicable lanes, correlates results, and produces a documentation bundle.
 
-**Current status: Phase 7 (CI/CD, Scheduling & Notifications) — Milestone M3: "Always on" + Full-Stack Data Lineage & DB Explorer.**
-Intake, mode guard, sandbox, discovery, Application Map, one Playwright
-session per run, repo/API/E2E/a11y/Web Vitals/passive-security lanes,
-fingerprint v2 dedupe, false-positive replay, baseline/`retest-new`, quality
-gate, external SARIF ingestion, full documentation bundle, REST API server
-(`apps/api`), Test Builder registry (`packages/registry`), unslop engineering
-console (`apps/web`), multi-source test planner (`packages/planner`), regression
-suite promotion (`packages/qa-suite`), CI/CD workflows (`.github/workflows/`),
-database schema extraction (Prisma / SQL / PII detection), full-stack data
-lineage (`Page -> Endpoint -> Controller -> DB Table`), interactive SVG
-topology graph, and operational Runbook (`docs/RUNBOOK.md`) are fully
-implemented and verified.
+**Current status: Phase 8 (Extended Lanes) — Complete.**
+Intake, mode guard, sandbox, discovery, Application Map, Playwright session
+per run with multi-browser (`chromium`, `firefox`, `webkit`) and mobile viewports,
+repo/API/E2E/a11y/Web Vitals/passive-security lanes, visual regression with
+baseline storage and split-screen diff slider, k6 load testing with SLA
+thresholds, extended framework extractors (Express, Next.js, Laravel, FastAPI,
+Spring Boot), database schema reconstruction (Prisma / SQL DDL / PII tagging),
+full-stack data lineage, REST API server (`apps/api`), Test Builder registry
+(`packages/registry`), unslop engineering console (`apps/web`), multi-source test
+planner (`packages/planner`), regression suite promotion (`packages/qa-suite`),
+and operational Runbook (`docs/RUNBOOK.md`) are fully implemented and verified.
 
-The platform delivers all three core milestones: M1 ("One command"), M2 ("One click"), and M3 ("Always on").
+The platform delivers Milestones M1, M2, M3, and all Extended Lanes.
+
 
 The product specification and phase plan live in [`ketentuan/`](ketentuan/README.md).
 

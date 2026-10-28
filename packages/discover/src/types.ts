@@ -60,7 +60,7 @@ export interface RepoRoute {
   path: string;
   file: string;
   line: number;
-  framework: 'express' | 'next-app';
+  framework: 'express' | 'next-app' | 'laravel' | 'fastapi' | 'spring';
   lineCount: number;
 }
 

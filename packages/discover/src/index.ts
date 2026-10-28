@@ -3,7 +3,13 @@ export { resolveAuth } from './auth.js';
 export type { ResolvedAuth } from './auth.js';
 export { crawl } from './crawler.js';
 export { importOpenApi } from './openapi.js';
-export { analyzeRepo, ownersFor } from './repo-analyzer.js';
+export {
+  analyzeRepo,
+  ownersFor,
+  laravelRoutes,
+  fastApiRoutes,
+  springBootRoutes,
+} from './repo-analyzer.js';
 export { parseRobots, loadRobots } from './robots.js';
 export {
   DiscoveryHttpClient,

@@ -6,7 +6,8 @@ export { runApiLane } from './api.js';
 export { runRepoLane } from './repo.js';
 export { runSecurityLane } from './security.js';
 export { runPerfLane } from './perf.js';
-export { runVisualLane } from './visual.js';
+export { runVisualLane, compareScreenshotBuffers, type VisualDiffResult } from './visual.js';
+export { runK6LoadLane, generateK6Script, executeK6Scenario, type K6ScenarioConfig, type K6RunResult } from './k6.js';
 export type {
   LaneName,
   LanePlan,

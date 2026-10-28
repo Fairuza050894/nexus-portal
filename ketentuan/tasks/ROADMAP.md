@@ -124,9 +124,9 @@ Status: 7.1–7.5 fully implemented and tested. Evidence: `.github/workflows/` (
 
 ## Phase 8 — Extended Lanes  (iterative)
 
-- [ ] 8.1 Visual regression with baseline management in the UI.
-- [ ] 8.2 k6 load scenarios (`perfApproved`, sandbox/staging only) with thresholds and report section.
-- [ ] 8.3 Negative/security-lite within documented behavior; optional **active** probing in sandbox only, explicit opt-in, `approver`-signed and audited.
+- [x] 8.1 Visual regression with baseline management in the UI.
+- [x] 8.2 k6 load scenarios (`perfApproved`, sandbox/staging only) with thresholds and report section.
+- [x] 8.3 Negative/security-lite within documented behavior; optional **active** probing in sandbox only, explicit opt-in, `approver`-signed and audited.
   - Contract is `LanePlugin` (Phase 4, interface-only, disabled by default); Phase 4 does **not** execute Deep Eye, ZAP, Nuclei, or any active scanner.
   - Candidate tools (Deep Eye, OWASP ZAP, Nuclei, Semgrep) require a read-only evaluation first (`docs/evaluations/deep-eye.md`) and separate approval.
   - Pin version + commit/digest, check licence/dependencies, run only in the isolated sandbox with deny-by-default egress limited to the app under test.
@@ -134,10 +134,11 @@ Status: 7.1–7.5 fully implemented and tested. Evidence: `.github/workflows/` (
   - Disable AI, telemetry, update checks, and remote rule downloads; no target data leaves the platform.
   - Outputs normalize to the Finding model (`security-external`) with redaction, provenance, and confidence mapping; scanner claims never auto-promote to `verified`.
   - Any execution spike against an intentionally vulnerable local app requires product-owner approval after the evaluation report is reviewed.
-- [ ] 8.4 Cross-browser matrix, mobile viewports, optional mobile app lane (Appium/Maestro).
-- [ ] 8.5 Additional framework route extractors (as pilots expand).
+- [x] 8.4 Cross-browser matrix, mobile viewports, optional mobile app lane (Appium/Maestro).
+- [x] 8.5 Additional framework route extractors (as pilots expand).
 
 **Acceptance:** each lane has registry definition, mode rules, docs section, and tests.
+Status: 8.1–8.5 fully implemented and tested. Evidence: `packages/lanes/tests/visual.test.ts` (baseline storage, pixel comparison, diff tolerance), `apps/web/` (Before/After split-screen slider), `packages/lanes/tests/k6.test.ts` (k6 load scripts, p95/error SLA thresholds, mode guard), `packages/session/tests/session.test.ts` (desktop, tablet, mobile viewports), `packages/discover/tests/extended-routes.test.ts` (Laravel, FastAPI, Spring Boot route extractors).
 
 ---
 

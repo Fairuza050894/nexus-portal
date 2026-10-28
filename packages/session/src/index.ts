@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { chromium, type Browser, type BrowserContext, type Page, type Response } from 'playwright';
+import { chromium, firefox, webkit, type Browser, type BrowserContext, type Page, type Response } from 'playwright';
 import axe from 'axe-core';
 import { isHostAllowed, resolveHost } from '@nexus/core';
 
@@ -68,7 +68,15 @@ export interface SessionOptions {
   headless?: boolean;
   navigationTimeoutMs?: number;
   maxPages?: number;
+  browserType?: 'chromium' | 'firefox' | 'webkit';
+  viewport?: { width: number; height: number; isMobile?: boolean };
 }
+
+export const STANDARD_VIEWPORTS = {
+  desktop: { width: 1366, height: 768, isMobile: false },
+  tablet: { width: 820, height: 1180, isMobile: false },
+  mobile: { width: 390, height: 844, isMobile: true },
+} as const;
 
 interface RawAxeResult {
   violations?: Array<{
@@ -332,9 +340,12 @@ export async function runInstrumentedSession(options: SessionOptions): Promise<S
   let browser: Browser | undefined;
   let context: BrowserContext | undefined;
   try {
-    browser = await chromium.launch({ headless: options.headless ?? true });
+    const bType = options.browserType ?? 'chromium';
+    const launcher = bType === 'firefox' ? firefox : bType === 'webkit' ? webkit : chromium;
+    browser = await launcher.launch({ headless: options.headless ?? true });
     context = await browser.newContext({
-      viewport: { width: 1366, height: 768 },
+      viewport: options.viewport ?? { width: 1366, height: 768 },
+      isMobile: options.viewport?.isMobile ?? false,
       ignoreHTTPSErrors: false,
     });
     await injectVitalsObserver(context);

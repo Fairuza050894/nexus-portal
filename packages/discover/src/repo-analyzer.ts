@@ -162,6 +162,70 @@ function nextPages(file: string, source: string, base: string): RepoPageRoute[] 
   return [{ path, file, lineCount: lineCount(source) }];
 }
 
+export function laravelRoutes(file: string, source: string): RepoRoute[] {
+  const routes: RepoRoute[] = [];
+  const routeRegex = /Route::(get|post|put|patch|delete|options)\(\s*['"]([^'"]+)['"]/gi;
+  for (const match of source.matchAll(routeRegex)) {
+    const method = match[1].toUpperCase();
+    const rawPath = match[2];
+    const path = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+    routes.push({
+      method,
+      path,
+      file,
+      line: lineNumberAt(source, match.index ?? 0),
+      framework: 'laravel',
+      lineCount: lineCount(source),
+    });
+  }
+  return routes;
+}
+
+export function fastApiRoutes(file: string, source: string): RepoRoute[] {
+  const routes: RepoRoute[] = [];
+  const routeRegex = /@(?:app|router)\.(get|post|put|patch|delete)\(\s*["']([^"']+)["']/gi;
+  for (const match of source.matchAll(routeRegex)) {
+    const method = match[1].toUpperCase();
+    const rawPath = match[2];
+    const path = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+    routes.push({
+      method,
+      path,
+      file,
+      line: lineNumberAt(source, match.index ?? 0),
+      framework: 'fastapi',
+      lineCount: lineCount(source),
+    });
+  }
+  return routes;
+}
+
+export function springBootRoutes(file: string, source: string): RepoRoute[] {
+  const routes: RepoRoute[] = [];
+  const routeRegex = /@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\(\s*(?:(?:value|path)\s*=\s*)?["']([^"']+)["']/gi;
+  const methodMap: Record<string, string> = {
+    getmapping: 'GET',
+    postmapping: 'POST',
+    putmapping: 'PUT',
+    deletemapping: 'DELETE',
+    patchmapping: 'PATCH',
+  };
+  for (const match of source.matchAll(routeRegex)) {
+    const method = methodMap[match[1].toLowerCase()] ?? 'GET';
+    const rawPath = match[2];
+    const path = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+    routes.push({
+      method,
+      path,
+      file,
+      line: lineNumberAt(source, match.index ?? 0),
+      framework: 'spring',
+      lineCount: lineCount(source),
+    });
+  }
+  return routes;
+}
+
 function parseCodeOwners(root: string): CodeOwnerRule[] {
   const candidates = [
     join(root, 'CODEOWNERS'),
@@ -249,23 +313,47 @@ export function analyzeRepo(options: RepoAnalyzeOptions): RepoAnalysis {
         }
       }
     }
-    if (!/[.][cm]?[jt]sx?$/.test(relativeFile) || /[.](?:test|spec)[.]/.test(relativeFile)) {
+    if (/[.](?:test|spec)[.]/.test(relativeFile)) {
       continue;
     }
     const source = scanSource;
     if (!source) continue;
-    const next = nextRoutes(file, source, options.repoDir);
-    if (next.length > 0) {
-      routes.push(...next);
-      pageRoutes.push(...nextPages(file, source, options.repoDir));
+
+    // 1. PHP / Laravel routes
+    if (relativeFile.endsWith('.php')) {
+      const laravel = laravelRoutes(file, source);
+      if (laravel.length > 0) routes.push(...laravel);
       continue;
     }
-    pageRoutes.push(...nextPages(file, source, options.repoDir));
-    if (relativeFile.startsWith('app/') || relativeFile.startsWith('src/app/')) continue;
-    const express = expressRoutes(file, source);
-    if (express.length > 0) routes.push(...express);
-  }
 
+    // 2. Python / FastAPI routes
+    if (relativeFile.endsWith('.py')) {
+      const fastapi = fastApiRoutes(file, source);
+      if (fastapi.length > 0) routes.push(...fastapi);
+      continue;
+    }
+
+    // 3. Java / Spring Boot routes
+    if (relativeFile.endsWith('.java')) {
+      const spring = springBootRoutes(file, source);
+      if (spring.length > 0) routes.push(...spring);
+      continue;
+    }
+
+    // 4. JS/TS (Next.js & Express)
+    if (/[.][cm]?[jt]sx?$/.test(relativeFile)) {
+      const next = nextRoutes(file, source, options.repoDir);
+      if (next.length > 0) {
+        routes.push(...next);
+        pageRoutes.push(...nextPages(file, source, options.repoDir));
+        continue;
+      }
+      pageRoutes.push(...nextPages(file, source, options.repoDir));
+      if (relativeFile.startsWith('app/') || relativeFile.startsWith('src/app/')) continue;
+      const express = expressRoutes(file, source);
+      if (express.length > 0) routes.push(...express);
+    }
+  }
   const gitSha = git(options.repoDir, ['rev-parse', 'HEAD']);
   const gitBranch = git(options.repoDir, ['rev-parse', '--abbrev-ref', 'HEAD']);
   const changedFiles = (
