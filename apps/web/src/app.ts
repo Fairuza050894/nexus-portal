@@ -634,6 +634,17 @@ export function renderPortalHtml(state: PortalState): string {
             payload.api.specUrl = apiSpec;
           }
         }
+        const guidedLogin = document.getElementById('check-guided-login')?.checked || false;
+        const cookieStr = (document.getElementById('input-session-cookies')?.value || '').trim();
+
+        if (guidedLogin || cookieStr) {
+          payload.auth = {
+            interactive: guidedLogin,
+            roles: guidedLogin ? ['guided-login'] : undefined,
+            cookies: cookieStr || undefined,
+          };
+        }
+
         if (effectiveMode !== 'sandbox') {
           payload.authorization = {
             ownerConfirmed: authChecked || Boolean(webVal),
@@ -641,7 +652,6 @@ export function renderPortalHtml(state: PortalState): string {
             perfApproved: true
           };
         }
-
         return payload;
       }
 
@@ -866,6 +876,22 @@ function renderStep1Target(state: PortalState): string {
             <label for="input-api-spec">${t(lang, 'apiSpecUrlLabel')} <span class="field-key">api.specUrl</span></label>
             <input type="text" id="input-api-spec" class="input-mono" value="${state.apiSpecUrl}" placeholder="/openapi.json" />
           </div>
+
+        <!-- Guided Login & Cookie Injection Controls -->
+        <div class="field-row" style="margin-top:12px; padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:3px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; font-size:12px; margin-bottom:4px;">
+            <input type="checkbox" id="check-guided-login" />
+            <span>Bantuan Login Interaktif (Guided Login: Buka browser, tunggu saya login, lalu lanjutkan otomatis)</span>
+          </label>
+          <div style="font-size:11px; color:var(--text-muted); margin-left:24px;">
+            Sangat cocok untuk akun LDAP / SSO / 2FA kantor: Robot Playwright akan membuka browser nyata dan jeda hingga Anda selesai login, lalu otomatis mengambil alih untuk membedah seluruh halaman dalam.
+          </div>
+        </div>
+
+        <div class="field-row" style="margin-top:8px;">
+          <label for="input-session-cookies">Suntik Cookie Sesi (Opsional — misal: laravel_session=...):</label>
+          <input type="text" id="input-session-cookies" class="input-mono" placeholder="laravel_session=eyJpdm...; XSRF-TOKEN=..." />
+        </div>
         </div>
 
         <!-- Authorization Block (Scenarios 1.5, 1.6) -->

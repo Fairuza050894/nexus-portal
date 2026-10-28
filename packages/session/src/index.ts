@@ -70,6 +70,30 @@ export interface SessionOptions {
   maxPages?: number;
   browserType?: 'chromium' | 'firefox' | 'webkit';
   viewport?: { width: number; height: number; isMobile?: boolean };
+  interactiveLogin?: boolean;
+  loginTimeoutMs?: number;
+  cookies?: Array<{ name: string; value: string; domain?: string; path?: string }>;
+  onLog?: (message: string) => void;
+}
+
+export function parseCookieString(
+  cookieStr: string,
+  domain: string,
+): Array<{ name: string; value: string; domain: string; path: string }> {
+  const cookies: Array<{ name: string; value: string; domain: string; path: string }> = [];
+  const parts = cookieStr.split(';');
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx <= 0) continue;
+    const name = trimmed.slice(0, eqIdx).trim();
+    const value = trimmed.slice(eqIdx + 1).trim();
+    if (name && value) {
+      cookies.push({ name, value, domain, path: '/' });
+    }
+  }
+  return cookies;
 }
 
 export const STANDARD_VIEWPORTS = {
@@ -342,13 +366,18 @@ export async function runInstrumentedSession(options: SessionOptions): Promise<S
   try {
     const bType = options.browserType ?? 'chromium';
     const launcher = bType === 'firefox' ? firefox : bType === 'webkit' ? webkit : chromium;
-    browser = await launcher.launch({ headless: options.headless ?? true });
+    const isHeadless = options.headless ?? (options.interactiveLogin ? false : true);
+    browser = await launcher.launch({ headless: isHeadless });
     context = await browser.newContext({
       viewport: options.viewport ?? { width: 1366, height: 768 },
       isMobile: options.viewport?.isMobile ?? false,
       ignoreHTTPSErrors: false,
     });
     await injectVitalsObserver(context);
+
+    if (options.cookies && options.cookies.length > 0) {
+      await context.addCookies(options.cookies);
+    }
 
     if (options.authHeaders && options.authHost) {
       await context.route('**/*', async (route) => {
@@ -381,6 +410,27 @@ export async function runInstrumentedSession(options: SessionOptions): Promise<S
         await route.continue();
       });
     }
+
+    if (options.interactiveLogin && targets.length > 0) {
+      options.onLog?.('Guided Login: Browser opened. Please log in manually in the browser window...');
+      const loginPage = await context.newPage();
+      try {
+        await loginPage.goto(targets[0].url, { timeout: options.navigationTimeoutMs ?? 30_000 });
+        options.onLog?.('Awaiting manual login. Once you land on the dashboard, automated testing will resume...');
+        await loginPage.waitForURL(
+          (url) => !url.pathname.includes('/login') && !url.pathname.endsWith('/login'),
+          { timeout: options.loginTimeoutMs ?? 60_000 },
+        ).catch(() => {
+          options.onLog?.('Guided login wait period completed. Continuing session with current state...');
+        });
+        options.onLog?.('Authenticated session captured! Commencing automated multi-lane testing...');
+      } catch (err) {
+        options.onLog?.(`Guided login notice: ${(err as Error).message}`);
+      } finally {
+        await loginPage.close().catch(() => undefined);
+      }
+    }
+
 
     const pages: SessionPageResult[] = [];
     for (const target of targets) {

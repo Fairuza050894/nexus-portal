@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { resolveHost } from '@nexus/core';
 import { resolveAuth } from '@nexus/discover';
-import { runInstrumentedSession, type SessionResult } from '@nexus/session';
+import { parseCookieString, runInstrumentedSession, type SessionResult } from '@nexus/session';
 import { runA11yLane } from './a11y.js';
 import { runApiLane } from './api.js';
 import { runE2eLane } from './e2e.js';
@@ -71,13 +71,22 @@ export async function runLanes(context: LaneContext, selected: LaneName[]): Prom
   const sessionPromise: Promise<SessionResult | undefined> = (() => {
     if (context.session) return Promise.resolve(context.session);
     if (!needsSession || targets.length === 0) return Promise.resolve(undefined);
+    const authConfig = context.request.auth;
+    const isInteractive = Boolean(authConfig?.interactive || authConfig?.roles?.includes('guided-login'));
+    let cookieList: Array<{ name: string; value: string; domain?: string; path?: string }> | undefined;
+    if (authConfig?.cookies && firstTarget) {
+      const host = resolveHost(firstTarget);
+      cookieList = parseCookieString(authConfig.cookies, host);
+    }
     return runInstrumentedSession({
       pages: targets,
       allowlist: context.config.allowlist,
       artifactDir: join(context.runDir, 'evidence', 'session'),
       authHeaders: auth.headers,
       authHost,
-      headless: true,
+      headless: !isInteractive,
+      interactiveLogin: isInteractive,
+      cookies: cookieList,
       maxPages: context.scope === 'quick' ? 5 : context.scope === 'standard' ? 20 : 50,
     });
   })();

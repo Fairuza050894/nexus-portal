@@ -195,8 +195,10 @@ export function evidenceLinks(
     const path = typeof item.path === 'string' ? item.path : undefined;
     const url = typeof item.url === 'string' ? item.url : undefined;
     const label = typeof item.type === 'string' ? item.type : 'evidence';
-    if (path && !path.includes('..') && linkable) {
-      const href = `evidence/${path.replace(/^evidence\//, '')}`;
+    const hasFileExt = path ? /\.(png|jpe?g|webp|json|har|html|txt|xml|sarif|pdf|csv|xlsx)$/i.test(path.split('#')[0]) : false;
+    if (path && !path.includes('..') && linkable && hasFileExt) {
+      const cleanPath = path.replace(/^evidence\//, '').replace(/^\/+/, '');
+      const href = `evidence/${cleanPath}`;
       return `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
     }
     if (url && /^https?:\/\//.test(url)) {

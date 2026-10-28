@@ -84,7 +84,12 @@ export const RunRequestSchema = z
     web: WebSchema.optional(),
     api: ApiSchema.optional(),
     auth: z
-      .object({ ref: SecretRefSchema, roles: z.array(z.string()).optional() })
+      .object({
+        ref: SecretRefSchema.optional(),
+        roles: z.array(z.string()).optional(),
+        interactive: z.boolean().optional(),
+        cookies: z.string().optional(),
+      })
       .strict()
       .optional(),
     requirements: z
