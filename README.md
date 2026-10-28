@@ -3,19 +3,18 @@
 Unified QA automation platform. One run request discovers a target, executes the
 applicable lanes, correlates results, and produces a documentation bundle.
 
-**Current status: Phase 5 (Web App & Test Builder) — Milestone M2.** Intake, mode
-guard, sandbox, discovery, Application Map, one Playwright session per run,
+**Current status: Phase 6 (Test Generation & Promotion).** Intake, mode guard,
+sandbox, discovery, Application Map, one Playwright session per run,
 repo/API/E2E/a11y/Web Vitals/passive-security lanes, fingerprint v2 dedupe,
 false-positive replay, baseline/`retest-new`, the per-confidence quality gate,
-external SARIF ingestion, full documentation bundle, **REST API server**
-(`apps/api`), **data-driven Test Builder registry** (`packages/registry`), and
-the **engineering web dashboard** (`apps/web`) with live SSE progress and plan
-review are implemented and dogfooded.
+external SARIF ingestion, full documentation bundle, REST API server
+(`apps/api`), Test Builder registry (`packages/registry`), unslop engineering
+console (`apps/web`), multi-source test planner (`packages/planner`), and
+regression suite promotion with 3× green check (`packages/qa-suite`) are fully
+implemented and verified.
 
 The platform provides full parity between the `qa` CLI and the web console.
-Visual baselines and automated test generation remain later phases (6–8).
-Unimplemented stages are recorded as `skipped` with an explicit reason —
-the platform never reports fabricated results.
+CI/CD pipelines and scheduling remain Phase 7 (Milestone M3).
 
 The product specification and phase plan live in [`ketentuan/`](ketentuan/README.md).
 
@@ -180,6 +179,8 @@ Everything under `artifacts/` is generated and gitignored.
 | `packages/correlate`       | Fingerprint/dedupe, FP replay, external SARIF ingestion, confidence labels, baseline    |
 | `packages/gate`            | Per-confidence quality gate (GO / GO WITH RISKS / NO-GO) with rule evidence             |
 | `packages/doc-engine`      | 15 documents + SARIF/JUnit exports, i18n, compliance section, verification, zip bundle  |
+| `packages/planner`         | 5 test generators, diff suggester, change-based risk ordering, self-healing suggestions |
+| `packages/qa-suite`        | Test promotion pipeline (conventions, verified-only, 3x green check), catalogue matrix   |
 | `compliance/`              | Optional example compliance mapping (disabled by default)                              |
 | `fixtures/sample-todo-api` | Dependency-free sample target used by smoke tests                                      |
 | `run-requests/`            | Example run requests                                                                   |

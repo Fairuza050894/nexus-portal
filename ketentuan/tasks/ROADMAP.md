@@ -98,13 +98,14 @@ Status: 5.1–5.6 implemented and tested. Evidence: `apps/api/tests/api.test.ts`
 
 ## Phase 6 — Test Generation & Promotion  (≈ 2 weeks)
 
-- [ ] 6.1 Planner generators: invariants, spec-based, crawl-based, repo-route-based, requirement-based.
-- [ ] 6.2 "Suggest scenarios" in Test Builder (diff-style acceptance).
-- [ ] 6.3 Promotion of approved generated cases to `packages/qa-suite` via PR (metadata, conventions, 3× green check).
-- [ ] 6.4 Change-based selection from git diff; risk-ordered execution; coverage and "not covered" reporting.
-- [ ] 6.5 Self-healing suggestions (report-only diffs).
+- [x] 6.1 Planner generators: invariants, spec-based, crawl-based, repo-route-based, requirement-based.
+- [x] 6.2 "Suggest scenarios" in Test Builder (diff-style acceptance).
+- [x] 6.3 Promotion of approved generated cases to `packages/qa-suite` via PR (metadata, conventions, 3× green check).
+- [x] 6.4 Change-based selection from git diff; risk-ordered execution; coverage and "not covered" reporting.
+- [x] 6.5 Self-healing suggestions (report-only diffs).
 
 **Acceptance:** generated cases carry `source` + `confidence`; no business assertion without a requirement/spec/user row; promoted tests are green 3× and appear in catalogue and traceability; risky areas covered first (shown in report).
+Status: 6.1–6.5 fully implemented and tested. Evidence: `packages/planner/tests/planner.test.ts` (5 generators, diff suggester, change-based risk ordering, self-healing status/schema/selector drift), `packages/qa-suite/tests/qa-suite.test.ts` (TC-<AREA>-<NNN> convention, verified-only promotion, 3x consecutive green check with 0% flakiness, catalogue & traceability matrix).
 
 ---
 

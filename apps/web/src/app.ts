@@ -5,7 +5,6 @@ import type { PortalState, PortalStep } from './state.js';
 export function renderPortalHtml(state: PortalState): string {
   const lang = state.language;
 
-
   // Compute active lanes preview for Step 1
   const hasRepo = Boolean(state.repoUrl.trim());
   const hasWeb = Boolean(state.webUrls.trim());
@@ -20,8 +19,6 @@ export function renderPortalHtml(state: PortalState): string {
     activeLanes.push('api');
   }
 
-  // Estimated requests & duration
-
   return `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
@@ -30,23 +27,30 @@ export function renderPortalHtml(state: PortalState): string {
   <title>${t(lang, 'appTitle')} — ${t(lang, 'appSubtitle')}</title>
   <style>
     :root {
-      --bg: #0b0f17;
-      --surface: #111827;
-      --surface-elevated: #1a2234;
-      --border: #232f46;
-      --border-focus: #3b82f6;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --success: #10b981;
-      --success-bg: rgba(16, 185, 129, 0.12);
-      --warning: #f59e0b;
-      --warning-bg: rgba(245, 158, 11, 0.12);
-      --danger: #ef4444;
-      --danger-bg: rgba(239, 68, 68, 0.12);
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --bg: #090d13;
+      --surface: #0e1520;
+      --surface-subtle: #090d13;
+      --surface-hover: #131c2b;
+      --border: #1e2838;
+      --border-subtle: #141c28;
+      --border-focus: #388bfd;
+      --text: #c9d1d9;
+      --text-bright: #f0f6fc;
+      --text-muted: #768390;
+      --accent: #1f6feb;
+      --accent-hover: #2679f3;
+      --accent-fg: #58a6ff;
+      --success: #238636;
+      --success-bg: rgba(35, 134, 54, 0.12);
+      --success-fg: #3fb950;
+      --warning: #9e6a03;
+      --warning-bg: rgba(158, 106, 3, 0.12);
+      --warning-fg: #d29922;
+      --danger: #da3633;
+      --danger-bg: rgba(218, 54, 51, 0.12);
+      --danger-fg: #f85149;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -54,333 +58,395 @@ export function renderPortalHtml(state: PortalState): string {
       background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
-      font-size: 14px;
-      line-height: 1.5;
+      font-size: 13px;
+      line-height: 1.45;
       padding: 0;
       margin: 0;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Layout */
-    .app-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 24px 20px;
-    }
-
-    /* Header */
+    /* Top Utility Header */
     header.top-nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 20px;
+      height: 44px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
     }
-    .brand {
+    .brand-meta {
       display: flex;
       align-items: center;
       gap: 12px;
-    }
-    .brand-logo {
-      width: 28px;
-      height: 28px;
-      background: var(--accent);
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      color: #fff;
-      font-family: var(--mono);
-      font-size: 14px;
-    }
-    .brand-text h1 {
-      font-size: 18px;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-    }
-    .brand-text p {
       font-size: 12px;
+    }
+    .brand-tag {
+      font-family: var(--mono);
+      font-weight: 700;
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+    .breadcrumb-path {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .breadcrumb-path strong {
+      color: var(--text-bright);
+      font-weight: 600;
+    }
+    .env-tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      background: var(--border-subtle);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 3px;
       color: var(--text-muted);
     }
-    .nav-controls {
+    .nav-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-family: var(--mono);
-      font-weight: 500;
-      border: 1px solid transparent;
+
+    /* Main Console Layout */
+    .console-layout {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 16px 20px 40px;
     }
-    .badge-role { background: var(--surface-elevated); border-color: var(--border); color: var(--text-muted); }
-    .badge-verified { background: var(--success-bg); color: var(--success); border-color: rgba(16,185,129,0.3); }
-    .badge-discovered { background: rgba(59,130,246,0.12); color: var(--accent); border-color: rgba(59,130,246,0.3); }
-    .badge-review { background: var(--warning-bg); color: var(--warning); border-color: rgba(245,158,11,0.3); }
-    .badge-skipped { background: rgba(148,163,184,0.1); color: var(--text-muted); border-color: var(--border); }
 
     /* Step Navigation Bar */
     .step-bar {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
-      margin-bottom: 28px;
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+      gap: 2px;
     }
     .step-item {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 12px 14px;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--mono);
+      color: var(--text-muted);
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 10px;
-      transition: all 0.15s ease;
-      color: var(--text-muted);
+      gap: 8px;
+      border-bottom: 2px solid transparent;
       user-select: none;
+      transition: all 0.1s ease;
+      letter-spacing: 0.02em;
+    }
+    .step-item:hover:not(.disabled) {
+      color: var(--text);
     }
     .step-item.active {
-      border-color: var(--accent);
-      background: var(--surface-elevated);
-      color: var(--text);
+      color: var(--accent-fg);
+      border-bottom-color: var(--accent);
+      background: rgba(31, 111, 235, 0.04);
     }
     .step-item.complete {
       color: var(--text);
-      border-color: rgba(59,130,246,0.3);
     }
     .step-item.disabled {
-      opacity: 0.45;
+      opacity: 0.4;
       cursor: not-allowed;
     }
     .step-number {
-      font-family: var(--mono);
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--accent);
-    }
-    .step-title {
-      font-size: 13px;
-      font-weight: 500;
+      font-size: 11px;
+      opacity: 0.7;
     }
 
-    /* Content Cards */
-    .card {
+    /* Section Panels */
+    .panel {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-    .card-title {
-      font-size: 16px;
-      font-weight: 600;
+      border-radius: 4px;
       margin-bottom: 16px;
+    }
+    .panel-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-subtle);
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .panel-body {
+      padding: 16px 14px;
     }
 
-    /* Form Inputs */
-    .form-group {
-      margin-bottom: 18px;
+    /* Form Fields */
+    .field-row {
+      margin-bottom: 14px;
     }
-    .form-group label {
+    .field-row label {
       display: block;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
-      margin-bottom: 6px;
-      color: var(--text);
+      margin-bottom: 4px;
+      color: var(--text-bright);
     }
-    .form-control {
+    .field-row label .field-key {
+      font-family: var(--mono);
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-left: 4px;
+    }
+    .input-mono {
       width: 100%;
+      height: 32px;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 9px 12px;
-      font-size: 13px;
-      color: var(--text);
+      border-radius: 3px;
+      padding: 0 10px;
+      font-size: 12px;
+      color: var(--text-bright);
       outline: none;
-      transition: border-color 0.15s ease;
+      font-family: var(--mono);
+      transition: border-color 0.1s ease;
+    }
+    .input-mono:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 1px var(--border-focus);
+    }
+    .field-error {
+      font-size: 11px;
+      color: var(--danger-fg);
+      margin-top: 4px;
       font-family: var(--mono);
     }
-    .form-control:focus {
-      border-color: var(--border-focus);
-    }
-    .form-error {
-      font-size: 12px;
-      color: var(--danger);
-      margin-top: 5px;
-    }
-    .form-help {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
 
-    /* Mode Selection Grid */
-    .mode-grid {
+    /* Segmented Mode Selector */
+    .mode-selector {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 8px;
+      margin-bottom: 16px;
     }
-    .mode-card {
+    .mode-opt {
       border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 16px;
+      border-radius: 3px;
+      padding: 10px 12px;
       background: var(--bg);
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.1s ease;
     }
-    .mode-card.selected {
-      border-color: var(--accent);
-      background: rgba(59,130,246,0.06);
+    .mode-opt.selected {
+      border-color: var(--accent-fg);
+      background: rgba(31, 111, 235, 0.08);
     }
-    .mode-header {
+    .mode-opt-title {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-bright);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      margin-bottom: 3px;
     }
-    .mode-name { font-weight: 600; font-size: 14px; }
-    .mode-desc { font-size: 12px; color: var(--text-muted); }
+    .mode-opt-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
 
-    /* Persistent Banners */
-    .alert-banner {
-      padding: 12px 16px;
-      border-radius: 4px;
-      margin-bottom: 20px;
-      font-size: 13px;
+    /* Status Banners */
+    .banner {
+      padding: 8px 12px;
+      border-radius: 3px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      border: 1px solid;
       display: flex;
       align-items: center;
-      gap: 10px;
-      border: 1px solid;
+      gap: 8px;
+      font-family: var(--mono);
     }
-    .alert-banner-warning { background: var(--warning-bg); border-color: rgba(245,158,11,0.3); color: var(--warning); }
-    .alert-banner-danger { background: var(--danger-bg); border-color: rgba(239,68,68,0.3); color: var(--danger); }
-    .alert-banner-success { background: var(--success-bg); border-color: rgba(16,185,129,0.3); color: var(--success); }
+    .banner-warn { background: var(--warning-bg); border-color: rgba(210, 153, 34, 0.35); color: var(--warning-fg); }
+    .banner-danger { background: var(--danger-bg); border-color: rgba(248, 81, 73, 0.35); color: var(--danger-fg); }
+    .banner-success { background: var(--success-bg); border-color: rgba(63, 185, 80, 0.35); color: var(--success-fg); }
 
-    /* Buttons */
-    .btn {
+    /* Badges & Tags */
+    .tag, .badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 9px 16px;
-      font-size: 13px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-family: var(--mono);
       font-weight: 600;
-      border-radius: 4px;
+      letter-spacing: 0.03em;
+      border: 1px solid transparent;
+      text-transform: uppercase;
+    }
+    .tag-meta, .badge-role { background: var(--border-subtle); border-color: var(--border); color: var(--text-muted); }
+    .tag-verified, .badge-verified { background: var(--success-bg); color: var(--success-fg); border-color: rgba(63, 185, 80, 0.3); }
+    .tag-discovered, .badge-discovered { background: rgba(31, 111, 235, 0.12); color: var(--accent-fg); border-color: rgba(88, 166, 255, 0.3); }
+    .tag-review, .badge-review { background: var(--warning-bg); color: var(--warning-fg); border-color: rgba(210, 153, 34, 0.3); }
+    .tag-muted, .badge-skipped { background: var(--border-subtle); color: var(--text-muted); border-color: var(--border); }
+    /* Action Buttons */
+    .btn {
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--mono);
+      border-radius: 3px;
       border: 1px solid transparent;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.15s ease;
+      transition: all 0.1s ease;
+      white-space: nowrap;
     }
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover { background: var(--accent-hover); }
-    .btn-secondary { background: var(--surface-elevated); border-color: var(--border); color: var(--text); }
-    .btn-secondary:hover { background: var(--border); }
+    .btn-secondary { background: var(--surface-subtle); border-color: var(--border); color: var(--text); }
+    .btn-secondary:hover { background: var(--surface-hover); border-color: var(--text-muted); }
     .btn-danger { background: var(--danger); color: #fff; }
 
-    /* Data Tables */
+    /* Dense Data Table */
     .table-container {
       overflow-x: auto;
       border: 1px solid var(--border);
-      border-radius: 4px;
-      margin-bottom: 16px;
+      border-radius: 3px;
+      margin-bottom: 12px;
+      background: var(--bg);
     }
     table.data-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 12px;
       text-align: left;
     }
     table.data-table th {
-      background: var(--surface-elevated);
-      padding: 10px 14px;
+      background: var(--surface);
+      padding: 6px 10px;
       font-weight: 600;
       color: var(--text-muted);
       border-bottom: 1px solid var(--border);
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
       white-space: nowrap;
     }
     table.data-table td {
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg);
       vertical-align: middle;
     }
+    table.data-table tr:hover td { background: var(--surface); }
     table.data-table tr:last-child td { border-bottom: none; }
-    table.data-table tr:hover td { background: var(--surface-elevated); }
+
+    /* Metric Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .kpi-box {
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 8px 12px;
+      background: var(--bg);
+    }
+    .kpi-label {
+      font-size: 10px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .kpi-val {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: var(--mono);
+      color: var(--text-bright);
+      margin-top: 2px;
+    }
 
     /* Terminal Console */
     .terminal-box {
-      background: #05080e;
+      background: #04070b;
       border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 14px;
+      border-radius: 3px;
+      padding: 10px 12px;
       font-family: var(--mono);
-      font-size: 12px;
-      color: #cbd5e1;
-      height: 260px;
+      font-size: 11px;
+      color: #adbac7;
+      height: 240px;
       overflow-y: auto;
-      line-height: 1.6;
+      line-height: 1.55;
     }
-    .log-line { display: block; margin-bottom: 2px; }
-    .log-line-stage { color: var(--accent); font-weight: 600; }
-    .log-line-error { color: var(--danger); }
+    .log-line { display: block; margin-bottom: 1px; }
 
-    /* Filter Pills */
+    /* Builder Type Switcher */
     .type-switcher {
       display: flex;
-      gap: 6px;
-      margin-bottom: 16px;
+      gap: 4px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
       overflow-x: auto;
-      padding-bottom: 4px;
     }
     .type-pill {
-      padding: 6px 14px;
-      border-radius: 4px;
-      font-size: 13px;
-      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-family: var(--mono);
+      font-weight: 600;
       border: 1px solid var(--border);
       background: var(--bg);
       color: var(--text-muted);
       cursor: pointer;
-      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
     }
     .type-pill.active {
-      background: var(--surface-elevated);
-      border-color: var(--accent);
-      color: var(--text);
+      background: var(--surface-hover);
+      border-color: var(--accent-fg);
+      color: var(--text-bright);
     }
   </style>
 </head>
 <body>
-  <div class="app-container">
-    <!-- Header -->
-    <header class="top-nav">
-      <div class="brand">
-        <div class="brand-logo">NX</div>
-        <div class="brand-text">
-          <h1>${t(lang, 'appTitle')}</h1>
-          <p>${t(lang, 'appSubtitle')}</p>
-        </div>
-      </div>
-      <div class="nav-controls">
-        <span class="badge badge-role">Role: ${state.userRole.toUpperCase()}</span>
-        <button id="btn-toggle-lang" class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;">
-          ${lang === 'id' ? 'ID 🇮🇩' : 'EN 🇬🇧'}
-        </button>
-      </div>
-    </header>
+  <!-- Top Navigation Header -->
+  <header class="top-nav">
+    <div class="brand-meta">
+      <span class="brand-tag">NX</span>
+      <span class="breadcrumb-path">nexus-portal / qa / <strong>pilot-app</strong></span>
+      <span class="env-tag">env:local</span>
+      <span class="env-tag" style="color:var(--accent-fg);">git:main@c23db59</span>
+    </div>
+    <div class="nav-actions">
+      <span class="tag tag-meta">ROLE: ${state.userRole.toUpperCase()}</span>
+      <button id="btn-toggle-lang" class="btn btn-secondary" style="height:24px; padding:0 8px; font-size:11px;">
+        ${lang.toUpperCase()}
+      </button>
+    </div>
+  </header>
 
-    <!-- 5-Step Navigation Header -->
+  <div class="console-layout">
+    <!-- 5-Step Segmented Bar -->
     <nav class="step-bar">
       ${renderStepNav(state, 1, t(lang, 'step1'))}
       ${renderStepNav(state, 2, t(lang, 'step2'))}
@@ -389,7 +455,7 @@ export function renderPortalHtml(state: PortalState): string {
       ${renderStepNav(state, 5, t(lang, 'step5'))}
     </nav>
 
-    <!-- Main Step Views -->
+    <!-- Main View -->
     <main id="portal-content">
       ${renderActiveStep(state)}
     </main>
@@ -410,8 +476,8 @@ function renderStepNav(state: PortalState, step: PortalStep, label: string): str
 
   return `
     <div class="${classes}" data-step="${step}">
-      <span class="step-number">${step}</span>
-      <span class="step-title">${label}</span>
+      <span class="step-number">0${step}</span>
+      <span>${label.toUpperCase()}</span>
     </div>
   `;
 }
@@ -446,116 +512,122 @@ function renderStep1Target(state: PortalState): string {
   if (hasApi && !activeLanes.includes('api')) activeLanes.push('api');
 
   return `
-    <div class="card">
-      <div class="card-title">
-        <span>Target Aplikasi & Mode Eksekusi</span>
-        <span class="badge badge-role">M1 / M2 Engine Ready</span>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Execution Target & Mode Guard</span>
+        <span class="tag tag-verified">ENGINE M1/M2 READY</span>
       </div>
-
-      <!-- Mode selection grid -->
-      <label style="font-weight:600; margin-bottom:8px; display:block;">Pilih Mode Eksekusi (Mode Guard):</label>
-      <div class="mode-grid">
-        <div class="mode-card ${state.mode === 'sandbox' ? 'selected' : ''}" data-mode="sandbox">
-          <div class="mode-header">
-            <span class="mode-name">${t(lang, 'modeSandboxTitle')}</span>
-            <span class="badge badge-verified">Ephemeral</span>
+      <div class="panel-body">
+        <!-- Segmented Mode Control -->
+        <label style="font-size:11px; font-weight:600; font-family:var(--mono); color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">
+          Mode Guard (Strict Execution Boundary):
+        </label>
+        <div class="mode-selector">
+          <div class="mode-opt ${state.mode === 'sandbox' ? 'selected' : ''}" data-mode="sandbox">
+            <div class="mode-opt-title">
+              <span>${t(lang, 'modeSandboxTitle').toUpperCase()}</span>
+              <span class="tag tag-verified" style="font-size:10px;">EPHEMERAL</span>
+            </div>
+            <div class="mode-opt-desc">${t(lang, 'modeSandboxDesc')}</div>
           </div>
-          <div class="mode-desc">${t(lang, 'modeSandboxDesc')}</div>
-        </div>
-        <div class="mode-card ${state.mode === 'staging' ? 'selected' : ''}" data-mode="staging">
-          <div class="mode-header">
-            <span class="mode-name">${t(lang, 'modeStagingTitle')}</span>
-            <span class="badge badge-discovered">Non-Prod</span>
+          <div class="mode-opt ${state.mode === 'staging' ? 'selected' : ''}" data-mode="staging">
+            <div class="mode-opt-title">
+              <span>${t(lang, 'modeStagingTitle').toUpperCase()}</span>
+              <span class="tag tag-discovered" style="font-size:10px;">NON-PROD</span>
+            </div>
+            <div class="mode-opt-desc">${t(lang, 'modeStagingDesc')}</div>
           </div>
-          <div class="mode-desc">${t(lang, 'modeStagingDesc')}</div>
-        </div>
-        <div class="mode-card ${state.mode === 'prod-safe' ? 'selected' : ''}" data-mode="prod-safe">
-          <div class="mode-header">
-            <span class="mode-name">${t(lang, 'modeProdSafeTitle')}</span>
-            <span class="badge badge-review">Observe-Only</span>
-          </div>
-          <div class="mode-desc">${t(lang, 'modeProdSafeDesc')}</div>
-        </div>
-      </div>
-
-      <!-- Prod safe banner -->
-      ${
-        isProdSafe
-          ? `<div class="alert-banner alert-banner-warning" id="banner-prod-safe">
-              <span>⚠️ ${t(lang, 'prodSafeBanner')}</span>
-            </div>`
-          : ''
-      }
-
-      <!-- Target input fields -->
-      <div class="form-group">
-        <label for="input-repo">${t(lang, 'repoUrlLabel')}</label>
-        <input type="text" id="input-repo" class="form-control" value="${state.repoUrl}" placeholder="fixtures/sample-todo-api" />
-        ${state.validationErrors.repo ? `<div class="form-error">${state.validationErrors.repo}</div>` : ''}
-      </div>
-
-      <div class="form-group">
-        <label for="input-web">${t(lang, 'webUrlLabel')}</label>
-        <input type="text" id="input-web" class="form-control" value="${state.webUrls}" placeholder="http://127.0.0.1:3100/" />
-        ${state.validationErrors.web ? `<div class="form-error">${state.validationErrors.web}</div>` : ''}
-      </div>
-
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
-        <div class="form-group">
-          <label for="input-api-base">${t(lang, 'apiBaseUrlLabel')}</label>
-          <input type="text" id="input-api-base" class="form-control" value="${state.apiBaseUrl}" placeholder="http://127.0.0.1:3100" />
-        </div>
-        <div class="form-group">
-          <label for="input-api-spec">${t(lang, 'apiSpecUrlLabel')}</label>
-          <input type="text" id="input-api-spec" class="form-control" value="${state.apiSpecUrl}" placeholder="/openapi.json" />
-        </div>
-      </div>
-
-      <!-- Authorization block: Hidden in sandbox, shown in staging/prod-safe (Scenarios 1.5, 1.6) -->
-      ${
-        !isSandbox
-          ? `
-        <div class="card" id="auth-block" style="background:var(--bg); border-color:rgba(59,130,246,0.3); margin-top:16px;">
-          <div class="card-title" style="font-size:14px; margin-bottom:12px;">Konfirmasi Otorisasi Pengujian (Wajib)</div>
-          <div class="form-group" style="margin-bottom:12px;">
-            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-              <input type="checkbox" id="check-auth" ${state.authorizationConfirmed ? 'checked' : ''} />
-              <span>${t(lang, 'authConfirmationLabel')}</span>
-            </label>
-            ${state.validationErrors.auth ? `<div class="form-error">${state.validationErrors.auth}</div>` : ''}
-          </div>
-          <div class="form-group" style="margin-bottom:0;">
-            <label for="input-approver">${t(lang, 'approverLabel')}</label>
-            <input type="text" id="input-approver" class="form-control" value="${state.approvedBy}" placeholder="approver@company.local" />
-            ${state.validationErrors.approver ? `<div class="form-error">${state.validationErrors.approver}</div>` : ''}
+          <div class="mode-opt ${state.mode === 'prod-safe' ? 'selected' : ''}" data-mode="prod-safe">
+            <div class="mode-opt-title">
+              <span>${t(lang, 'modeProdSafeTitle').toUpperCase()}</span>
+              <span class="tag tag-review" style="font-size:10px;">GET-ONLY</span>
+            </div>
+            <div class="mode-opt-desc">${t(lang, 'modeProdSafeDesc')}</div>
           </div>
         </div>
-      `
-          : ''
-      }
 
-      <!-- Dynamic Active Lanes Chips (Scenario 1.7) -->
-      <div style="margin: 20px 0 24px 0; padding-top:16px; border-top:1px solid var(--border);">
-        <div style="font-size:13px; font-weight:600; margin-bottom:8px;">${t(lang, 'activeLanes')}</div>
-        <div id="active-lanes-chips" style="display:flex; gap:8px; flex-wrap:wrap;">
-          ${activeLanes.map((l) => `<span class="badge badge-verified" style="font-size:12px;">${l.toUpperCase()}</span>`).join('')}
-          ${activeLanes.length === 0 ? `<span class="badge badge-skipped">Belum ada target diisi</span>` : ''}
+        ${
+          isProdSafe
+            ? `<div class="banner banner-warn" id="banner-prod-safe">
+                <span>[OBSERVE-ONLY] ${t(lang, 'prodSafeBanner')}</span>
+              </div>`
+            : ''
+        }
+
+        <!-- Inputs Grid -->
+        <div class="field-row">
+          <label for="input-repo">${t(lang, 'repoUrlLabel')} <span class="field-key">repo.url | repo.localPath</span></label>
+          <input type="text" id="input-repo" class="input-mono" value="${state.repoUrl}" placeholder="fixtures/sample-todo-api" />
+          ${state.validationErrors.repo ? `<div class="field-error">${state.validationErrors.repo}</div>` : ''}
         </div>
-      </div>
 
-      <!-- Action Buttons -->
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; gap:12px;">
-          <button id="btn-run-everything" class="btn btn-primary" style="font-size:14px; padding:10px 20px;">
-            ⚡ ${t(lang, 'runEverything')}
+        <div class="field-row">
+          <label for="input-web">${t(lang, 'webUrlLabel')} <span class="field-key">web.urls</span></label>
+          <input type="text" id="input-web" class="input-mono" value="${state.webUrls}" placeholder="http://127.0.0.1:3100/" />
+          ${state.validationErrors.web ? `<div class="field-error">${state.validationErrors.web}</div>` : ''}
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="field-row">
+            <label for="input-api-base">${t(lang, 'apiBaseUrlLabel')} <span class="field-key">api.baseUrl</span></label>
+            <input type="text" id="input-api-base" class="input-mono" value="${state.apiBaseUrl}" placeholder="http://127.0.0.1:3100" />
+          </div>
+          <div class="field-row">
+            <label for="input-api-spec">${t(lang, 'apiSpecUrlLabel')} <span class="field-key">api.specUrl</span></label>
+            <input type="text" id="input-api-spec" class="input-mono" value="${state.apiSpecUrl}" placeholder="/openapi.json" />
+          </div>
+        </div>
+
+        <!-- Authorization Block (Scenarios 1.5, 1.6) -->
+        ${
+          !isSandbox
+            ? `
+          <div class="panel" id="auth-block" style="background:var(--bg); border-color:rgba(88,166,255,0.3); margin-top:12px;">
+            <div class="panel-header" style="font-size:11px;">Authorization & Approver Sign-off (Mandatory)</div>
+            <div class="panel-body" style="padding:10px 12px;">
+              <div class="field-row" style="margin-bottom:8px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                  <input type="checkbox" id="check-auth" ${state.authorizationConfirmed ? 'checked' : ''} />
+                  <span>${t(lang, 'authConfirmationLabel')}</span>
+                </label>
+                ${state.validationErrors.auth ? `<div class="field-error">${state.validationErrors.auth}</div>` : ''}
+              </div>
+              <div class="field-row" style="margin-bottom:0;">
+                <label for="input-approver">${t(lang, 'approverLabel')} <span class="field-key">authorization.approvedBy</span></label>
+                <input type="text" id="input-approver" class="input-mono" value="${state.approvedBy}" placeholder="approver@company.local" />
+                ${state.validationErrors.approver ? `<div class="field-error">${state.validationErrors.approver}</div>` : ''}
+              </div>
+            </div>
+          </div>
+        `
+            : ''
+        }
+
+        <!-- Active Lanes Chips (Scenario 1.7) -->
+        <div style="margin: 16px 0; padding-top:12px; border-top:1px solid var(--border);">
+          <div style="font-size:11px; font-weight:600; font-family:var(--mono); color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">
+            ${t(lang, 'activeLanes')}
+          </div>
+          <div id="active-lanes-chips" style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${activeLanes.map((l) => `<span class="tag tag-verified">${l.toUpperCase()}</span>`).join('')}
+            ${activeLanes.length === 0 ? `<span class="tag tag-muted">NO TARGETS CONFIGURED</span>` : ''}
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-top:10px; border-top:1px solid var(--border);">
+          <div style="display:flex; gap:8px;">
+            <button id="btn-run-everything" class="btn btn-primary">
+              ${t(lang, 'runEverything')}
+            </button>
+            <button id="btn-dry-run" class="btn btn-secondary">
+              ${t(lang, 'dryRun')}
+            </button>
+          </div>
+          <button id="btn-goto-builder" class="btn btn-secondary">
+            ${t(lang, 'customizeBuilder')} ->
           </button>
-          <button id="btn-dry-run" class="btn btn-secondary">
-            📋 ${t(lang, 'dryRun')}
-          </button>
         </div>
-        <button id="btn-goto-builder" class="btn btn-secondary">
-          ⚙️ ${t(lang, 'customizeBuilder')} →
-        </button>
       </div>
     </div>
   `;
@@ -570,93 +642,94 @@ function renderStep2Builder(state: PortalState): string {
   const rows = state.testRows[activeType] ?? [];
 
   return `
-    <div class="card">
-      <div class="card-title">
-        <span>Test Builder — Tipe Uji Berbasis Registry</span>
-        <button id="btn-suggest-scenarios" class="btn btn-secondary">
-          💡 ${t(lang, 'suggestScenarios')}
+    <div class="panel">
+      <div class="panel-header">
+        <span>Test Builder — Registry Type Catalog</span>
+        <button id="btn-suggest-scenarios" class="btn btn-secondary" style="height:24px; padding:0 8px; font-size:11px;">
+          ${t(lang, 'suggestScenarios')}
         </button>
       </div>
-
-      <!-- Type Switcher Buttons (Scenario 2.1) -->
-      <div class="type-switcher" id="type-switcher">
-        ${defaultRegistry
-          .list()
-          .map(
-            (item) => `
-          <button class="type-pill ${item.type === activeType ? 'active' : ''}" data-type="${item.type}">
-            ${item.label.en}
-          </button>
-        `,
-          )
-          .join('')}
-      </div>
-
-      <!-- Mode-aware blocking warnings (Scenarios 2.2, 2.3) -->
-      ${
-        isProdSafe && activeType === 'perf'
-          ? `
-        <div class="alert-banner alert-banner-danger" id="alert-perf-blocked">
-          <span>⛔ Pengujian beban performa (perf) diblokir pada mode prod-safe untuk mencegah degradasi layanan target.</span>
+      <div class="panel-body">
+        <!-- Type Switcher Tabs (Scenario 2.1) -->
+        <div class="type-switcher" id="type-switcher">
+          ${defaultRegistry
+            .list()
+            .map(
+              (item) => `
+            <button class="type-pill ${item.type === activeType ? 'active' : ''}" data-type="${item.type}">
+              ${item.label.en}
+            </button>
+          `,
+            )
+            .join('')}
         </div>
-      `
-          : ''
-      }
 
-      ${
-        state.mode !== 'sandbox' && !state.authorizationConfirmed && activeType === 'security-passive'
-          ? `
-        <div class="alert-banner alert-banner-warning" id="alert-sec-unauth">
-          <span>⚠️ Harap konfirmasi otorisasi pengujian pada Langkah 1 untuk mengaktifkan audit keamanan pasif.</span>
-        </div>
-      `
-          : ''
-      }
+        <!-- Mode-aware Warnings (Scenarios 2.2, 2.3) -->
+        ${
+          isProdSafe && activeType === 'perf'
+            ? `
+          <div class="banner banner-danger" id="alert-perf-blocked">
+            <span>[BLOCKED] Pengujian beban performa (perf) diblokir pada mode prod-safe untuk mencegah degradasi layanan target.</span>
+          </div>
+        `
+            : ''
+        }
 
-      <!-- Editable Data Table (Scenario 2.4) -->
-      <div class="table-container">
-        <table class="data-table" id="builder-table">
-          <thead>
-            <tr>
-              ${def?.columns.map((c) => `<th style="${c.width ? `width:${c.width};` : ''}">${c.label.en}</th>`).join('')}
-              <th style="width:70px; text-align:right;">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows
-              .map(
-                (row, rIdx) => `
-              <tr data-row-index="${rIdx}">
-                ${def?.columns
-                  .map(
-                    (col) => `
-                  <td>
-                    <input type="text" class="form-control" style="padding:4px 8px; font-size:12px;"
-                      data-field="${col.key}" value="${String(row[col.key] ?? '')}" />
-                  </td>
-                `,
-                  )
-                  .join('')}
-                <td style="text-align:right;">
-                  <button class="btn btn-secondary btn-del-row" style="padding:2px 8px; font-size:11px;" data-index="${rIdx}">
-                    ✕
-                  </button>
-                </td>
+        ${
+          state.mode !== 'sandbox' && !state.authorizationConfirmed && activeType === 'security-passive'
+            ? `
+          <div class="banner banner-warn" id="alert-sec-unauth">
+            <span>[AUTH REQUIRED] konfirmasi otorisasi pengujian pada Langkah 1 untuk mengaktifkan audit keamanan pasif.</span>
+          </div>
+        `
+            : ''
+        }
+
+        <!-- Dense Data Table (Scenario 2.4) -->
+        <div class="table-container">
+          <table class="data-table" id="builder-table">
+            <thead>
+              <tr>
+                ${def?.columns.map((c) => `<th style="${c.width ? `width:${c.width};` : ''}">${c.label.en}</th>`).join('')}
+                <th style="width:60px; text-align:right;">ACTION</th>
               </tr>
-            `,
-              )
-              .join('')}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              ${rows
+                .map(
+                  (row, rIdx) => `
+                <tr data-row-index="${rIdx}">
+                  ${def?.columns
+                    .map(
+                      (col) => `
+                    <td>
+                      <input type="text" class="input-mono" style="height:26px; padding:0 6px; font-size:11px;"
+                        data-field="${col.key}" value="${String(row[col.key] ?? '')}" />
+                    </td>
+                  `,
+                    )
+                    .join('')}
+                  <td style="text-align:right;">
+                    <button class="btn btn-secondary btn-del-row" style="height:22px; padding:0 6px; font-size:10px;" data-index="${rIdx}">
+                      DEL
+                    </button>
+                  </td>
+                </tr>
+              `,
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </div>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
-        <button id="btn-add-row" class="btn btn-secondary">
-          + ${t(lang, 'addRow')}
-        </button>
-        <button id="btn-builder-to-plan" class="btn btn-primary">
-          Review Plan & Run →
-        </button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+          <button id="btn-add-row" class="btn btn-secondary">
+            + ${t(lang, 'addRow')}
+          </button>
+          <button id="btn-builder-to-plan" class="btn btn-primary">
+            Review Plan & Run ->
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -671,93 +744,94 @@ function renderStep3PlanReview(state: PortalState): string {
   const skippedByMode = cases.filter((c) => c.modeCompatibility === 'skipped-by-mode').length;
 
   return `
-    <div class="card">
-      <div class="card-title">
-        <span>Plan Review & Persetujuan Kasus Pengujian</span>
-        <button id="btn-approve-all-safe" class="btn btn-secondary">
-          🛡️ ${t(lang, 'approveAllSafe')}
+    <div class="panel">
+      <div class="panel-header">
+        <span>Execution Plan & Case Approvals</span>
+        <button id="btn-approve-all-safe" class="btn btn-secondary" style="height:24px; padding:0 8px; font-size:11px;">
+          ${t(lang, 'approveAllSafe')}
         </button>
       </div>
-
-      <!-- Plan summary metric counters (Scenario 3.1) -->
-      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:20px;">
-        <div class="card" style="padding:14px; background:var(--bg); margin:0;">
-          <div style="font-size:12px; color:var(--text-muted);">Total Kandidat</div>
-          <div style="font-size:20px; font-weight:700; font-family:var(--mono);">${cases.length}</div>
+      <div class="panel-body">
+        <!-- KPI Metrics (Scenario 3.1) -->
+        <div class="kpi-grid">
+          <div class="kpi-box">
+            <div class="kpi-label">Total Kandidat</div>
+            <div class="kpi-val">${cases.length}</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">Akan Dijalankan</div>
+            <div class="kpi-val" style="color:var(--success-fg);">${toRun}</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">${t(lang, 'needsApprovalChip')}</div>
+            <div class="kpi-val" style="color:var(--warning-fg);">${needsApproval}</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">Dilewati Mode</div>
+            <div class="kpi-val" style="color:var(--text-muted);">${skippedByMode}</div>
+          </div>
         </div>
-        <div class="card" style="padding:14px; background:var(--bg); margin:0;">
-          <div style="font-size:12px; color:var(--text-muted);">Akan Dijalankan</div>
-          <div style="font-size:20px; font-weight:700; font-family:var(--mono); color:var(--success);">${toRun}</div>
+
+        <!-- Cases Table (Scenarios 3.2, 3.3, 3.8) -->
+        <div class="table-container">
+          <table class="data-table" id="plan-table">
+            <thead>
+              <tr>
+                <th style="width:36px;">SEL</th>
+                <th style="width:110px;">CASE ID</th>
+                <th>SCENARIO TITLE</th>
+                <th style="width:80px;">LANE</th>
+                <th style="width:90px;">SOURCE</th>
+                <th style="width:120px;">CONFIDENCE</th>
+                <th style="width:80px;">PRIORITY</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${cases
+                .map((c) => {
+                  const isSkipped = c.modeCompatibility === 'skipped-by-mode';
+                  const isChecked = state.approvedCaseIds.has(c.id) && !isSkipped;
+
+                  let confBadge = 'badge-verified tag-verified';
+                  if (c.confidence === 'needs-review') confBadge = 'badge-review tag-review';
+                  else if (c.confidence === 'auto-discovered') confBadge = 'badge-discovered tag-discovered';
+
+                  return `
+                  <tr class="${isSkipped ? 'row-skipped' : ''}">
+                    <td>
+                      ${
+                        isSkipped
+                          ? '<span class="tag tag-muted" style="font-size:9px;">LOCKED</span>'
+                          : `<input type="checkbox" class="plan-checkbox" data-id="${c.id}" ${isChecked ? 'checked' : ''} />`
+                      }
+                    </td>
+                    <td style="font-family:var(--mono); font-weight:600;">${c.id}</td>
+                    <td>${c.title}</td>
+                    <td><span class="tag tag-meta">${c.lane.toUpperCase()}</span></td>
+                    <td style="color:var(--text-muted); font-size:11px; font-family:var(--mono);">${c.source}</td>
+                    <td>
+                      ${
+                        isSkipped
+                          ? `<span class="tag tag-muted">${t(lang, 'skippedByModeBadge')}</span>`
+                          : `<span class="tag ${confBadge}">${c.confidence}</span>`
+                      }
+                    </td>
+                    <td><span class="tag tag-meta">${c.priority}</span></td>
+                  </tr>
+                `;
+                })
+                .join('')}
+            </tbody>
+          </table>
         </div>
-        <div class="card" style="padding:14px; background:var(--bg); margin:0;">
-          <div style="font-size:12px; color:var(--text-muted);">${t(lang, 'needsApprovalChip')}</div>
-          <div style="font-size:20px; font-weight:700; font-family:var(--mono); color:var(--warning);">${needsApproval}</div>
+
+        ${state.validationErrors.plan ? `<div class="field-error" style="margin-bottom:12px;">${state.validationErrors.plan}</div>` : ''}
+
+        <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+          <button id="btn-approve-and-run" class="btn btn-primary">
+            ${t(lang, 'approveAndRun')}
+          </button>
         </div>
-        <div class="card" style="padding:14px; background:var(--bg); margin:0;">
-          <div style="font-size:12px; color:var(--text-muted);">Dilewati Mode</div>
-          <div style="font-size:20px; font-weight:700; font-family:var(--mono); color:var(--text-muted);">${skippedByMode}</div>
-        </div>
-      </div>
-
-      <!-- Table of cases (Scenarios 3.2, 3.3, 3.8) -->
-      <div class="table-container">
-        <table class="data-table" id="plan-table">
-          <thead>
-            <tr>
-              <th style="width:40px;">Pilih</th>
-              <th style="width:110px;">ID Kasus</th>
-              <th>Judul Skenario</th>
-              <th style="width:90px;">Lane</th>
-              <th style="width:100px;">Sumber</th>
-              <th style="width:130px;">Confidence</th>
-              <th style="width:90px;">Prioritas</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${cases
-              .map((c) => {
-                const isSkipped = c.modeCompatibility === 'skipped-by-mode';
-                const isChecked = state.approvedCaseIds.has(c.id) && !isSkipped;
-
-                let confBadge = 'badge-verified';
-                if (c.confidence === 'needs-review') confBadge = 'badge-review';
-                else if (c.confidence === 'auto-discovered') confBadge = 'badge-discovered';
-
-                return `
-                <tr class="${isSkipped ? 'row-skipped' : ''}">
-                  <td>
-                    ${
-                      isSkipped
-                        ? '<span class="badge badge-skipped" style="font-size:10px;">LOCKED</span>'
-                        : `<input type="checkbox" class="plan-checkbox" data-id="${c.id}" ${isChecked ? 'checked' : ''} />`
-                    }
-                  </td>
-                  <td style="font-family:var(--mono); font-weight:600;">${c.id}</td>
-                  <td>${c.title}</td>
-                  <td><span class="badge badge-role">${c.lane.toUpperCase()}</span></td>
-                  <td style="color:var(--text-muted); font-size:12px;">${c.source}</td>
-                  <td>
-                    ${
-                      isSkipped
-                        ? `<span class="badge badge-skipped">${t(lang, 'skippedByModeBadge')}</span>`
-                        : `<span class="badge ${confBadge}">${c.confidence}</span>`
-                    }
-                  </td>
-                  <td><span class="badge badge-role">${c.priority}</span></td>
-                </tr>
-              `;
-              })
-              .join('')}
-          </tbody>
-        </table>
-      </div>
-
-      ${state.validationErrors.plan ? `<div class="form-error" style="margin-bottom:12px;">${state.validationErrors.plan}</div>` : ''}
-
-      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px;">
-        <button id="btn-approve-and-run" class="btn btn-primary" style="font-size:14px; padding:10px 22px;">
-          🚀 ${t(lang, 'approveAndRun')}
-        </button>
       </div>
     </div>
   `;
@@ -765,54 +839,54 @@ function renderStep3PlanReview(state: PortalState): string {
 
 function renderStep4LiveRun(state: PortalState): string {
   const lang = state.language;
-
   const stageOrder = ['preflight', 'discover', 'app-map', 'lanes', 'correlate', 'document'];
 
   return `
-    <div class="card">
-      <div class="card-title">
-        <span>Live Run Progression — ${state.runId ?? 'Running'}</span>
-        <button id="btn-stop-run" class="btn btn-danger" style="font-size:12px;">
-          ⏹ ${t(lang, 'cancelRun')}
+    <div class="panel">
+      <div class="panel-header">
+        <span>Live Run Stream — ${state.runId ?? 'Running'}</span>
+        <button id="btn-stop-run" class="btn btn-danger" style="height:22px; padding:0 8px; font-size:10px;">
+          ${t(lang, 'cancelRun')}
         </button>
       </div>
+      <div class="panel-body">
+        <!-- Stage Timeline Chips (Scenario 4.1) -->
+        <div style="display:flex; gap:6px; margin-bottom:14px; overflow-x:auto;">
+          ${stageOrder
+            .map((st) => {
+              const status = state.stages[st] ?? 'pending';
+              let badgeClass = 'tag-muted';
+              if (status === 'ok') badgeClass = 'tag-verified';
+              else if (status === 'running') badgeClass = 'tag-discovered';
+              else if (status === 'failed') badgeClass = 'tag-review';
 
-      <!-- Stage progression timeline (Scenario 4.1) -->
-      <div style="display:flex; gap:8px; margin-bottom:20px; overflow-x:auto;">
-        ${stageOrder
-          .map((st) => {
-            const status = state.stages[st] ?? 'pending';
-            let badgeClass = 'badge-skipped';
-            if (status === 'ok') badgeClass = 'badge-verified';
-            else if (status === 'running') badgeClass = 'badge-discovered';
-            else if (status === 'failed') badgeClass = 'badge-review';
+              return `
+              <div style="flex:1; background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:8px; text-align:center;">
+                <div style="font-size:10px; font-family:var(--mono); color:var(--text-muted); font-weight:600;">${st.toUpperCase()}</div>
+                <span class="tag ${badgeClass}" style="margin-top:3px; font-size:10px;">${status}</span>
+              </div>
+            `;
+            })
+            .join('')}
+        </div>
 
-            return `
-            <div style="flex:1; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:10px; text-align:center;">
-              <div style="font-size:11px; color:var(--text-muted); font-weight:600;">${st.toUpperCase()}</div>
-              <span class="badge ${badgeClass}" style="margin-top:4px;">${status}</span>
-            </div>
-          `;
-          })
-          .join('')}
-      </div>
+        <!-- Telemetry Indicators (Scenario 4.3) -->
+        <div style="display:flex; gap:10px; margin-bottom:12px;">
+          <span class="tag tag-meta">Requests Executed: ${state.requestsCount}</span>
+          <span class="tag tag-meta">Circuit Breaker: ${state.circuitBreakerOpen ? 'OPEN (Tripped)' : 'CLOSED (Healthy)'}</span>
+        </div>
 
-      <!-- Metrics counter and circuit breaker (Scenario 4.3) -->
-      <div style="display:flex; gap:16px; margin-bottom:16px; font-size:13px;">
-        <span class="badge badge-role">Requests Executed: ${state.requestsCount}</span>
-        <span class="badge badge-role">Circuit Breaker: ${state.circuitBreakerOpen ? 'OPEN (Tripped)' : 'CLOSED (Healthy)'}</span>
-      </div>
+        <!-- Live Terminal Stream -->
+        <div class="terminal-box" id="terminal-logs">
+          ${state.liveLogs.map((l) => `<span class="log-line">${l}</span>`).join('')}
+          ${state.liveLogs.length === 0 ? '<span class="log-line" style="color:var(--text-muted);">Waiting for pipeline events...</span>' : ''}
+        </div>
 
-      <!-- Live Terminal Console -->
-      <div class="terminal-box" id="terminal-logs">
-        ${state.liveLogs.map((l) => `<span class="log-line">${l}</span>`).join('')}
-        ${state.liveLogs.length === 0 ? '<span class="log-line" style="color:var(--text-muted);">Waiting for pipeline events...</span>' : ''}
-      </div>
-
-      <div style="display:flex; justify-content:flex-end; margin-top:20px;">
-        <button id="btn-view-results" class="btn btn-primary" style="font-size:14px; padding:10px 22px;">
-          ${t(lang, 'viewResults')} →
-        </button>
+        <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+          <button id="btn-view-results" class="btn btn-primary">
+            ${t(lang, 'viewResults')} ->
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -822,13 +896,13 @@ function renderStep5Results(state: PortalState): string {
   const lang = state.language;
   const gate = state.gate ?? 'GO WITH RISKS';
 
-  let gateBadge = 'alert-banner-warning';
+  let gateBannerClass = 'banner-warn';
   let gateText = t(lang, 'gateRisks');
   if (gate === 'GO') {
-    gateBadge = 'alert-banner-success';
+    gateBannerClass = 'banner-success';
     gateText = t(lang, 'gateGo');
   } else if (gate === 'NO-GO') {
-    gateBadge = 'alert-banner-danger';
+    gateBannerClass = 'banner-danger';
     gateText = t(lang, 'gateNoGo');
   }
 
@@ -837,90 +911,93 @@ function renderStep5Results(state: PortalState): string {
   const reviewCount = state.findings.filter((f) => f.confidence === 'needs-review').length;
 
   return `
-    <div class="card">
-      <div class="card-title">
-        <span>Executive Run Results & Quality Gate</span>
-        <div style="display:flex; gap:10px;">
-          <button id="btn-download-bundle" class="btn btn-primary">
-            📦 ${t(lang, 'downloadBundle')}
+    <div class="panel">
+      <div class="panel-header">
+        <span>Execution Report & Quality Gate Verdict</span>
+        <div style="display:flex; gap:6px;">
+          <button id="btn-download-bundle" class="btn btn-primary" style="height:24px; padding:0 8px; font-size:11px;">
+            ${t(lang, 'downloadBundle')}
           </button>
-          <button id="btn-start-new-run" class="btn btn-secondary">
-            🔄 ${t(lang, 'startNewRun')}
+          <button id="btn-start-new-run" class="btn btn-secondary" style="height:24px; padding:0 8px; font-size:11px;">
+            ${t(lang, 'startNewRun')}
           </button>
         </div>
       </div>
-
-      <!-- Gate Decision Banner (Scenario 5.1) -->
-      <div class="alert-banner ${gateBadge}" style="font-size:15px; font-weight:700;">
-        <span>Gate Result: ${gateText}</span>
-      </div>
-
-      ${
-        state.gateReasons.length > 0
-          ? `
-        <div style="margin-bottom:20px; background:var(--bg); padding:12px 16px; border-radius:4px; border:1px solid var(--border);">
-          <div style="font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:6px;">Gate Reasons:</div>
-          <ul style="padding-left:18px; font-size:13px;">
-            ${state.gateReasons.map((r) => `<li>${r}</li>`).join('')}
-          </ul>
+      <div class="panel-body">
+        <!-- Gate Result Banner (Scenario 5.1) -->
+        <div class="banner ${gateBannerClass}" style="font-weight:700; font-size:13px;">
+          <span>Gate Result: ${gateText}</span>
         </div>
-      `
-          : ''
-      }
 
-      <!-- Confidence metrics (Scenario 5.2) -->
-      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:24px;">
-        <div class="card" style="padding:14px; background:var(--bg); margin:0;">
-          <div style="font-size:12px; color:var(--text-muted);">${t(lang, 'verifiedBadge')}</div>
-          <div style="font-size:22px; font-weight:700; font-family:var(--mono); color:var(--success);">${verifiedCount}</div>
-        </div>
-        <div class="card" style="padding:14px; background:var(--bg); margin:0;">
-          <div style="font-size:12px; color:var(--text-muted);">${t(lang, 'autoDiscoveredBadge')}</div>
-          <div style="font-size:22px; font-weight:700; font-family:var(--mono); color:var(--accent);">${autoCount}</div>
-        </div>
-        <div class="card" style="padding:14px; background:var(--bg); margin:0;">
-          <div style="font-size:12px; color:var(--text-muted);">${t(lang, 'needsReviewBadge')}</div>
-          <div style="font-size:22px; font-weight:700; font-family:var(--mono); color:var(--warning);">${reviewCount}</div>
-        </div>
-      </div>
+        ${
+          state.gateReasons.length > 0
+            ? `
+          <div style="margin-bottom:16px; background:var(--bg); padding:10px 12px; border-radius:3px; border:1px solid var(--border);">
+            <div style="font-size:11px; font-weight:600; font-family:var(--mono); color:var(--text-muted); margin-bottom:4px;">GATE REASONS:</div>
+            <ul style="padding-left:16px; font-size:12px; font-family:var(--mono);">
+              ${state.gateReasons.map((r) => `<li>${r}</li>`).join('')}
+            </ul>
+          </div>
+        `
+            : ''
+        }
 
-      <!-- Findings Board (Scenario 5.3) -->
-      <div class="card-title" style="font-size:15px;">${t(lang, 'findingsTitle')}</div>
-      <div class="table-container">
-        <table class="data-table" id="findings-table">
-          <thead>
-            <tr>
-              <th style="width:100px;">ID</th>
-              <th style="width:100px;">Severity</th>
-              <th style="width:130px;">Confidence</th>
-              <th style="width:90px;">Lane</th>
-              <th>Judul Temuan & Ringkasan Bukti</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${state.findings
-              .map((f) => {
-                let confBadge = 'badge-verified';
-                if (f.confidence === 'needs-review') confBadge = 'badge-review';
-                else if (f.confidence === 'auto-discovered') confBadge = 'badge-discovered';
+        <!-- KPI Metrics (Scenario 5.2) -->
+        <div class="kpi-grid" style="grid-template-columns:repeat(3, 1fr); margin-bottom:16px;">
+          <div class="kpi-box">
+            <div class="kpi-label">${t(lang, 'verifiedBadge')}</div>
+            <div class="kpi-val" style="color:var(--success-fg);">${verifiedCount}</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">${t(lang, 'autoDiscoveredBadge')}</div>
+            <div class="kpi-val" style="color:var(--accent-fg);">${autoCount}</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label">${t(lang, 'needsReviewBadge')}</div>
+            <div class="kpi-val" style="color:var(--warning-fg);">${reviewCount}</div>
+          </div>
+        </div>
 
-                return `
-                <tr>
-                  <td style="font-family:var(--mono); font-weight:600;">${f.id}</td>
-                  <td><span class="badge badge-role">${f.severity.toUpperCase()}</span></td>
-                  <td><span class="badge ${confBadge}">${f.confidence}</span></td>
-                  <td><span class="badge badge-role">${f.lanes.join(', ').toUpperCase()}</span></td>
-                  <td>
-                    <div style="font-weight:600;">${f.title}</div>
-                    ${f.evidenceSummary ? `<div style="font-size:12px; color:var(--text-muted); margin-top:2px;">${f.evidenceSummary}</div>` : ''}
-                  </td>
-                </tr>
-              `;
-              })
-              .join('')}
-            ${state.findings.length === 0 ? '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Tidak ada temuan defect.</td></tr>' : ''}
-          </tbody>
-        </table>
+        <!-- Correlated Findings Table (Scenario 5.3) -->
+        <div style="font-size:11px; font-weight:600; font-family:var(--mono); color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">
+          ${t(lang, 'findingsTitle')}
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="findings-table">
+            <thead>
+              <tr>
+                <th style="width:80px;">FINDING ID</th>
+                <th style="width:90px;">SEVERITY</th>
+                <th style="width:120px;">CONFIDENCE</th>
+                <th style="width:80px;">LANE</th>
+                <th>TITLE & EVIDENCE SUMMARY</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.findings
+                .map((f) => {
+                  let confBadge = 'badge-verified tag-verified';
+                  if (f.confidence === 'needs-review') confBadge = 'badge-review tag-review';
+                  else if (f.confidence === 'auto-discovered') confBadge = 'badge-discovered tag-discovered';
+
+                  return `
+                  <tr>
+                    <td style="font-family:var(--mono); font-weight:600;">${f.id}</td>
+                    <td><span class="tag tag-meta">${f.severity.toUpperCase()}</span></td>
+                    <td><span class="tag ${confBadge}">${f.confidence}</span></td>
+                    <td><span class="tag tag-meta">${f.lanes.join(', ').toUpperCase()}</span></td>
+                    <td>
+                      <div style="font-weight:600;">${f.title}</div>
+                      ${f.evidenceSummary ? `<div style="font-size:11px; color:var(--text-muted); margin-top:2px; font-family:var(--mono);">${f.evidenceSummary}</div>` : ''}
+                    </td>
+                  </tr>
+                `;
+                })
+                .join('')}
+              ${state.findings.length === 0 ? '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No findings recorded.</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   `;

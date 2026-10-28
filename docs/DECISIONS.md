@@ -127,3 +127,11 @@ Phase 4 (4.1–4.7) is complete: correlation, classification/dedupe, baseline co
 - **API server (`apps/api`):** Lightweight, zero-bloat Node HTTP server. Provides run lifecycle, dry-run estimation, SSE real-time event streaming (`/api/runs/:id/events`), ZIP bundle streaming, and single-page app static serving.
 - **Auth & Role matrix:** Role hierarchy (`viewer` < `runner` < `approver` < `admin`). `viewer` has read-only access; `runner` can create sandbox runs; `approver` and `admin` are required for `staging`, `prod-safe`, and active-scan plans.
 - **Dogfooding validation:** 26 automated acceptance scenarios covering all steps in `docs/08-UI-FLOW-REFERENCE.md` (validation, mode guards, secret rejection, builder persistence, plan review, live SSE, and results).
+
+## 14. Phase 6 implementation decisions (2026-10-28)
+
+- **Planner engine (`packages/planner`):** 5 modular generators (invariants, OpenAPI spec, crawl invariants, repo AST routes, formal requirements). Every test case carries strict `source` and `confidence` labels (`verified` for invariants/requirements/user rows, `auto-discovered` for spec/routes, `needs-review` for heuristic forms). Strict rule: no business assertion without a requirement/spec/user row.
+- **Diff-style scenario suggestions:** `computeScenarioDiff` generates `{ added, modified, unchanged }` diffs for row-by-row acceptance in Test Builder.
+- **Change-based selection & risk ordering:** `orderCasesByRisk` correlates git diff changed files with `AppMap` nodes, boosting risk scores for changed components and executing highest-risk tests first.
+- **Self-healing suggestions:** `detectSelfHealingSuggestions` detects status drift (e.g. 200 vs 204), schema drift, and selector drift. Emits report-only diff suggestions with `needs-review` without silently mutating suites.
+- **Regression suite promotion (`packages/qa-suite`):** `promoteTestCase` enforces naming conventions (`TC-<AREA>-<NNN>`), verified confidence, and 3× consecutive green test passes (0% flakiness) before admitting tests into the persistent test catalogue and traceability matrix.
