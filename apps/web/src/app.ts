@@ -455,12 +455,288 @@ export function renderPortalHtml(state: PortalState): string {
       ${renderStepNav(state, 5, t(lang, 'step5'))}
       ${renderStepNav(state, 6, t(lang, 'step6'))}
     </nav>
-
-    <!-- Main View -->
+    <!-- Main Step Views: All 6 rendered so client-side switching is instant -->
     <main id="portal-content">
-      ${renderActiveStep(state)}
+      <div id="step-view-1" class="step-panel" style="${state.currentStep === 1 ? 'display:block' : 'display:none'}">
+        ${renderStep1Target(state)}
+      </div>
+      <div id="step-view-2" class="step-panel" style="${state.currentStep === 2 ? 'display:block' : 'display:none'}">
+        ${renderStep2Builder(state)}
+      </div>
+      <div id="step-view-3" class="step-panel" style="${state.currentStep === 3 ? 'display:block' : 'display:none'}">
+        ${renderStep3PlanReview(state)}
+      </div>
+      <div id="step-view-4" class="step-panel" style="${state.currentStep === 4 ? 'display:block' : 'display:none'}">
+        ${renderStep4LiveRun(state)}
+      </div>
+      <div id="step-view-5" class="step-panel" style="${state.currentStep === 5 ? 'display:block' : 'display:none'}">
+        ${renderStep5Results(state)}
+      </div>
+      <div id="step-view-6" class="step-panel" style="${state.currentStep === 6 ? 'display:block' : 'display:none'}">
+        ${renderStep6Lineage(state)}
+      </div>
     </main>
   </div>
+
+  <script>
+    // Client-side Interactive SPA Engine
+    (function() {
+      let currentStep = ${state.currentStep};
+      let currentMode = '${state.mode}';
+      let activeRunId = '${state.runId ?? ''}';
+      let eventSource = null;
+
+      function switchStep(step) {
+        currentStep = step;
+        for (let i = 1; i <= 6; i++) {
+          const panel = document.getElementById('step-view-' + i);
+          if (panel) panel.style.display = (i === step ? 'block' : 'none');
+        }
+        document.querySelectorAll('.step-item').forEach(el => {
+          const s = Number(el.getAttribute('data-step'));
+          if (s === step) el.classList.add('active');
+          else el.classList.remove('active');
+        });
+      }
+
+      // Step tab clicking
+      document.querySelectorAll('.step-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const s = Number(el.getAttribute('data-step'));
+          if (!isNaN(s) && s >= 1 && s <= 6) switchStep(s);
+        });
+      });
+
+      // Quick navigation buttons
+      document.getElementById('btn-goto-builder')?.addEventListener('click', () => switchStep(2));
+      document.getElementById('btn-builder-to-plan')?.addEventListener('click', () => switchStep(3));
+      document.getElementById('btn-view-results')?.addEventListener('click', () => switchStep(5));
+      document.getElementById('btn-start-new-run')?.addEventListener('click', () => switchStep(1));
+
+      // Mode selector
+      document.querySelectorAll('.mode-opt').forEach(opt => {
+        opt.addEventListener('click', () => {
+          document.querySelectorAll('.mode-opt').forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+          currentMode = opt.getAttribute('data-mode') || 'sandbox';
+
+          const authBlock = document.getElementById('auth-block');
+          const prodBanner = document.getElementById('banner-prod-safe');
+
+          if (currentMode === 'sandbox') {
+            if (authBlock) authBlock.style.display = 'none';
+            if (prodBanner) prodBanner.style.display = 'none';
+          } else if (currentMode === 'staging') {
+            if (authBlock) authBlock.style.display = 'block';
+            if (prodBanner) prodBanner.style.display = 'none';
+          } else if (currentMode === 'prod-safe') {
+            if (authBlock) authBlock.style.display = 'block';
+            if (prodBanner) prodBanner.style.display = 'block';
+          }
+        });
+      });
+
+      // Dynamic Active Lanes calculation
+      function updateActiveLanes() {
+        const repo = (document.getElementById('input-repo')?.value || '').trim();
+        const web = (document.getElementById('input-web')?.value || '').trim();
+        const api = (document.getElementById('input-api-base')?.value || '').trim();
+
+        const container = document.getElementById('active-lanes-chips');
+        if (!container) return;
+
+        const lanes = [];
+        if (repo) lanes.push('REPO');
+        if (web) lanes.push('E2E', 'A11Y', 'PERF', 'SECURITY');
+        if (api && !lanes.includes('API')) lanes.push('API');
+
+        if (lanes.length === 0) {
+          container.innerHTML = '<span class="tag tag-muted">NO TARGETS CONFIGURED</span>';
+        } else {
+          container.innerHTML = lanes.map(l => '<span class="tag tag-verified">' + l + '</span>').join('');
+        }
+      }
+
+      document.getElementById('input-repo')?.addEventListener('input', updateActiveLanes);
+      document.getElementById('input-web')?.addEventListener('input', updateActiveLanes);
+      document.getElementById('input-api-base')?.addEventListener('input', updateActiveLanes);
+
+      // Dry Run execution
+      document.getElementById('btn-dry-run')?.addEventListener('click', async () => {
+        const btn = document.getElementById('btn-dry-run');
+        if (btn) btn.textContent = 'Estimating...';
+
+        const payload = collectRunPayload();
+        try {
+          const res = await fetch('/api/runs/dry-run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const json = await res.json();
+          alert(json.valid 
+            ? 'Dry Run OK! Active Lanes: ' + (json.activeLanes || []).join(', ') + 
+              ' | Est. Requests: ' + json.estimatedRequests + 
+              ' | Est. Duration: ' + json.estimatedDurationSeconds + 's'
+            : 'Dry Run Validation Error:\\n- ' + (json.errors || []).join('\\n- ')
+          );
+        } catch (err) {
+          alert('Dry run request failed: ' + err.message);
+        } finally {
+          if (btn) btn.textContent = 'Uji Kering (Dry Run)';
+        }
+      });
+
+      // Helper to collect payload
+      function collectRunPayload() {
+        const repoVal = (document.getElementById('input-repo')?.value || '').trim();
+        const webVal = (document.getElementById('input-web')?.value || '').trim();
+        const apiBase = (document.getElementById('input-api-base')?.value || '').trim();
+        const apiSpec = (document.getElementById('input-api-spec')?.value || '').trim();
+        const authChecked = document.getElementById('check-auth')?.checked || false;
+        const approverVal = (document.getElementById('input-approver')?.value || '').trim();
+
+        const payload = {
+          name: 'Portal Run ' + new Date().toLocaleTimeString(),
+          mode: currentMode,
+          scope: 'quick',
+          lanes: { e2e: true, a11y: true, perf: true, security: true, api: Boolean(apiBase || apiSpec) }
+        };
+
+        if (repoVal) payload.repo = { localPath: repoVal };
+        if (webVal) payload.web = { urls: webVal.split(',').map(s => s.trim()).filter(Boolean) };
+        if (apiBase || apiSpec) payload.api = { baseUrl: apiBase || undefined, specUrl: apiSpec || undefined };
+
+        if (currentMode !== 'sandbox') {
+          payload.authorization = {
+            ownerConfirmed: authChecked,
+            approvedBy: approverVal || 'user@company.local',
+            perfApproved: true
+          };
+        }
+
+        return payload;
+      }
+
+      // Run Everything -> starts run, streams SSE, switches to Live Run & Results
+      document.getElementById('btn-run-everything')?.addEventListener('click', async () => {
+        const payload = { ...collectRunPayload(), planApproval: 'auto' };
+
+        // Client validation
+        if (!payload.repo && !payload.web && !payload.api) {
+          alert('Provide a repository link or target web URL to test.');
+          return;
+        }
+
+        const runBtn = document.getElementById('btn-run-everything');
+        if (runBtn) {
+          runBtn.disabled = true;
+          runBtn.textContent = 'Launching...';
+        }
+
+        try {
+          const res = await fetch('/api/runs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!res.ok) {
+            const errJson = await res.json();
+            alert('Cannot start run: ' + (errJson.error || 'Server error'));
+            if (runBtn) { runBtn.disabled = false; runBtn.textContent = 'Jalankan Semua (Run Everything)'; }
+            return;
+          }
+
+          const runRecord = await res.json();
+          activeRunId = runRecord.id;
+
+          // Switch to Step 4 (Live Run)
+          switchStep(4);
+          const terminal = document.getElementById('terminal-logs');
+          if (terminal) terminal.innerHTML = '<span class="log-line" style="color:var(--accent-fg);">Run initialized: ' + activeRunId + '</span>';
+
+          // Connect SSE
+          if (eventSource) eventSource.close();
+          eventSource = new EventSource('/api/runs/' + activeRunId + '/events');
+
+          eventSource.addEventListener('stage', (e) => {
+            const data = JSON.parse(e.data);
+            if (terminal) {
+              const line = document.createElement('span');
+              line.className = 'log-line';
+              line.textContent = 'Stage [' + (data.stage || '') + ']: ' + (data.status || '');
+              terminal.appendChild(line);
+              terminal.scrollTop = terminal.scrollHeight;
+            }
+          });
+
+          eventSource.addEventListener('log', (e) => {
+            const data = JSON.parse(e.data);
+            if (terminal) {
+              const line = document.createElement('span');
+              line.className = 'log-line';
+              line.textContent = data.message || '';
+              terminal.appendChild(line);
+              terminal.scrollTop = terminal.scrollHeight;
+            }
+          });
+
+          eventSource.addEventListener('complete', (e) => {
+            const data = JSON.parse(e.data);
+            eventSource.close();
+            if (terminal) {
+              const line = document.createElement('span');
+              line.className = 'log-line';
+              line.style.color = 'var(--success-fg)';
+              line.textContent = 'Pipeline execution completed: Gate ' + (data.gate || '');
+              terminal.appendChild(line);
+              terminal.scrollTop = terminal.scrollHeight;
+            }
+            setTimeout(() => {
+              window.location.href = '/?step=5&runId=' + activeRunId;
+            }, 1200);
+          });
+
+          eventSource.addEventListener('error', () => {
+            eventSource.close();
+          });
+        } catch (err) {
+          alert('Network error starting run: ' + err.message);
+        } finally {
+          if (runBtn) { runBtn.disabled = false; runBtn.textContent = 'Jalankan Semua (Run Everything)'; }
+        }
+      });
+
+      // Visual slider diff interaction
+      const slider = document.getElementById('slider-visual-diff');
+      if (slider) {
+        slider.addEventListener('input', function() {
+          const val = this.value;
+          const before = document.getElementById('visual-before');
+          const afterText = document.querySelector('#visual-after > div');
+          const label = document.getElementById('slider-pos-val');
+
+          if (before) before.style.width = val + '%';
+          if (afterText) afterText.style.paddingLeft = 'calc(' + val + '% + 16px)';
+          if (label) label.textContent = val + '%';
+        });
+      }
+
+      // Download Bundle
+      document.getElementById('btn-download-bundle')?.addEventListener('click', () => {
+        window.location.href = '/api/runs/' + (activeRunId || 'latest') + '/bundle';
+      });
+
+      // Language Switcher
+      document.getElementById('btn-toggle-lang')?.addEventListener('click', () => {
+        const url = new URL(window.location.href);
+        const currentLang = url.searchParams.get('lang') || 'id';
+        url.searchParams.set('lang', currentLang === 'id' ? 'en' : 'id');
+        window.location.href = url.href;
+      });
+    })();
+  </script>
 </body>
 </html>`;
 }
@@ -483,22 +759,6 @@ function renderStepNav(state: PortalState, step: PortalStep, label: string): str
   `;
 }
 
-function renderActiveStep(state: PortalState): string {
-  switch (state.currentStep) {
-    case 1:
-      return renderStep1Target(state);
-    case 2:
-      return renderStep2Builder(state);
-    case 3:
-      return renderStep3PlanReview(state);
-    case 4:
-      return renderStep4LiveRun(state);
-    case 5:
-      return renderStep5Results(state);
-    case 6:
-      return renderStep6Lineage(state);
-  }
-}
 
 function renderStep1Target(state: PortalState): string {
   const lang = state.language;
@@ -549,13 +809,9 @@ function renderStep1Target(state: PortalState): string {
           </div>
         </div>
 
-        ${
-          isProdSafe
-            ? `<div class="banner banner-warn" id="banner-prod-safe">
-                <span>[OBSERVE-ONLY] ${t(lang, 'prodSafeBanner')}</span>
-              </div>`
-            : ''
-        }
+        <div class="banner banner-warn" id="banner-prod-safe" style="display:${isProdSafe ? 'flex' : 'none'};">
+          <span>[OBSERVE-ONLY] ${t(lang, 'prodSafeBanner')}</span>
+        </div>
 
         <!-- Inputs Grid -->
         <div class="field-row">
@@ -582,29 +838,23 @@ function renderStep1Target(state: PortalState): string {
         </div>
 
         <!-- Authorization Block (Scenarios 1.5, 1.6) -->
-        ${
-          !isSandbox
-            ? `
-          <div class="panel" id="auth-block" style="background:var(--bg); border-color:rgba(88,166,255,0.3); margin-top:12px;">
-            <div class="panel-header" style="font-size:11px;">Authorization & Approver Sign-off (Mandatory)</div>
-            <div class="panel-body" style="padding:10px 12px;">
-              <div class="field-row" style="margin-bottom:8px;">
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                  <input type="checkbox" id="check-auth" ${state.authorizationConfirmed ? 'checked' : ''} />
-                  <span>${t(lang, 'authConfirmationLabel')}</span>
-                </label>
-                ${state.validationErrors.auth ? `<div class="field-error">${state.validationErrors.auth}</div>` : ''}
-              </div>
-              <div class="field-row" style="margin-bottom:0;">
-                <label for="input-approver">${t(lang, 'approverLabel')} <span class="field-key">authorization.approvedBy</span></label>
-                <input type="text" id="input-approver" class="input-mono" value="${state.approvedBy}" placeholder="approver@company.local" />
-                ${state.validationErrors.approver ? `<div class="field-error">${state.validationErrors.approver}</div>` : ''}
-              </div>
+        <div class="panel" id="auth-block" style="background:var(--bg); border-color:rgba(88,166,255,0.3); margin-top:12px; display:${!isSandbox ? 'block' : 'none'};">
+          <div class="panel-header" style="font-size:11px;">Authorization & Approver Sign-off (Mandatory)</div>
+          <div class="panel-body" style="padding:10px 12px;">
+            <div class="field-row" style="margin-bottom:8px;">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                <input type="checkbox" id="check-auth" ${state.authorizationConfirmed ? 'checked' : ''} />
+                <span>${t(lang, 'authConfirmationLabel')}</span>
+              </label>
+              ${state.validationErrors.auth ? `<div class="field-error">${state.validationErrors.auth}</div>` : ''}
+            </div>
+            <div class="field-row" style="margin-bottom:0;">
+              <label for="input-approver">${t(lang, 'approverLabel')} <span class="field-key">authorization.approvedBy</span></label>
+              <input type="text" id="input-approver" class="input-mono" value="${state.approvedBy}" placeholder="approver@company.local" />
+              ${state.validationErrors.approver ? `<div class="field-error">${state.validationErrors.approver}</div>` : ''}
             </div>
           </div>
-        `
-            : ''
-        }
+        </div>
 
         <!-- Active Lanes Chips (Scenario 1.7) -->
         <div style="margin: 16px 0; padding-top:12px; border-top:1px solid var(--border);">

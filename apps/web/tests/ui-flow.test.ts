@@ -74,12 +74,14 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       // Sandbox mode: authorization block is hidden
       const sandboxState: PortalState = { ...createInitialState(), mode: 'sandbox' };
       const sandboxHtml = renderPortalHtml(sandboxState);
-      expect(sandboxHtml).not.toContain('id="auth-block"');
+      expect(sandboxHtml).toContain('id="auth-block"');
+      expect(sandboxHtml).toContain('display:none');
 
       // Staging mode: authorization block is visible
       const stagingState: PortalState = { ...createInitialState(), mode: 'staging' };
       const stagingHtml = renderPortalHtml(stagingState);
       expect(stagingHtml).toContain('id="auth-block"');
+      expect(stagingHtml).toContain('display:block');
       expect(stagingHtml).toContain('id="check-auth"');
       expect(stagingHtml).toContain('id="input-approver"');
 
@@ -87,6 +89,7 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       const prodState: PortalState = { ...createInitialState(), mode: 'prod-safe' };
       const prodHtml = renderPortalHtml(prodState);
       expect(prodHtml).toContain('id="auth-block"');
+      expect(prodHtml).toContain('display:block');
     });
 
     it('Scenario 1.7: Repo and/or URL entered updates active lanes chips', () => {
@@ -99,10 +102,12 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
         apiSpecUrl: '',
       };
       const webHtml = renderPortalHtml(webOnlyState);
-      expect(webHtml).toContain('E2E');
-      expect(webHtml).toContain('A11Y');
-      expect(webHtml).toContain('SECURITY');
-      expect(webHtml).not.toContain('REPO');
+      const activeLanesMatch = webHtml.match(/id="active-lanes-chips"[\s\S]*?<\/div>/);
+      expect(activeLanesMatch).toBeDefined();
+      expect(activeLanesMatch![0]).toContain('E2E');
+      expect(activeLanesMatch![0]).toContain('A11Y');
+      expect(activeLanesMatch![0]).toContain('SECURITY');
+      expect(activeLanesMatch![0]).not.toContain('REPO');
 
       // Repo and URL -> REPO + Web lanes
       const fullState: PortalState = {
@@ -111,8 +116,9 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
         webUrls: 'http://127.0.0.1:3100/',
       };
       const fullHtml = renderPortalHtml(fullState);
-      expect(fullHtml).toContain('REPO');
-      expect(fullHtml).toContain('E2E');
+      const fullLanesMatch = fullHtml.match(/id="active-lanes-chips"[\s\S]*?<\/div>/);
+      expect(fullLanesMatch![0]).toContain('REPO');
+      expect(fullLanesMatch![0]).toContain('E2E');
     });
 
     it('Scenario 1.8: Scope estimate shows duration, requests, and prod-safe note', () => {

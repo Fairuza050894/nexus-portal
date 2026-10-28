@@ -46,6 +46,22 @@ One-click platform checks (lint → typecheck → tests → smoke run):
 npm run qa
 ```
 
+## Web Console & REST API
+
+Start the interactive web dashboard and backend API server:
+
+```bash
+npm run api
+```
+
+Open `http://127.0.0.1:3000` in any web browser. The console is fully interactive client-side:
+- **01 TARGET & MODE**: Select execution mode (`sandbox`, `staging`, `prod-safe`), configure repo or target URLs, dynamic active lanes calculation, and one-click "Jalankan Semua (Run Everything)" or "Uji Kering (Dry Run)".
+- **02 TEST BUILDER**: Data-driven test authoring across 6 types (`e2e`, `api`, `a11y`, `perf`, `visual`, `security-passive`) with inline table editing and "Sarankan Skenario (Suggest)".
+- **03 REVIEW PLAN**: Review auto-generated cases, toggle checkboxes (`needs-review` unchecked by default), "Setujui Semua Kasus Aman", and "Setujui dan Jalankan Rencana".
+- **04 LIVE RUN**: Real-time pipeline stage timeline and live log streaming via Server-Sent Events (SSE).
+- **05 HASIL & DOKUMEN**: Quality gate verdict (GO / GO WITH RISKS / NO-GO) with explicit reasons, confidence metrics, findings board, interactive Before/After visual diff slider, and one-click ZIP bundle download.
+- **06 ARSITEKTUR & DATABASE**: Live Security Sandbox Monitor (Host Allowlist Radar, Egress Boundary, Data Redaction counter), interactive multi-tier SVG topology canvas, and searchable Full-Stack Data Lineage table (`UI Page -> Endpoint -> Handler -> DB Table`).
+
 ## CLI
 
 The examples below use `qa` as shorthand for
