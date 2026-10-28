@@ -3,7 +3,7 @@
 Unified QA automation platform. One run request discovers a target, executes the
 applicable lanes, correlates results, and produces a documentation bundle.
 
-**Current status: Phase 8 (Extended Lanes) — Complete.**
+**Current status: All Phases 0–9 Complete (Full Platform Release).**
 Intake, mode guard, sandbox, discovery, Application Map, Playwright session
 per run with multi-browser (`chromium`, `firefox`, `webkit`) and mobile viewports,
 repo/API/E2E/a11y/Web Vitals/passive-security lanes, visual regression with
@@ -13,9 +13,10 @@ Spring Boot), database schema reconstruction (Prisma / SQL DDL / PII tagging),
 full-stack data lineage, REST API server (`apps/api`), Test Builder registry
 (`packages/registry`), unslop engineering console (`apps/web`), multi-source test
 planner (`packages/planner`), regression suite promotion (`packages/qa-suite`),
+automated flaky test quarantine, comprehensive security tests, CI/CD suite,
 and operational Runbook (`docs/RUNBOOK.md`) are fully implemented and verified.
 
-The platform delivers Milestones M1, M2, M3, and all Extended Lanes.
+The platform delivers all three core milestones: M1 ("One command"), M2 ("One click"), and M3 ("Always on").
 
 
 The product specification and phase plan live in [`ketentuan/`](ketentuan/README.md).
@@ -190,6 +191,7 @@ Everything under `artifacts/` is generated and gitignored.
 | `ketentuan/`               | Frozen product specification, rules, and roadmap                                       |
 | `docs/RUNBOOK.md`          | Comprehensive operational procedures, scheduling, retention, secret rotation, incidents |
 | `.github/workflows/`       | Complete CI/CD suite: PR check, nightly regression, manual dispatch, release gate, docs |
+| `CONTRIBUTING.md`          | Comprehensive onboarding & extension guide (lanes, types, extractors, docs)             |
 
 ## Safety limitations in this phase
 

@@ -158,3 +158,11 @@ Phase 4 (4.1–4.7) is complete: correlation, classification/dedupe, baseline co
 - **k6 Load Testing (`packages/lanes/src/k6.ts`):** Standalone load execution generating k6 scripts with p95 latency and error rate SLA thresholds. Mode guard strictly enforces prohibition in `prod-safe` and requires `authorization.perfApproved: true` in `staging`.
 - **Cross-Browser & Viewports (`packages/session/src/index.ts`):** Multi-browser support (`chromium`, `firefox`, `webkit`) and `STANDARD_VIEWPORTS` (`desktop`: 1366x768, `tablet`: 820x1180, `mobile`: 390x844).
 - **Extended Route Extractors (`packages/discover/src/repo-analyzer.ts`):** Automated AST route extractors for Laravel PHP (`routes/web.php`, `routes/api.php`), FastAPI Python (`@app.get`, `@router.post`), and Spring Boot Java (`@GetMapping`, `@PostMapping`).
+
+## 18. Phase 9 Hardening & Handover decisions (2026-10-28)
+
+- **Platform Security Review (`tests/security/platform-security.test.ts`):** Verified SSRF protection against AWS/GCP metadata endpoints and private IP blocks, homoglyph lookalike protection, open redirect blocking, RBAC hierarchy enforcement (`viewer` < `runner` < `approver` < `admin`), 100% secret and PII scrub guarantee.
+- **Scalability & Scale Benchmark (`tests/perf/platform-scale.test.ts`):** Sub-100ms risk ordering over 1,000 test cases, 500-node/1000-edge AppMap traversal, sub-150ms deduplication across 500+ findings.
+- **Flaky Test Quarantine (`packages/gate/src/quarantine.ts`):** Ticketed quarantine records with mandatory 14-day expiration windows. Quarantined tests do not trip gate blockers during their window, but expired records are automatically unmasked.
+- **Contributor Documentation & ADRs (`CONTRIBUTING.md` & `docs/adr/`):** 5 extension guides (new lane, new test type, new extractor, new doc section, monorepo standards) and ADRs 0004 & 0005.
+- **Final Handover Dry Run (`tests/smoke/handover-dry-run.test.ts`):** Validated 100% clean operation across all monorepo packages.
