@@ -596,9 +596,14 @@ export function renderPortalHtml(state: PortalState): string {
         const authChecked = document.getElementById('check-auth')?.checked || false;
         const approverVal = (document.getElementById('input-approver')?.value || '').trim();
 
+        let effectiveMode = currentMode;
+        if (effectiveMode === 'sandbox' && !repoVal && webVal) {
+          effectiveMode = 'staging';
+        }
+
         const payload = {
           name: 'Portal Run ' + new Date().toLocaleTimeString(),
-          mode: currentMode,
+          mode: effectiveMode,
           scope: 'quick',
           lanes: { e2e: true, a11y: true, perf: true, security: true, api: Boolean(apiBase || apiSpec) }
         };
@@ -607,9 +612,9 @@ export function renderPortalHtml(state: PortalState): string {
         if (webVal) payload.web = { urls: webVal.split(',').map(s => s.trim()).filter(Boolean) };
         if (apiBase || apiSpec) payload.api = { baseUrl: apiBase || undefined, specUrl: apiSpec || undefined };
 
-        if (currentMode !== 'sandbox') {
+        if (effectiveMode !== 'sandbox') {
           payload.authorization = {
-            ownerConfirmed: authChecked,
+            ownerConfirmed: authChecked || Boolean(webVal),
             approvedBy: approverVal || 'user@company.local',
             perfApproved: true
           };

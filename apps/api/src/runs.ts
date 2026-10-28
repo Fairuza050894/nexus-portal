@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path';
 import {
   createRunId,
   DEFAULT_ALLOWLIST,
+  isHostAllowed,
   QaConfigSchema,
   RunRequestSchema,
   RunStore,
@@ -73,10 +74,29 @@ export class RunManager {
 
   constructor(rootDir: string = process.cwd()) {
     this.rootDir = resolve(rootDir);
+    let loadedAllowlist = [...DEFAULT_ALLOWLIST];
+    const cfgPath = join(this.rootDir, 'qa.config.ts');
+    if (existsSync(cfgPath)) {
+      try {
+        const content = readFileSync(cfgPath, 'utf8');
+        const match = content.match(/allowlist:\s*\[([\s\S]*?)\]/);
+        if (match) {
+          const items = match[1]
+            .split(',')
+            .map((s) => s.replace(/['"\s]/g, ''))
+            .filter(Boolean);
+          if (items.length > 0) {
+            loadedAllowlist = items;
+          }
+        }
+      } catch {
+        // fallback
+      }
+    }
     this.config = QaConfigSchema.parse({
       env: 'development',
       modes: ['sandbox', 'staging', 'prod-safe'],
-      allowlist: [...DEFAULT_ALLOWLIST],
+      allowlist: loadedAllowlist,
     });
   }
 
@@ -115,14 +135,7 @@ export class RunManager {
       const parsed = new URL(urlStr);
       const host = parsed.hostname;
       const allowlist = this.config.allowlist;
-      const matched = allowlist.some((pattern) => {
-        if (pattern.startsWith('*.')) {
-          const suffix = pattern.slice(2);
-          return host === suffix || host.endsWith('.' + suffix);
-        }
-        return host === pattern;
-      });
-      if (!matched) {
+      if (!isHostAllowed(host, allowlist)) {
         return `Host "${host}" is not in the approved allowlist (${allowlist.join(', ')})`;
       }
     } catch {
