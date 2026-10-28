@@ -574,13 +574,31 @@ export function renderPortalHtml(state: PortalState): string {
             body: JSON.stringify(payload)
           });
           const json = await res.json();
+          const actionContainer = document.querySelector('#step-view-1 .panel-body');
+          let dryBanner = document.getElementById('dry-run-feedback');
+          if (!dryBanner && actionContainer) {
+            dryBanner = document.createElement('div');
+            dryBanner.id = 'dry-run-feedback';
+            actionContainer.appendChild(dryBanner);
+          }
+          if (dryBanner && json.valid) {
+            dryBanner.className = 'banner banner-success';
+            dryBanner.style.marginTop = '14px';
+            dryBanner.innerHTML = '<div>' +
+              '<strong>Estimasi Uji Kering Selesai:</strong> Target valid! Lanes aktif: ' + (json.activeLanes || []).join(', ').toUpperCase() + ' (~' + json.estimatedRequests + ' requests, ~' + json.estimatedDurationSeconds + 's).<br>' +
+              '<span style="font-size:11px; color:var(--text-bright);">Untuk mengeksekusi pengujian nyata dan melihat hasilnya, klik tombol biru <strong>Jalankan Semua (Run Everything)</strong>.</span>' +
+              '</div>';
+          }
           alert(json.valid 
-            ? 'Dry Run OK! Active Lanes: ' + (json.activeLanes || []).join(', ') + 
-              ' | Est. Requests: ' + json.estimatedRequests + 
-              ' | Est. Duration: ' + json.estimatedDurationSeconds + 's'
-            : 'Dry Run Validation Error:\\n- ' + (json.errors || []).join('\\n- ')
+            ? 'Estimasi Uji Kering (Dry Run) Berhasil!\\n\\n' +
+              '• Target valid: ' + (payload.web?.urls?.[0] || 'Target') + '\\n' +
+              '• Lanes aktif: ' + (json.activeLanes || []).join(', ').toUpperCase() + '\\n' +
+              '• Estimasi request: ' + json.estimatedRequests + '\\n' +
+              '• Estimasi durasi: ~' + json.estimatedDurationSeconds + ' detik\\n\\n' +
+              'CATATAN: Uji Kering (Dry Run) hanya memvalidasi target tanpa mengirim trafik uji.\\n\\n' +
+              'Untuk MELIHAT HASIL LENGKAP pengujian, silakan klik tombol biru "Jalankan Semua (Run Everything)".'
+            : 'Validasi Uji Kering Gagal:\\n- ' + (json.errors || []).join('\\n- ')
           );
-        } catch (err) {
           alert('Dry run request failed: ' + err.message);
         } finally {
           if (btn) btn.textContent = 'Uji Kering (Dry Run)';
