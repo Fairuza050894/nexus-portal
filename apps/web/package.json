@@ -6,6 +6,7 @@
   "main": "./src/index.ts",
   "dependencies": {
     "@nexus/core": "0.1.0",
+    "@nexus/app-map": "0.1.0",
     "@nexus/registry": "0.1.0"
   }
 }

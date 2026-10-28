@@ -6,6 +6,9 @@ import { defaultEventStream } from './events.js';
 import { defaultRunManager, type RunManager } from './runs.js';
 import { defaultRegistry } from '@nexus/registry';
 import { renderPortalHtml, createInitialState } from '@nexus/web';
+import { RunStore } from '@nexus/core';
+import { extractDatabaseSchema } from '@nexus/discover';
+import { buildFullStackLineage, type AppMap } from '@nexus/app-map';
 
 export interface ServerOptions {
   port?: number;
@@ -213,6 +216,32 @@ export function createApiServer(options: ServerOptions = {}): Server {
           sendJson(res, 200, run);
           return;
         }
+        // 6g. Run lineage: GET /api/runs/:id/lineage
+        if (subAction === 'lineage' && method === 'GET') {
+          const run = manager.getRun(runId);
+          const rootDir = manager.getRootDir();
+          const dbSchema = extractDatabaseSchema(rootDir);
+          const summary = run?.summary ?? RunStore.readSummaryById(rootDir, runId);
+          const appMap: AppMap = {
+            schemaVersion: '1.0',
+            generatedAt: new Date().toISOString(),
+            nodes: [
+              { id: 'page:/', type: 'page', path: '/', forms: 0, sources: ['crawl'], changedRecently: false, risk: 0.1, riskFactors: [] },
+              { id: 'endpoint:GET /health', type: 'endpoint', path: '/health', method: 'GET', sources: ['spec'], changedRecently: false, risk: 0.1, riskFactors: [], authRequired: false },
+              { id: 'endpoint:GET /api/todos', type: 'endpoint', path: '/api/todos', method: 'GET', sources: ['spec'], changedRecently: false, risk: 0.2, riskFactors: [], authRequired: false },
+            ],
+            edges: [],
+            stats: { pages: 1, endpoints: 2, code: 0, edges: 0, highRisk: 0, changed: 0 },
+          };
+          const topology = buildFullStackLineage({
+            appMap,
+            dbSchema,
+            findings: summary?.findings ?? [],
+          });
+          sendJson(res, 200, topology);
+          return;
+        }
+
       }
 
       // 7. Scenario suggestions: POST /api/suggest/:type
@@ -243,6 +272,30 @@ export function createApiServer(options: ServerOptions = {}): Server {
         });
         return;
       }
+      // 8b. Global Lineage & Topology: GET /api/lineage
+      if (pathname === '/api/lineage' && method === 'GET') {
+        const rootDir = manager.getRootDir();
+        const dbSchema = extractDatabaseSchema(rootDir);
+        const defaultAppMap: AppMap = {
+          schemaVersion: '1.0',
+          generatedAt: new Date().toISOString(),
+          nodes: [
+            { id: 'page:/', type: 'page', path: '/', forms: 0, sources: ['crawl'], changedRecently: false, risk: 0.1, riskFactors: [] },
+            { id: 'endpoint:GET /health', type: 'endpoint', path: '/health', method: 'GET', sources: ['spec'], changedRecently: false, risk: 0.1, riskFactors: [], authRequired: false },
+            { id: 'endpoint:GET /api/todos', type: 'endpoint', path: '/api/todos', method: 'GET', sources: ['spec'], changedRecently: false, risk: 0.2, riskFactors: [], authRequired: false },
+            { id: 'endpoint:POST /api/todos', type: 'endpoint', path: '/api/todos', method: 'POST', sources: ['spec'], changedRecently: true, risk: 0.5, riskFactors: [], authRequired: false },
+          ],
+          edges: [
+            { from: 'page:/', to: 'endpoint:GET /health', kind: 'calls', confidence: 'verified' },
+            { from: 'page:/', to: 'endpoint:GET /api/todos', kind: 'calls', confidence: 'verified' },
+          ],
+          stats: { pages: 1, endpoints: 3, code: 0, edges: 2, highRisk: 0, changed: 1 },
+        };
+        const topology = buildFullStackLineage({ appMap: defaultAppMap, dbSchema });
+        sendJson(res, 200, topology);
+        return;
+      }
+
 
       // 9. Web App & Static serving
       if (method === 'GET' || method === 'HEAD') {

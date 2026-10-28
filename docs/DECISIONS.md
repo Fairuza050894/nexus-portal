@@ -144,3 +144,10 @@ Phase 4 (4.1–4.7) is complete: correlation, classification/dedupe, baseline co
 - **Sanitized Notifications (`packages/core/src/notifications.ts`):** Formatted payloads for Slack, Teams, and Email. All inputs pass through `redactString()`, guaranteeing zero plaintext secrets or PII are published.
 - **Issue Tracker Export:** Markdown and JSON defect export formats for Jira, GitHub Issues, and Azure DevOps.
 - **Runbook (`docs/RUNBOOK.md`):** Covers operations, scheduling lifecycle, backup, retention, secret rotation, circuit breaker trip, and emergency procedures.
+
+## 16. Full-Stack Data Lineage, DB Schema Reconstruction & Security Monitor (2026-10-28)
+
+- **Database Schema Extractor (`packages/discover/src/schema-extractor.ts`):** Parses Prisma schemas (`schema.prisma`) and SQL DDL migrations (`CREATE TABLE`). Automatically detects sensitive columns (PII / credentials: `password`, `email`, `token`, `nik`, `credit_card`) and foreign key relationships.
+- **Full-Stack Data Lineage & Topology Graph (`packages/app-map/src/lineage.ts`):** Connects 4 tiers: `Page (UI) -> calls -> Endpoint (API) -> handled-by -> Controller -> queries -> Database Table`. Automatically infers database operations (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) based on HTTP verbs. Reflects defect and gate failure status onto affected topology nodes.
+- **Web Console Step 6 (`apps/web`):** Interactive SVG Topology Graph with cascading node relationships, Live Security Sandbox Monitor (Host Allowlist Radar, Egress Boundary, Real-Time Data Redaction), and Data Lineage catalog table.
+- **Lineage API (`apps/api`):** Exposes `GET /api/lineage` and `GET /api/runs/:id/lineage`.

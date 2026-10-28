@@ -196,4 +196,13 @@ describe('Apps API Server Endpoints & Security Guards', () => {
     expect(invalidJson.valid).toBe(false);
     expect(invalidJson.errors.length).toBeGreaterThan(0);
   });
+
+  it('GET /api/lineage returns full-stack architecture topology and DB schema', async () => {
+    const res = await fetch(`${baseUrl}/api/lineage`);
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { nodes: unknown[]; edges: unknown[]; lineage: unknown[] };
+    expect(Array.isArray(json.nodes)).toBe(true);
+    expect(Array.isArray(json.edges)).toBe(true);
+    expect(Array.isArray(json.lineage)).toBe(true);
+  });
 });

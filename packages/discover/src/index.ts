@@ -22,6 +22,18 @@ export {
   maxDepthFor,
   maxPagesFor,
 } from './policy.js';
+export {
+  extractDatabaseSchema,
+  parsePrismaSchema,
+  parseSqlSchema,
+  isSensitiveColumn,
+} from './schema-extractor.js';
+export type {
+  DatabaseColumn,
+  DatabaseForeignKey,
+  DatabaseTable,
+  DatabaseSchema,
+} from './schema-extractor.js';
 export type { DiscoveryFetch, HttpClientOptions, HttpResponse, ResponseLike } from './http.js';
 export type { CrawlOptions } from './crawler.js';
 export type { RepoAnalyzeOptions } from './repo-analyzer.js';

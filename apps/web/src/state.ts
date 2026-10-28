@@ -1,4 +1,5 @@
 import type { Finding, RunRequest } from '@nexus/core';
+import type { FullStackTopology } from '@nexus/app-map';
 import type { SupportedLanguage } from './i18n.js';
 export interface PlanCase {
   id: string;
@@ -12,7 +13,7 @@ export interface PlanCase {
   estDurationMs: number;
 }
 
-export type PortalStep = 1 | 2 | 3 | 4 | 5;
+export type PortalStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface PortalState {
   currentStep: PortalStep;
@@ -55,6 +56,9 @@ export interface PortalState {
   selectedFinding?: Finding;
   notCovered: Array<{ id: string; title: string; reason: string }>;
   bundleUrl?: string;
+
+  // Step 6: Architecture & Lineage
+  topology?: FullStackTopology;
 
   // UI status
   validationErrors: Record<string, string>;

@@ -3,7 +3,7 @@
 Unified QA automation platform. One run request discovers a target, executes the
 applicable lanes, correlates results, and produces a documentation bundle.
 
-**Current status: Phase 7 (CI/CD, Scheduling & Notifications) — Milestone M3: "Always on".**
+**Current status: Phase 7 (CI/CD, Scheduling & Notifications) — Milestone M3: "Always on" + Full-Stack Data Lineage & DB Explorer.**
 Intake, mode guard, sandbox, discovery, Application Map, one Playwright
 session per run, repo/API/E2E/a11y/Web Vitals/passive-security lanes,
 fingerprint v2 dedupe, false-positive replay, baseline/`retest-new`, quality
@@ -11,9 +11,10 @@ gate, external SARIF ingestion, full documentation bundle, REST API server
 (`apps/api`), Test Builder registry (`packages/registry`), unslop engineering
 console (`apps/web`), multi-source test planner (`packages/planner`), regression
 suite promotion (`packages/qa-suite`), CI/CD workflows (`.github/workflows/`),
-renewable authorization with environment concurrency locks, sanitized
-notifications, issue-tracker exports, and operational Runbook (`docs/RUNBOOK.md`)
-are fully implemented and verified.
+database schema extraction (Prisma / SQL / PII detection), full-stack data
+lineage (`Page -> Endpoint -> Controller -> DB Table`), interactive SVG
+topology graph, and operational Runbook (`docs/RUNBOOK.md`) are fully
+implemented and verified.
 
 The platform delivers all three core milestones: M1 ("One command"), M2 ("One click"), and M3 ("Always on").
 

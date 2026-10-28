@@ -436,3 +436,14 @@ export function buildAppMap(options: BuildAppMapOptions): AppMap {
     },
   };
 }
+export { buildFullStackLineage } from './lineage.js';
+export type {
+  TopologyNodeType,
+  TopologyEdgeKind,
+  TopologyNode,
+  TopologyEdge,
+  LineageTableTouch,
+  DataLineageEntry,
+  FullStackTopology,
+  BuildLineageOptions,
+} from './lineage.js';

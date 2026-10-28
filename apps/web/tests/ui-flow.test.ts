@@ -447,6 +447,26 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
   });
 
   // ==========================================
+  // STEP 6 — ARCHITECTURE & LINEAGE EXPLORER
+  // ==========================================
+  describe('Step 6 — Architecture & Data Lineage Explorer', () => {
+    it('renders visual topology canvas, live security radar, and data lineage table', () => {
+      const state = createInitialState();
+      state.currentStep = 6;
+      state.furthestStep = 6;
+
+      const html = renderPortalHtml(state);
+      expect(html).toContain('SECURITY RADAR ACTIVE');
+      expect(html).toContain('SVG TOPOLOGY CANVAS');
+      expect(html).toContain('id="lineage-table"');
+      expect(html).toContain('Page: /checkout');
+      expect(html).toContain('POST /api/orders');
+      expect(html).toContain('orders, order_items');
+      expect(html).toContain('PII: card_token');
+    });
+  });
+
+  // ==========================================
   // CROSS-CUTTING (Scenarios X.1 - X.5)
   // ==========================================
   describe('Cross-cutting UI Quality Rules', () => {
