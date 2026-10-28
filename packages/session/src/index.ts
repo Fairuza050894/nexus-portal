@@ -412,18 +412,67 @@ export async function runInstrumentedSession(options: SessionOptions): Promise<S
     }
 
     if (options.interactiveLogin && targets.length > 0) {
-      options.onLog?.('Guided Login: Browser opened. Please log in manually in the browser window...');
+      options.onLog?.('Guided Login: Browser opened. Waiting for manual authentication...');
       const loginPage = await context.newPage();
       try {
         await loginPage.goto(targets[0].url, { timeout: options.navigationTimeoutMs ?? 30_000 });
-        options.onLog?.('Awaiting manual login. Once you land on the dashboard, automated testing will resume...');
-        await loginPage.waitForURL(
-          (url) => !url.pathname.includes('/login') && !url.pathname.endsWith('/login'),
-          { timeout: options.loginTimeoutMs ?? 60_000 },
-        ).catch(() => {
-          options.onLog?.('Guided login wait period completed. Continuing session with current state...');
-        });
-        options.onLog?.('Authenticated session captured! Commencing automated multi-lane testing...');
+
+        // Wait up to 10s for the login page / form to settle
+        await loginPage.waitForSelector('input[type="password"]', { timeout: 10_000 }).catch(() => undefined);
+
+        // Inject helper banner
+        await loginPage.evaluate(() => {
+          if (document.getElementById('__nexus_login_banner__')) return;
+          const banner = document.createElement('div');
+          banner.id = '__nexus_login_banner__';
+          banner.innerHTML =
+            '<div style="position:fixed;top:0;left:0;right:0;background:#0f172a;color:#f8fafc;padding:10px 16px;z-index:99999999;font-family:sans-serif;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,0.5);display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #3b82f6;">' +
+            '<span><strong>Nexus QA Guided Login:</strong> Silakan login dengan akun Anda. Begitu Anda masuk ke dashboard, pengujian otomatis akan langsung berjalan.</span>' +
+            '<button id="__nexus_resume_btn__" style="background:#2563eb;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">Sudah Login, Lanjutkan!</button>' +
+            '</div>';
+          document.body.prepend(banner);
+          document.body.style.paddingTop = '50px';
+          const btn = document.getElementById('__nexus_resume_btn__');
+          if (btn) btn.onclick = () => { window.sessionStorage.setItem('__nexus_resume__', '1'); };
+        }).catch(() => undefined);
+
+        options.onLog?.('Browser window ready. Please enter your credentials and log in...');
+
+        // Await either button click, password field detachment, or URL navigation away from login
+        const timeoutLimit = options.loginTimeoutMs ?? 120_000;
+        const pollStart = Date.now();
+
+        while (Date.now() - pollStart < timeoutLimit) {
+          const isDone = await loginPage.evaluate(() => {
+            if (window.sessionStorage.getItem('__nexus_resume__') === '1') return true;
+            const hasPass = Boolean(document.querySelector('input[type="password"]'));
+            const isLoginUrl = window.location.pathname.includes('/login');
+            return !hasPass && !isLoginUrl;
+          }).catch(() => false);
+
+          if (isDone) {
+            options.onLog?.('Login success detected! Extracting authenticated session...');
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+
+        // Harvest internal links from the authenticated dashboard
+        const internalPaths = await loginPage.$$eval('a[href]', (anchors) =>
+          anchors
+            .map((a) => (a as HTMLAnchorElement).pathname)
+            .filter((p) => p && !p.startsWith('#') && !p.includes('logout') && !p.includes('login')),
+        ).catch(() => []);
+
+        for (const p of [...new Set(internalPaths)].slice(0, 5)) {
+          const origin = new URL(targets[0].url).origin;
+          const fullUrl = `${origin}${p.startsWith('/') ? '' : '/'}${p}`;
+          if (!targets.some((t) => t.path === p)) {
+            targets.push({ url: fullUrl, path: p });
+          }
+        }
+
+        options.onLog?.('Authenticated session captured! Commencing automated testing...');
       } catch (err) {
         options.onLog?.(`Guided login notice: ${(err as Error).message}`);
       } finally {
