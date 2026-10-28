@@ -415,11 +415,27 @@ export async function runInstrumentedSession(options: SessionOptions): Promise<S
       options.onLog?.('Guided Login: Browser opened. Waiting for manual authentication...');
       const loginPage = await context.newPage();
       try {
-        await loginPage.goto(targets[0].url, { timeout: options.navigationTimeoutMs ?? 30_000 });
+        let navOk = false;
+        try {
+          await loginPage.goto(targets[0].url, { timeout: options.navigationTimeoutMs ?? 30_000 });
+          navOk = true;
+        } catch (navErr) {
+          options.onLog?.(`Guided login navigation alert: ${(navErr as Error).message}`);
+          await loginPage.setContent(`
+            <div style="font-family:ui-monospace,sans-serif; background:#090d13; color:#f0f6fc; padding:40px; height:100vh; box-sizing:border-box;">
+              <div style="max-width:600px; margin:0 auto; background:#161b22; border:1px solid #30363d; border-radius:6px; padding:24px;">
+                <h3 style="color:#f85149; margin-top:0;">Koneksi Ditolak: Server Target Sedang Menolak Port 443</h3>
+                <p style="font-size:13px; color:#8b949e; line-height:1.5;">Browser mencoba membuka <code>${targets[0].url}</code>, namun server merespons dengan <strong>ERR_CONNECTION_REFUSED</strong>.</p>
+                <p style="font-size:12px; color:#8b949e; margin-top:12px;">Penyebab umum: Layanan Apache/web di server sandbox kantor sedang mati/restart, atau membutuhkan koneksi VPN kantor.</p>
+              </div>
+            </div>
+          `).catch(() => undefined);
+          await new Promise((r) => setTimeout(r, 8000));
+        }
 
-        // Wait up to 10s for the login page / form to settle
-        await loginPage.waitForSelector('input[type="password"]', { timeout: 10_000 }).catch(() => undefined);
-
+        if (navOk) {
+          // Wait up to 10s for the login page / form to settle
+          await loginPage.waitForSelector('input[type="password"]', { timeout: 10_000 }).catch(() => undefined);
         // Inject helper banner
         await loginPage.evaluate(() => {
           if (document.getElementById('__nexus_login_banner__')) return;
@@ -471,8 +487,8 @@ export async function runInstrumentedSession(options: SessionOptions): Promise<S
             targets.push({ url: fullUrl, path: p });
           }
         }
-
-        options.onLog?.('Authenticated session captured! Commencing automated testing...');
+          options.onLog?.('Authenticated session captured! Commencing automated testing...');
+        }
       } catch (err) {
         options.onLog?.(`Guided login notice: ${(err as Error).message}`);
       } finally {
