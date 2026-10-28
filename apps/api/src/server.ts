@@ -304,9 +304,9 @@ export function createApiServer(options: ServerOptions = {}): Server {
           const langParam = url.searchParams.get('lang');
           const state = createInitialState();
           state.language = langParam === 'en' ? 'en' : 'id';
-          state.furthestStep = 5;
-          if (stepParam >= 1 && stepParam <= 5) {
-            state.currentStep = stepParam as 1 | 2 | 3 | 4 | 5;
+          state.furthestStep = 6;
+          if (stepParam >= 1 && stepParam <= 6) {
+            state.currentStep = stepParam as 1 | 2 | 3 | 4 | 5 | 6;
           }
           if (state.currentStep === 3) {
             const plan = manager.buildPlanCases({
