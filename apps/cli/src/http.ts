@@ -50,18 +50,23 @@ export async function probeUrl(
     }
     try {
       let response;
-      try {
-        response = await fetchImpl(current, {
-          redirect: 'manual',
-          signal: AbortSignal.timeout(timeoutMs),
-        });
-      } catch {
-        // Retry once after 500ms in case of transient socket/DNS handshake delay
-        await new Promise((r) => setTimeout(r, 500));
-        response = await fetchImpl(current, {
-          redirect: 'manual',
-          signal: AbortSignal.timeout(timeoutMs),
-        });
+      let lastFetchError;
+      for (let retry = 0; retry < 3; retry++) {
+        try {
+          response = await fetchImpl(current, {
+            redirect: 'manual',
+            signal: AbortSignal.timeout(timeoutMs),
+          });
+          break;
+        } catch (fetchErr) {
+          lastFetchError = fetchErr;
+          if (retry < 2) {
+            await new Promise((r) => setTimeout(r, 1000));
+          }
+        }
+      }
+      if (!response) {
+        throw lastFetchError || new Error('Fetch failed after 3 attempts');
       }
       if (response.body) {
         await response.body.cancel().catch(() => undefined);

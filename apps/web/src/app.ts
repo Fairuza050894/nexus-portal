@@ -628,8 +628,12 @@ export function renderPortalHtml(state: PortalState): string {
 
         if (repoVal) payload.repo = { localPath: repoVal };
         if (webVal) payload.web = { urls: webVal.split(',').map(s => s.trim()).filter(Boolean) };
-        if (apiBase || apiSpec) payload.api = { baseUrl: apiBase || undefined, specUrl: apiSpec || undefined };
-
+        if (apiBase && apiBase.startsWith('http')) {
+          payload.api = { baseUrl: apiBase };
+          if (apiSpec && apiSpec.startsWith('http')) {
+            payload.api.specUrl = apiSpec;
+          }
+        }
         if (effectiveMode !== 'sandbox') {
           payload.authorization = {
             ownerConfirmed: authChecked || Boolean(webVal),
@@ -663,7 +667,7 @@ export function renderPortalHtml(state: PortalState): string {
             headers: {
               'Content-Type': 'application/json',
               'X-User-Role': 'approver',
-              'X-User-Email': approverVal || 'user@company.local',
+              'X-User-Email': (payload.authorization && payload.authorization.approvedBy) ? payload.authorization.approvedBy : 'user@company.local',
             },
             body: JSON.stringify(payload)
           });

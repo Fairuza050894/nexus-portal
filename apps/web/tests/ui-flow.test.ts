@@ -465,10 +465,10 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       expect(html).toContain('SECURITY RADAR ACTIVE');
       expect(html).toContain('SVG TOPOLOGY CANVAS');
       expect(html).toContain('id="lineage-table"');
-      expect(html).toContain('Page: /checkout');
-      expect(html).toContain('POST /api/orders');
-      expect(html).toContain('orders, order_items');
-      expect(html).toContain('PII: card_token');
+      expect(html).toContain('Page: /login');
+      expect(html).toContain('POST /login');
+      expect(html).toContain('users, sessions');
+      expect(html).toContain('PII: password');
     });
   });
 
