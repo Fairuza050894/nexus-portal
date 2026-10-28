@@ -70,7 +70,7 @@ export function createInitialState(): PortalState {
     currentStep: 1,
     furthestStep: 1,
     language: 'id',
-    userRole: 'runner',
+    userRole: 'approver',
 
     name: 'Sample QA Run',
     mode: 'sandbox',

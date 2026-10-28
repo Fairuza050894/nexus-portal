@@ -660,7 +660,11 @@ export function renderPortalHtml(state: PortalState): string {
         try {
           const res = await fetch('/api/runs', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'X-User-Role': 'approver',
+              'X-User-Email': approverVal || 'user@company.local',
+            },
             body: JSON.stringify(payload)
           });
 
