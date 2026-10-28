@@ -1,0 +1,23 @@
+{
+  "name": "Audit Mobospace Sandbox Pancaran Group",
+  "mode": "staging",
+  "scope": "quick",
+  "web": {
+    "urls": ["https://mobospace-sandbox.pancaran-group.co.id/"]
+  },
+  "lanes": {
+    "repo": false,
+    "e2e": true,
+    "a11y": true,
+    "perf": true,
+    "security": true,
+    "api": false,
+    "visual": false
+  },
+  "planApproval": "auto",
+  "authorization": {
+    "ownerConfirmed": true,
+    "approvedBy": "user@pancaran-group.co.id",
+    "perfApproved": true
+  }
+}

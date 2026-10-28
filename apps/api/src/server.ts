@@ -300,25 +300,43 @@ export function createApiServer(options: ServerOptions = {}): Server {
       // 9. Web App & Static serving
       if (method === 'GET' || method === 'HEAD') {
         if (pathname === '/' || pathname === '/index.html') {
-          const stepParam = Number(url.searchParams.get('step') || 1);
+          const stepQuery = url.searchParams.get('step');
           const langParam = url.searchParams.get('lang');
+          const rootDir = manager.getRootDir();
+          const targetRunId = url.searchParams.get('runId') || RunStore.latestRunId(rootDir);
+          const realSummary = targetRunId ? RunStore.readSummaryById(rootDir, targetRunId) : undefined;
+
           const state = createInitialState();
           state.language = langParam === 'en' ? 'en' : 'id';
           state.furthestStep = 6;
-          if (stepParam >= 1 && stepParam <= 6) {
-            state.currentStep = stepParam as 1 | 2 | 3 | 4 | 5 | 6;
+
+          if (realSummary) {
+            state.runId = targetRunId;
+            state.gate = realSummary.gate.decision;
+            state.gateReasons = realSummary.gate.reasons;
+            state.findings = realSummary.findings;
+            state.webUrls = realSummary.environment?.baseUrl ?? 'https://mobospace-sandbox.pancaran-group.co.id/';
+            state.requestsCount = realSummary.totals.tests;
           }
+
+          // Default to Step 5 (Results) if a real run is loaded, otherwise respect ?step=
+          if (stepQuery) {
+            const s = Number(stepQuery);
+            if (s >= 1 && s <= 6) state.currentStep = s as 1 | 2 | 3 | 4 | 5 | 6;
+          } else if (realSummary) {
+            state.currentStep = 5;
+          }
+
           if (state.currentStep === 3) {
             const plan = manager.buildPlanCases({
               name: 'Sample Plan',
               mode: 'sandbox',
               repo: { localPath: 'fixtures/sample-todo-api' },
-              web: { urls: ['http://127.0.0.1:3100/'] },
+              web: { urls: [state.webUrls] },
             });
             state.planCases = plan.cases;
             state.approvedCaseIds = new Set(plan.cases.filter((c) => c.approved).map((c) => c.id));
           } else if (state.currentStep === 4) {
-            state.runId = '2026-10-28T00-00-00-000Z_sample';
             state.stages = {
               preflight: 'ok',
               discover: 'ok',
@@ -327,44 +345,11 @@ export function createApiServer(options: ServerOptions = {}): Server {
               correlate: 'pending',
               document: 'pending',
             };
-            state.requestsCount = 28;
             state.liveLogs = [
               'Stage preflight: ok (45ms)',
-              'Stage discover: ok (320ms) - 2 pages, 3 endpoints found',
-              'Stage app-map: running (inferred 4 edges)',
-            ];
-          } else if (state.currentStep === 5) {
-            state.gate = 'GO WITH RISKS';
-            state.gateReasons = [
-              'Coverage kebutuhan 0.0% (di bawah batas minimum 80%)',
-              '3 kasus pengujian dilewati pada repositori statis',
-              '2 temuan tergolong needs-review',
-            ];
-            state.findings = [
-              {
-                id: 'F-0001',
-                title: 'Missing Content-Security-Policy HTTP header',
-                severity: 'high',
-                confidence: 'auto-discovered',
-                category: 'security',
-                lanes: ['security'],
-                occurrences: 1,
-                evidence: [],
-                status: 'new',
-                evidenceSummary: 'Header CSP tidak terdeteksi pada response root /',
-              },
-              {
-                id: 'F-0002',
-                title: 'Elemen formulir belum memiliki label aksesibilitas',
-                severity: 'medium',
-                confidence: 'verified',
-                category: 'accessibility',
-                lanes: ['a11y'],
-                occurrences: 1,
-                evidence: [],
-                status: 'new',
-                evidenceSummary: 'WCAG 2.1 AA 4.1.2: Name, Role, Value',
-              },
+              `Target: ${state.webUrls}`,
+              'Stage discover: ok (320ms) - pages and endpoints crawled',
+              'Stage lanes: executing e2e, a11y, perf, security',
             ];
           }
           const html = renderPortalHtml(state);
