@@ -303,9 +303,21 @@ export function createApiServer(options: ServerOptions = {}): Server {
           const stepQuery = url.searchParams.get('step');
           const langParam = url.searchParams.get('lang');
           const rootDir = manager.getRootDir();
-          const targetRunId = url.searchParams.get('runId') || RunStore.latestRunId(rootDir);
-          const realSummary = targetRunId ? RunStore.readSummaryById(rootDir, targetRunId) : undefined;
+          const latestId = RunStore.latestRunId(rootDir);
+          let targetRunId = url.searchParams.get('runId') || latestId;
+          let realSummary = targetRunId ? RunStore.readSummaryById(rootDir, targetRunId) : undefined;
 
+          if (
+            (!realSummary || realSummary.run.status !== 'complete' || realSummary.findings.length === 0) &&
+            latestId &&
+            latestId !== targetRunId
+          ) {
+            const latestSummary = RunStore.readSummaryById(rootDir, latestId);
+            if (latestSummary && latestSummary.run.status === 'complete' && latestSummary.findings.length > 0) {
+              targetRunId = latestId;
+              realSummary = latestSummary;
+            }
+          }
           const state = createInitialState();
           state.language = langParam === 'en' ? 'en' : 'id';
           state.furthestStep = 6;

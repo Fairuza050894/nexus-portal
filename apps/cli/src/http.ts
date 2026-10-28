@@ -49,10 +49,20 @@ export async function probeUrl(
       };
     }
     try {
-      const response = await fetchImpl(current, {
-        redirect: 'manual',
-        signal: AbortSignal.timeout(timeoutMs),
-      });
+      let response;
+      try {
+        response = await fetchImpl(current, {
+          redirect: 'manual',
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+      } catch {
+        // Retry once after 500ms in case of transient socket/DNS handshake delay
+        await new Promise((r) => setTimeout(r, 500));
+        response = await fetchImpl(current, {
+          redirect: 'manual',
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+      }
       if (response.body) {
         await response.body.cancel().catch(() => undefined);
       }
