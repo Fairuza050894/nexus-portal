@@ -135,3 +135,12 @@ Phase 4 (4.1–4.7) is complete: correlation, classification/dedupe, baseline co
 - **Change-based selection & risk ordering:** `orderCasesByRisk` correlates git diff changed files with `AppMap` nodes, boosting risk scores for changed components and executing highest-risk tests first.
 - **Self-healing suggestions:** `detectSelfHealingSuggestions` detects status drift (e.g. 200 vs 204), schema drift, and selector drift. Emits report-only diff suggestions with `needs-review` without silently mutating suites.
 - **Regression suite promotion (`packages/qa-suite`):** `promoteTestCase` enforces naming conventions (`TC-<AREA>-<NNN>`), verified confidence, and 3× consecutive green test passes (0% flakiness) before admitting tests into the persistent test catalogue and traceability matrix.
+
+## 15. Phase 7 implementation decisions (2026-10-28)
+
+- **CI/CD pipeline suite (`.github/workflows/`):** Thin CI wrappers invoking npm scripts (`pr-check.yml`, `nightly-regression.yml`, `manual-run.yml`, `release-gate.yml`, `docs-only.yml`).
+- **Scheduling & Renewable Authorization (`packages/core/src/schedules.ts`):** Scheduled runs require an active approver-signed authorization with a 30-day expiry window. Expired authorization hard-blocks execution.
+- **Environment Concurrency Locks:** `EnvironmentLockManager` prevents concurrent runs on shared non-sandbox environments (`staging`, `uat`).
+- **Sanitized Notifications (`packages/core/src/notifications.ts`):** Formatted payloads for Slack, Teams, and Email. All inputs pass through `redactString()`, guaranteeing zero plaintext secrets or PII are published.
+- **Issue Tracker Export:** Markdown and JSON defect export formats for Jira, GitHub Issues, and Azure DevOps.
+- **Runbook (`docs/RUNBOOK.md`):** Covers operations, scheduling lifecycle, backup, retention, secret rotation, circuit breaker trip, and emergency procedures.

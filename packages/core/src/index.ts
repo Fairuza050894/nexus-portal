@@ -63,3 +63,31 @@ export type {
   ComplianceMapping,
   ComplianceRuleMapping,
 } from './compliance.js';
+export {
+  createRenewableAuthorization,
+  createSavedRunRequest,
+  renewAuthorization,
+  isAuthorizationExpired,
+  validateScheduledRun,
+  EnvironmentLockManager,
+  defaultEnvironmentLockManager,
+} from './schedules.js';
+export type {
+  RenewableAuthorization,
+  SavedRunRequest,
+  EnvironmentLock,
+} from './schedules.js';
+export {
+  extractNotificationSummary,
+  formatSlackNotification,
+  formatTeamsNotification,
+  formatEmailNotification,
+  exportFindingToJiraMarkdown,
+  exportFindingToGitHubIssue,
+} from './notifications.js';
+export type {
+  NotificationSummary,
+  SlackWebhookPayload,
+  TeamsWebhookPayload,
+  EmailNotificationPayload,
+} from './notifications.js';

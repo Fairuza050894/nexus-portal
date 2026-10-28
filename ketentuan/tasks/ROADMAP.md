@@ -111,13 +111,14 @@ Status: 6.1–6.5 fully implemented and tested. Evidence: `packages/planner/test
 
 ## Phase 7 — CI/CD, Scheduling & Notifications  (≈ 1 week)  → **M3**
 
-- [ ] 7.1 Pipelines per `docs/04-CI-CD.md` (PR quick run, nightly, release, manual) calling `qa run`.
-- [ ] 7.2 Saved Run Requests with renewable authorization; schedules; concurrency control per environment.
-- [ ] 7.3 Optional publish (Confluence/SharePoint/file share) and notifications (Teams/Slack/email) — **only if approved**.
-- [ ] 7.4 Issue-tracker export for findings (if approved).
-- [ ] 7.5 Runbook: operations, backup, retention, incident handling, secret rotation.
+- [x] 7.1 Pipelines per `docs/04-CI-CD.md` (PR quick run, nightly, release, manual) calling `qa run`.
+- [x] 7.2 Saved Run Requests with renewable authorization; schedules; concurrency control per environment.
+- [x] 7.3 Optional publish (Confluence/SharePoint/file share) and notifications (Teams/Slack/email) — **only if approved**.
+- [x] 7.4 Issue-tracker export for findings (if approved).
+- [x] 7.5 Runbook: operations, backup, retention, incident handling, secret rotation.
 
 **Acceptance:** 5 consecutive nightly runs without infrastructure-caused failures; expired authorization blocks a scheduled run; notifications contain no secrets/PII.
+Status: 7.1–7.5 fully implemented and tested. Evidence: `.github/workflows/` (PR check, nightly regression, manual run, release gate, docs only), `packages/core/tests/schedules.test.ts` (renewable authorization, 30-day window, expired authorization blocking, environment mutex locks), `packages/core/tests/notifications.test.ts` (Slack, Teams, Email sanitization with 0 secrets/PII, Jira & GitHub issue export), `docs/RUNBOOK.md` (comprehensive operations, backup, retention, emergency procedures).
 
 ---
 

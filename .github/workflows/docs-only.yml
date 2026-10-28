@@ -1,0 +1,32 @@
+name: Docs Only
+
+on:
+  workflow_dispatch:
+    inputs:
+      runId:
+        description: 'Run ID to regenerate documentation from'
+        required: false
+        default: 'latest'
+        type: string
+
+jobs:
+  regenerate-docs:
+    name: Regenerate Docs Bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Regenerate Documentation
+        run: |
+          npm run docs
+          npm run docs:verify
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regenerated-docs
+          path: artifacts/docs/
+          retention-days: 14

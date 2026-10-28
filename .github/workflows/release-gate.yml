@@ -1,0 +1,34 @@
+name: Release Gate
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-gate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-verification:
+    name: Full Release Gate & Audit Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run qa
+      - name: Verify Bundle Checksums & Artifacts
+        run: |
+          node --import tsx apps/cli/src/index.ts docs:verify
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-bundle-${{ github.ref_name }}
+          path: artifacts/bundles/
+          retention-days: 90
