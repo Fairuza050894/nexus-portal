@@ -368,6 +368,13 @@ export async function runInstrumentedSession(options: SessionOptions): Promise<S
     const launcher = bType === 'firefox' ? firefox : bType === 'webkit' ? webkit : chromium;
     const isHeadless = options.headless ?? (options.interactiveLogin ? false : true);
     browser = await launcher.launch({ headless: isHeadless });
+    const cleanupBrowser = () => {
+      void context?.close().catch(() => undefined);
+      void browser?.close().catch(() => undefined);
+    };
+    process.once('SIGINT', cleanupBrowser);
+    process.once('SIGTERM', cleanupBrowser);
+    process.once('beforeExit', cleanupBrowser);
     context = await browser.newContext({
       viewport: options.viewport ?? { width: 1366, height: 768 },
       isMobile: options.viewport?.isMobile ?? false,

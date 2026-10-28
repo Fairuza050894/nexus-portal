@@ -9,4 +9,4 @@ coverage/
 *.log
 .DS_Store
 *.local
-graphify-out/cache/
+graphify-out/

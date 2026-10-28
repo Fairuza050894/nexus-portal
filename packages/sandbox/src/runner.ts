@@ -363,9 +363,19 @@ export async function startSandbox(
     return builtResult;
   };
 
+  const cleanupHook = () => {
+    void stop();
+  };
+  process.once('SIGINT', cleanupHook);
+  process.once('SIGTERM', cleanupHook);
+  process.once('beforeExit', cleanupHook);
+
   const stop = async (): Promise<SandboxTeardown> => {
     if (stopped) return teardown;
     stopped = true;
+    process.removeListener('SIGINT', cleanupHook);
+    process.removeListener('SIGTERM', cleanupHook);
+    process.removeListener('beforeExit', cleanupHook);
     await stopProcess(child, deps);
     if (containerName) {
       try {

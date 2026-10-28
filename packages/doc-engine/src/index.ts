@@ -311,5 +311,5 @@ export function relativeTo(rootDir: string, filePath: string): string {
   return relative(rootDir, filePath).replace(/\\/g, '/');
 }
 
-export { listZipNames } from './zip.js';
+export { listZipNames, writeZipStream, createZip } from './zip.js';
 export type { ZipEntry } from './zip.js';
