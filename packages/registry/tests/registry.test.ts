@@ -118,7 +118,9 @@ describe('Row and Table Validation', () => {
     };
     const prodCheck = registry.validateRow('api', postRow, 0, { mode: 'prod-safe' });
     expect(prodCheck.valid).toBe(false);
-    expect(prodCheck.errors[0].message).toContain('State-changing method "POST" is blocked in prod-safe mode');
+    expect(prodCheck.errors[0].message).toContain(
+      'State-changing method "POST" is blocked in prod-safe mode',
+    );
 
     const getRow = {
       method: 'GET',
@@ -133,7 +135,9 @@ describe('Row and Table Validation', () => {
   it('enforces atLeastOneRow validator for tables requiring rows', () => {
     const emptyCheck = registry.validateTestRows('e2e', []);
     expect(emptyCheck.valid).toBe(false);
-    expect(emptyCheck.errors.some((e) => e.message.includes('At least one test row is required'))).toBe(true);
+    expect(
+      emptyCheck.errors.some((e) => e.message.includes('At least one test row is required')),
+    ).toBe(true);
 
     const populatedCheck = registry.validateTestRows('e2e', [
       {

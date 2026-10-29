@@ -142,6 +142,7 @@ export interface DiscoverOptions {
   };
   authRef?: string;
   env?: NodeJS.ProcessEnv;
+  cookieHeader?: string;
   timeoutMs?: number;
   deadlineMs?: number;
   now?: () => number;

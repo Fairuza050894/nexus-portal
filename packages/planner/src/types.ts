@@ -2,13 +2,7 @@ import type { AppMap } from '@nexus/app-map';
 import type { DiscoveryResult, RepoAnalysis } from '@nexus/discover';
 import type { RequirementRow, RunRequest } from '@nexus/core';
 
-export type PlanCaseSource =
-  | 'invariant'
-  | 'spec'
-  | 'crawl'
-  | 'repo-route'
-  | 'requirement'
-  | 'user';
+export type PlanCaseSource = 'invariant' | 'spec' | 'crawl' | 'repo-route' | 'requirement' | 'user';
 
 export type PlanCaseConfidence = 'verified' | 'auto-discovered' | 'needs-review';
 

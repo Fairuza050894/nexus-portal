@@ -1,13 +1,5 @@
 export type FieldKind =
-  | 'text'
-  | 'select'
-  | 'multiselect'
-  | 'number'
-  | 'url'
-  | 'path'
-  | 'json'
-  | 'secretRef'
-  | 'boolean';
+  'text' | 'select' | 'multiselect' | 'number' | 'url' | 'path' | 'json' | 'secretRef' | 'boolean';
 
 export interface FieldOption {
   value: string;

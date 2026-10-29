@@ -49,11 +49,7 @@ export const REQUIRED_DOC_FILES = [
   'coverage-report.html',
 ];
 
-export const PDF_DOC_FILES = [
-  'executive-summary.pdf',
-  'execution-report.pdf',
-  'plan-approval.pdf',
-];
+export const PDF_DOC_FILES = ['executive-summary.pdf', 'execution-report.pdf', 'plan-approval.pdf'];
 
 const SECRET_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
   { name: 'GitHub token', pattern: /gh[pousr]_[0-9a-zA-Z]{36}/ },
@@ -89,9 +85,9 @@ function validateSarif(content: string): string[] {
     }
     const parsed = JSON.parse(content) as unknown;
     if (sarifValidator(parsed)) return [];
-    return (sarifValidator.errors ?? []).slice(0, 10).map(
-      (error) => `${error.instancePath || '/'} ${error.message ?? 'invalid'}`,
-    );
+    return (sarifValidator.errors ?? [])
+      .slice(0, 10)
+      .map((error) => `${error.instancePath || '/'} ${error.message ?? 'invalid'}`);
   } catch (error) {
     return [`invalid SARIF JSON: ${(error as Error).message}`];
   }
@@ -99,9 +95,7 @@ function validateSarif(content: string): string[] {
 
 function xmlStructureError(content: string): string | undefined {
   if (!content.trimStart().startsWith('<?xml')) return 'missing XML declaration';
-  const body = content
-    .replace(/<\?[\s\S]*?\?>/g, '')
-    .replace(/<!--[\s\S]*?-->/g, '');
+  const body = content.replace(/<\?[\s\S]*?\?>/g, '').replace(/<!--[\s\S]*?-->/g, '');
   if (/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)/.test(body)) {
     return 'unescaped ampersand';
   }

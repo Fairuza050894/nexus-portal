@@ -35,11 +35,7 @@ describe('compliance mapping', () => {
   it('loads the example mapping and matches rule-specific entries before category', () => {
     const mapping = loadComplianceMapping(join(process.cwd(), 'compliance', 'mapping.yaml'));
     expect(mapping.version).toBe('1.0');
-    expect(mapping.frameworks).toEqual([
-      'PCI-DSS v4',
-      'SOC 2',
-      'ISO/IEC 27001:2022',
-    ]);
+    expect(mapping.frameworks).toEqual(['PCI-DSS v4', 'SOC 2', 'ISO/IEC 27001:2022']);
 
     const ruleMatches = matchCompliance(mapping, finding());
     expect(ruleMatches).toEqual(
@@ -53,19 +49,14 @@ describe('compliance mapping', () => {
       finding({ ruleId: 'some-other-security-rule' }),
     );
     expect(categoryMatches).toEqual(
-      expect.arrayContaining([
-        { framework: 'SOC 2', controls: ['CC7.1'], matchedBy: 'category' },
-      ]),
+      expect.arrayContaining([{ framework: 'SOC 2', controls: ['CC7.1'], matchedBy: 'category' }]),
     );
   });
 
   it('returns no match for unmapped findings', () => {
     const mapping = loadComplianceMapping(join(process.cwd(), 'compliance', 'mapping.yaml'));
     expect(
-      matchCompliance(
-        mapping,
-        finding({ ruleId: 'unknown-rule', category: 'quality-debt' }),
-      ),
+      matchCompliance(mapping, finding({ ruleId: 'unknown-rule', category: 'quality-debt' })),
     ).toEqual([]);
   });
 
@@ -76,11 +67,7 @@ describe('compliance mapping', () => {
     expect(() => loadComplianceMapping(invalid)).toThrow('mappings must be an array');
 
     const missingControls = join(dir, 'missing-controls.yaml');
-    writeFileSync(
-      missingControls,
-      'version: "1.0"\nmappings:\n  - category: security\n',
-      'utf8',
-    );
+    writeFileSync(missingControls, 'version: "1.0"\nmappings:\n  - category: security\n', 'utf8');
     expect(() => loadComplianceMapping(missingControls)).toThrow('controls must be an object');
 
     expect(() => loadComplianceMapping(join(dir, 'absent.yaml'))).toThrow(

@@ -236,6 +236,44 @@ export const PORTAL_STYLES = `
       color: var(--text-muted);
       line-height: 1.35;
     }
+    /* Segmented Scope Selector */
+    .scope-selector {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .scope-opt {
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 8px 10px;
+      background: var(--bg);
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+    .scope-opt:hover {
+      border-color: var(--border-focus);
+    }
+    .scope-opt.selected {
+      border-color: var(--accent-fg);
+      background: rgba(31, 111, 235, 0.08);
+    }
+    .scope-opt-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-bright);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .scope-opt-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
 
     /* Status Banners */
     .banner {
@@ -271,6 +309,65 @@ export const PORTAL_STYLES = `
     .tag-discovered, .badge-discovered { background: rgba(31, 111, 235, 0.12); color: var(--accent-fg); border-color: rgba(88, 166, 255, 0.3); }
     .tag-review, .badge-review { background: var(--warning-bg); color: var(--warning-fg); border-color: rgba(210, 153, 34, 0.3); }
     .tag-muted, .badge-skipped { background: var(--border-subtle); color: var(--text-muted); border-color: var(--border); }
+    .tag-critical { background: var(--danger-bg); color: var(--danger-fg); border-color: rgba(248, 81, 73, 0.3); }
+    .tag-high { background: rgba(240, 136, 62, 0.12); color: #f0883e; border-color: rgba(240, 136, 62, 0.3); }
+    .tag-medium { background: var(--warning-bg); color: var(--warning-fg); border-color: rgba(210, 153, 34, 0.3); }
+    .tag-low { background: rgba(56, 139, 253, 0.12); color: var(--accent-fg); border-color: rgba(56, 139, 253, 0.3); }
+
+    /* Interactive Lane Chips */
+    .chip-interactive {
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .chip-interactive:hover:not(.disabled) {
+      filter: brightness(1.2);
+    }
+    .chip-interactive.inactive {
+      background: var(--surface);
+      color: var(--text-muted);
+      border-color: var(--border);
+      opacity: 0.55;
+      text-decoration: line-through;
+    }
+    .chip-interactive.disabled {
+      cursor: not-allowed;
+      opacity: 0.35;
+      background: var(--surface-subtle);
+      border-color: var(--border-subtle);
+    }
+
+    /* Inline Drawer */
+    .inline-drawer {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface-subtle);
+      margin-top: 14px;
+      margin-bottom: 14px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    .inline-drawer-header {
+      padding: 8px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .inline-drawer-body {
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
 
     /* Action Buttons */
     .btn {
@@ -399,5 +496,128 @@ export const PORTAL_STYLES = `
       background: var(--surface-hover);
       border-color: var(--accent-fg);
       color: var(--text-bright);
+    }
+    /* Pill Count Badge & Builder Column Widths */
+    .pill-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 0 5px;
+      border-radius: 8px;
+      font-size: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-bright);
+    }
+    .col-scenario { min-width: 220px; }
+    .col-steps { min-width: 260px; }
+    .col-expected { min-width: 240px; }
+
+    /* Live Run Telemetry & Terminal Visuals */
+    @keyframes pulse-dot {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .live-pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--success-fg);
+      font-weight: 700;
+      font-size: 11px;
+      font-family: var(--mono);
+    }
+    .live-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success-fg);
+      box-shadow: 0 0 8px rgba(63, 185, 80, 0.7);
+      animation: pulse-dot 1.5s infinite ease-in-out;
+    }
+    .progress-bar-bg {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      height: 6px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.3s ease;
+    }
+    .progress-bar-fill.complete {
+      background: var(--success-fg);
+    }
+    .terminal-window {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      background: #04070b;
+    }
+    .terminal-topbar {
+      background: #0d1117;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .terminal-dot-red { background: #ff5f56; }
+    .terminal-dot-yellow { background: #ffbd2e; }
+    .terminal-dot-green { background: #27c93f; }
+    .log-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 2px 0;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .log-time {
+      color: #6e7681;
+      flex-shrink: 0;
+    }
+    .log-text {
+      flex: 1;
+      word-break: break-all;
+    }
+
+    /* Skipped rows & interactive highlights */
+    tr.row-skipped td {
+      opacity: 0.55;
+      background: var(--surface-subtle);
+    }
+    tr.finding-row {
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+    tr.finding-row:hover td {
+      background: var(--surface-hover);
+    }
+    .svg-topology-node {
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .svg-topology-node:hover rect {
+      stroke: var(--border-focus);
+      stroke-width: 2px;
+      filter: brightness(1.15);
+    }
+    .auth-field-row {
+      margin-bottom: 6px;
     }
 `;

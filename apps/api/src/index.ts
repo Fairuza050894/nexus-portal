@@ -1,3 +1,17 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+for (const envName of ['.env', '.env.local']) {
+  const envPath = resolve(process.cwd(), envName);
+  if (existsSync(envPath)) {
+    try {
+      process.loadEnvFile(envPath);
+    } catch {
+      // abaikan error parse jika file kosong atau sudah termuat
+    }
+  }
+}
+
 import { createApiServer } from './server.js';
 import { defaultRunManager, RunManager } from './runs.js';
 import { defaultEventStream, EventStreamManager } from './events.js';

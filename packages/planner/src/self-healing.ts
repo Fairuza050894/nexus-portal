@@ -3,7 +3,13 @@ import type { SelfHealingSuggestion } from './types.js';
 
 export function detectSelfHealingSuggestions(
   findings: Finding[],
-  executedCases: Array<{ id: string; lane: string; target?: string; expected?: string; actual?: string }>,
+  executedCases: Array<{
+    id: string;
+    lane: string;
+    target?: string;
+    expected?: string;
+    actual?: string;
+  }>,
 ): SelfHealingSuggestion[] {
   const suggestions: SelfHealingSuggestion[] = [];
 
@@ -41,7 +47,10 @@ export function detectSelfHealingSuggestions(
     }
 
     // 2. Schema field drift
-    if (item.actual.toLowerCase().includes('schema') || item.actual.toLowerCase().includes('additional properties')) {
+    if (
+      item.actual.toLowerCase().includes('schema') ||
+      item.actual.toLowerCase().includes('additional properties')
+    ) {
       suggestions.push({
         caseId: item.id,
         lane: item.lane,

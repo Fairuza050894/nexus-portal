@@ -7,11 +7,13 @@ Welcome to the Nexus QA Portal engineering repository! This guide provides onboa
 ## 1. Development Setup
 
 ### Prerequisites
+
 - **Node.js**: >= 20.0.0
 - **npm**: >= 10.0.0
 - **Chromium**: Installed via Playwright
 
 ### Initial Setup
+
 ```bash
 git clone https://github.com/Fairuza050894/nexus-portal.git
 cd nexus-portal
@@ -23,32 +25,42 @@ npm run qa               # Runs lint, typecheck, vitest monorepo suite, smoke ru
 
 ## 2. Monorepo Architecture Overview
 
-| Package | Role |
-|---|---|
-| `packages/core` | Run Request schema, Mode Guard, Allowlist/SSRF validation, redaction, audit |
-| `packages/discover` | Web crawler, OpenAPI importer, AST repo route & DB schema extractors |
-| `packages/app-map` | Application Map builder, risk scoring, full-stack data lineage |
-| `packages/session` | Playwright Chromium context, axe-core a11y, Web Vitals, passive security |
-| `packages/lanes` | Test lane scheduler (E2E, API, Repo, A11y, Perf, Security, Visual, k6, Plugins) |
-| `packages/correlate` | Signal correlation, fingerprint v2 dedupe, baseline comparison, FP replay |
-| `packages/gate` | Quality gate evaluator (GO / GO WITH RISKS / NO-GO) & Flaky quarantine |
-| `packages/doc-engine` | 15-document bundle generator (HTML, PDF, XLSX, SARIF 2.1.0, JUnit XML) |
-| `packages/registry` | Data-driven test types catalogue (`e2e`, `api`, `a11y`, `perf`, `visual`, `security-passive`) |
-| `packages/planner` | 5 test generators, diff suggester, change-based risk ordering, self-healing |
-| `packages/qa-suite` | Regression suite promotion pipeline with 3x green check |
-| `apps/cli` | Command-line interface (`qa run`, `qa plan`, `qa docs`, `qa clean`) |
-| `apps/api` | REST API server, OIDC/role auth, SSE real-time event streaming, bundle download |
-| `apps/web` | Engineering console (Target, Test Builder, Plan Review, Live Run, Results, Lineage) |
+| Package               | Role                                                                                          |
+| --------------------- | --------------------------------------------------------------------------------------------- |
+| `packages/core`       | Run Request schema, Mode Guard, Allowlist/SSRF validation, redaction, audit                   |
+| `packages/discover`   | Web crawler, OpenAPI importer, AST repo route & DB schema extractors                          |
+| `packages/app-map`    | Application Map builder, risk scoring, full-stack data lineage                                |
+| `packages/session`    | Playwright Chromium context, axe-core a11y, Web Vitals, passive security                      |
+| `packages/lanes`      | Test lane scheduler (E2E, API, Repo, A11y, Perf, Security, Visual, k6, Plugins)               |
+| `packages/correlate`  | Signal correlation, fingerprint v2 dedupe, baseline comparison, FP replay                     |
+| `packages/gate`       | Quality gate evaluator (GO / GO WITH RISKS / NO-GO) & Flaky quarantine                        |
+| `packages/doc-engine` | 15-document bundle generator (HTML, PDF, XLSX, SARIF 2.1.0, JUnit XML)                        |
+| `packages/registry`   | Data-driven test types catalogue (`e2e`, `api`, `a11y`, `perf`, `visual`, `security-passive`) |
+| `packages/planner`    | 5 test generators, diff suggester, change-based risk ordering, self-healing                   |
+| `packages/qa-suite`   | Regression suite promotion pipeline with 3x green check                                       |
+| `apps/cli`            | Command-line interface (`qa run`, `qa plan`, `qa docs`, `qa clean`)                           |
+| `apps/api`            | REST API server, OIDC/role auth, SSE real-time event streaming, bundle download               |
+| `apps/web`            | Engineering console (Target, Test Builder, Plan Review, Live Run, Results, Lineage)           |
 
 ---
 
 ## 3. How to Add a New Test Lane
 
 To add a new lane (e.g. `mobile` or `fuzz`):
+
 1. **Declare Lane Name**:
    In `packages/lanes/src/types.ts`, add the lane name to `LANE_NAMES`:
    ```ts
-   export const LANE_NAMES = ['repo', 'api', 'e2e', 'a11y', 'visual', 'perf', 'security', 'my-lane'] as const;
+   export const LANE_NAMES = [
+     'repo',
+     'api',
+     'e2e',
+     'a11y',
+     'visual',
+     'perf',
+     'security',
+     'my-lane',
+   ] as const;
    ```
 2. **Implement Lane Logic**:
    Create `packages/lanes/src/my-lane.ts`:
@@ -68,6 +80,7 @@ To add a new lane (e.g. `mobile` or `fuzz`):
 ## 4. How to Add a New Test Type in Registry
 
 Test types are data-driven JSON/TS definitions in `packages/registry/src/definitions.ts`:
+
 1. Define the type configuration:
    ```ts
    export const MY_TYPE_DEFINITION: TestTypeRegistryDefinition = {
@@ -78,9 +91,9 @@ Test types are data-driven JSON/TS definitions in `packages/registry/src/definit
      lane: 'my-lane',
      modes: { sandbox: true, staging: true, prodSafe: false }, // Mode guard rules
      requiresApproval: false,
-     globals: [ /* Global fields */ ],
-     columns: [ /* Table columns for test rows */ ],
-     defaults: [ /* Sample rows */ ],
+     globals: [/* Global fields */],
+     columns: [/* Table columns for test rows */],
+     defaults: [/* Sample rows */],
      validators: ['atLeastOneRow', 'urlOnAllowlist'],
    };
    ```
@@ -91,6 +104,7 @@ Test types are data-driven JSON/TS definitions in `packages/registry/src/definit
 ## 5. How to Add a New Framework Route Extractor
 
 In `packages/discover/src/repo-analyzer.ts`:
+
 1. Write an extractor function that inspects source files using AST or regex patterns:
    ```ts
    export function myFrameworkRoutes(file: string, source: string): RepoRoute[] {
@@ -105,6 +119,7 @@ In `packages/discover/src/repo-analyzer.ts`:
 ## 6. How to Add a New Documentation Section
 
 In `packages/doc-engine/src/`:
+
 1. Add section template logic in `packages/doc-engine/src/documents.ts`.
 2. Provide Indonesian and English translations in `packages/doc-engine/src/i18n.ts`.
 3. If exporting machine-readable schemas, declare schema and validate in `packages/doc-engine/src/verify.ts`.

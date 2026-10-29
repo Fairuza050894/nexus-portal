@@ -29,29 +29,29 @@ nexus-portal/
 
 ## 2. Specification Navigation (What was specified)
 
-| Reference | Document Title | Scope & Authority |
-|---|---|---|
-| `ketentuan/docs/01-ARCHITECTURE.md` | Core Monorepo Architecture | Monorepo layout, strict TS, package boundaries |
-| `ketentuan/docs/02-TEST-STRATEGY.md` | Multi-Lane Test Strategy | Unit, integration, E2E, a11y, perf, security |
-| `ketentuan/docs/03-DOC-GENERATION.md` | Documentation Engine & Bundles | 15-document bundle, SARIF 2.1.0, JUnit XML |
-| `ketentuan/docs/04-CI-CD.md` | CI/CD Pipelines & Scheduling | PR check, nightly regression, manual runs |
-| `ketentuan/docs/05-TARGET-INTAKE-AND-MODES.md` | Target Intake & Mode Guard | Sandbox, Staging, Prod-Safe execution boundaries |
-| `ketentuan/docs/06-UNIFIED-PIPELINE.md` | Unified Execution Pipeline | Single crawl & browser session, lane scheduler |
-| `ketentuan/docs/07-TEST-BUILDER-UI.md` | Web Console & Test Registry | Data-driven test types catalogue & API contract |
-| `ketentuan/docs/08-UI-FLOW-REFERENCE.md` | 5-Step UI Flow Reference | Acceptance criteria and observable user interactions |
-| `ketentuan/docs/09-EXTERNAL-TOOLS-INTEGRATION.md` | Plugin-Lane & External Tools | `LanePlugin` interface, forbidden capabilities |
+| Reference                                         | Document Title                 | Scope & Authority                                    |
+| ------------------------------------------------- | ------------------------------ | ---------------------------------------------------- |
+| `ketentuan/docs/01-ARCHITECTURE.md`               | Core Monorepo Architecture     | Monorepo layout, strict TS, package boundaries       |
+| `ketentuan/docs/02-TEST-STRATEGY.md`              | Multi-Lane Test Strategy       | Unit, integration, E2E, a11y, perf, security         |
+| `ketentuan/docs/03-DOC-GENERATION.md`             | Documentation Engine & Bundles | 15-document bundle, SARIF 2.1.0, JUnit XML           |
+| `ketentuan/docs/04-CI-CD.md`                      | CI/CD Pipelines & Scheduling   | PR check, nightly regression, manual runs            |
+| `ketentuan/docs/05-TARGET-INTAKE-AND-MODES.md`    | Target Intake & Mode Guard     | Sandbox, Staging, Prod-Safe execution boundaries     |
+| `ketentuan/docs/06-UNIFIED-PIPELINE.md`           | Unified Execution Pipeline     | Single crawl & browser session, lane scheduler       |
+| `ketentuan/docs/07-TEST-BUILDER-UI.md`            | Web Console & Test Registry    | Data-driven test types catalogue & API contract      |
+| `ketentuan/docs/08-UI-FLOW-REFERENCE.md`          | 5-Step UI Flow Reference       | Acceptance criteria and observable user interactions |
+| `ketentuan/docs/09-EXTERNAL-TOOLS-INTEGRATION.md` | Plugin-Lane & External Tools   | `LanePlugin` interface, forbidden capabilities       |
 
 ---
 
 ## 3. Operational Navigation (How the platform runs)
 
-| Reference | Document Title | Purpose |
-|---|---|---|
-| `docs/RUNBOOK.md` | Platform Operational Runbook | SRE/QA operations, scheduling, backup, secret rotation |
-| `docs/DECISIONS.md` | Implementation Decisions | Chronological record of decisions from Phase 0 to 9 |
-| `docs/adr/` | Architecture Decision Records | Formal ADRs 0001 through 0005 |
-| `docs/evaluations/deep-eye.md` | Deep Eye Security Evaluation | Static read-only evaluation of candidate scanner |
-| `CONTRIBUTING.md` | Contributor Onboarding | Developer extension tutorials & coding standards |
+| Reference                      | Document Title                | Purpose                                                |
+| ------------------------------ | ----------------------------- | ------------------------------------------------------ |
+| `docs/RUNBOOK.md`              | Platform Operational Runbook  | SRE/QA operations, scheduling, backup, secret rotation |
+| `docs/DECISIONS.md`            | Implementation Decisions      | Chronological record of decisions from Phase 0 to 9    |
+| `docs/adr/`                    | Architecture Decision Records | Formal ADRs 0001 through 0005                          |
+| `docs/evaluations/deep-eye.md` | Deep Eye Security Evaluation  | Static read-only evaluation of candidate scanner       |
+| `CONTRIBUTING.md`              | Contributor Onboarding        | Developer extension tutorials & coding standards       |
 
 ---
 

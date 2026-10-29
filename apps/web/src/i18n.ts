@@ -38,8 +38,10 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     apiSpecUrlLabel: 'OpenAPI Spec URL atau Path:',
     rawSecretError: 'Rahasia atau password mentah ditolak. Gunakan format "vault:<kunci>".',
     missingTargetError: 'Masukkan link repo atau URL web target untuk diuji.',
-    sandboxNeedsRepoError: 'Mode sandbox membutuhkan repository untuk membangun dan menjalankan aplikasi.',
-    stagingNeedsAuthError: 'Mode staging/prod-safe mewajibkan konfirmasi otorisasi dan nama approver.',
+    sandboxNeedsRepoError:
+      'Mode sandbox membutuhkan repository untuk membangun dan menjalankan aplikasi.',
+    stagingNeedsAuthError:
+      'Mode staging/prod-safe mewajibkan konfirmasi otorisasi dan nama approver.',
     suggestScenarios: 'Sarankan Skenario (Suggest)',
     addRow: 'Tambah Baris',
     deleteRow: 'Hapus',
@@ -99,8 +101,10 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     apiSpecUrlLabel: 'OpenAPI Spec URL or Path:',
     rawSecretError: 'Raw secrets or passwords are rejected. Use "vault:<key>" references only.',
     missingTargetError: 'Provide a repository link or target web URL to test.',
-    sandboxNeedsRepoError: 'Sandbox mode requires a repository to build and start the app container.',
-    stagingNeedsAuthError: 'Staging and prod-safe modes require authorization confirmation and an approver.',
+    sandboxNeedsRepoError:
+      'Sandbox mode requires a repository to build and start the app container.',
+    stagingNeedsAuthError:
+      'Staging and prod-safe modes require authorization confirmation and an approver.',
     suggestScenarios: 'Suggest Scenarios',
     addRow: 'Add Row',
     deleteRow: 'Delete',

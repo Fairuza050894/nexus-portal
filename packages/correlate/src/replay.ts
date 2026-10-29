@@ -55,10 +55,7 @@ function mismatchReason(finding: Finding, status: number | undefined): string {
   return 'no expected status was recorded';
 }
 
-async function replayApi(
-  finding: Finding,
-  executor: ReplayExecutor,
-): Promise<ReplayOutcome> {
+async function replayApi(finding: Finding, executor: ReplayExecutor): Promise<ReplayOutcome> {
   const url = apiUrl(finding);
   if (!url) {
     return { result: 'inconclusive', evidence: [], reason: 'no stored API request URL' };
@@ -123,10 +120,7 @@ async function replayApi(
   }
 }
 
-async function replayE2e(
-  finding: Finding,
-  executor: ReplayExecutor,
-): Promise<ReplayOutcome> {
+async function replayE2e(finding: Finding, executor: ReplayExecutor): Promise<ReplayOutcome> {
   if (!executor.e2e) {
     return {
       result: 'inconclusive',
@@ -213,7 +207,11 @@ export function applyReplayOutcome(
  */
 export function promoteConfirmedFinding(finding: Finding): Finding {
   const hasAssertionSource = (finding.requirements?.length ?? 0) > 0;
-  if (finding.replay?.result === 'confirmed' && hasAssertionSource && finding.confidence !== 'verified') {
+  if (
+    finding.replay?.result === 'confirmed' &&
+    hasAssertionSource &&
+    finding.confidence !== 'verified'
+  ) {
     return withEvidenceSummary({ ...finding, confidence: 'verified' });
   }
   return finding;

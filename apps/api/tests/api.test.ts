@@ -67,7 +67,9 @@ describe('Apps API Server Endpoints & Security Guards', () => {
     });
     expect(secretRes.status).toBe(400);
     const secretJson = (await secretRes.json()) as { errors: string[] };
-    expect(secretJson.errors.some((e) => e.includes('Raw secrets or passwords are rejected'))).toBe(true);
+    expect(secretJson.errors.some((e) => e.includes('Raw secrets or passwords are rejected'))).toBe(
+      true,
+    );
 
     // 3. Staging missing approval -> rejected
     const stagingRes = await fetch(`${baseUrl}/api/runs/dry-run`, {
@@ -186,9 +188,7 @@ describe('Apps API Server Endpoints & Security Guards', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        rows: [
-          { method: 'INVALID_VERB', endpoint: 'not-a-path', expectedStatus: 'not-a-number' },
-        ],
+        rows: [{ method: 'INVALID_VERB', endpoint: 'not-a-path', expectedStatus: 'not-a-number' }],
       }),
     });
     expect(invalidRes.status).toBe(400);
@@ -204,5 +204,117 @@ describe('Apps API Server Endpoints & Security Guards', () => {
     expect(Array.isArray(json.nodes)).toBe(true);
     expect(Array.isArray(json.edges)).toBe(true);
     expect(Array.isArray(json.lineage)).toBe(true);
+  });
+
+  it('RunManager cleanly and completely loads qa.config.ts', () => {
+    const config = runManager.getConfig();
+    expect(config.modes).toContain('sandbox');
+    expect(config.modes).toContain('staging');
+    expect(config.modes).toContain('prod-safe');
+    expect(config.allowlist).toContain('127.0.0.1');
+    expect(config.allowlist).toContain('staging-qa-pilot.local');
+    expect(config.gates.criticalPassRate).toBe(1);
+    expect(config.gates.overallPassRate).toBe(0.95);
+  });
+
+  it('POST /api/runs/dry-run resolves relative api.specUrl against baseUrl or web.urls[0]', async () => {
+    // 1. Relative specUrl resolved against api.baseUrl
+    const resBase = await fetch(`${baseUrl}/api/runs/dry-run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'spec relative to baseUrl',
+        mode: 'staging',
+        authorization: { ownerConfirmed: true, approvedBy: 'Lead QA' },
+        api: { baseUrl: 'http://127.0.0.1:3100', specUrl: '/openapi.json' },
+      }),
+    });
+    expect(resBase.status).toBe(200);
+    const jsonBase = (await resBase.json()) as {
+      valid: boolean;
+      activeLanes: string[];
+      targets: string[];
+    };
+    expect(jsonBase.valid).toBe(true);
+    expect(jsonBase.activeLanes).toContain('api');
+    expect(jsonBase.targets).toContain('http://127.0.0.1:3100/openapi.json');
+
+    // 2. Relative specUrl resolved against web.urls[0]
+    const resWeb = await fetch(`${baseUrl}/api/runs/dry-run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'spec relative to web.urls[0]',
+        mode: 'staging',
+        authorization: { ownerConfirmed: true, approvedBy: 'Lead QA' },
+        web: { urls: ['http://127.0.0.1:3100/'] },
+        api: { specUrl: '/openapi.json' },
+      }),
+    });
+    expect(resWeb.status).toBe(200);
+    const jsonWeb = (await resWeb.json()) as {
+      valid: boolean;
+      activeLanes: string[];
+      targets: string[];
+    };
+    expect(jsonWeb.valid).toBe(true);
+    expect(jsonWeb.activeLanes).toContain('api');
+    expect(jsonWeb.targets).toContain('http://127.0.0.1:3100/openapi.json');
+
+    // 3. Full URL specUrl
+    const resFull = await fetch(`${baseUrl}/api/runs/dry-run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'spec full URL',
+        mode: 'staging',
+        authorization: { ownerConfirmed: true, approvedBy: 'Lead QA' },
+        api: { specUrl: 'http://127.0.0.1:3100/openapi.json' },
+      }),
+    });
+    expect(resFull.status).toBe(200);
+    const jsonFull = (await resFull.json()) as { valid: boolean; activeLanes: string[] };
+    expect(jsonFull.valid).toBe(true);
+    expect(jsonFull.activeLanes).toContain('api');
+  });
+
+  it('POST /api/runs/plan-preview returns plan cases without creating a run', async () => {
+    const res = await fetch(`${baseUrl}/api/runs/plan-preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'preview run',
+        mode: 'sandbox',
+        repo: { localPath: 'fixtures/sample-todo-api' },
+        web: { urls: ['http://127.0.0.1:3100/'] },
+      }),
+    });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      cases: Array<{ id: string; title: string; lane: string }>;
+    };
+    expect(Array.isArray(json.cases)).toBe(true);
+    expect(json.cases.length).toBeGreaterThan(0);
+    expect(json.cases.some((c) => c.lane === 'e2e')).toBe(true);
+  });
+
+  it('GET / always initializes planCases so Step 3 is never empty', async () => {
+    const res = await fetch(`${baseUrl}/?step=1`);
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // Verify Step 3 table contains plan case rows even on initial render
+    expect(html).toContain('TC-');
+    expect(html).toContain('plan-table');
+  });
+
+  it('GET /?step=4 renders stage cards and does not hang on pending if real run is loaded', async () => {
+    const res = await fetch(`${baseUrl}/?step=4`);
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('stage-card-preflight');
+    expect(html).toContain('stage-card-lanes');
+    expect(html).toContain('stage-card-app-map');
+    expect(html).toContain('telemetry-requests');
+    expect(html).toContain('telemetry-circuit');
   });
 });

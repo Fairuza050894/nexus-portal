@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  laravelRoutes,
-  fastApiRoutes,
-  springBootRoutes,
-} from '../src/index.js';
+import { laravelRoutes, fastApiRoutes, springBootRoutes } from '../src/index.js';
 
 describe('Extended Framework Route Extractors (8.5)', () => {
   it('extracts Laravel PHP routes from routes/web.php or routes/api.php syntax', () => {
@@ -20,7 +16,11 @@ describe('Extended Framework Route Extractors (8.5)', () => {
     expect(routes).toHaveLength(3);
     expect(routes[0]).toMatchObject({ method: 'GET', path: '/users', framework: 'laravel' });
     expect(routes[1]).toMatchObject({ method: 'POST', path: '/api/orders', framework: 'laravel' });
-    expect(routes[2]).toMatchObject({ method: 'DELETE', path: '/api/orders/{id}', framework: 'laravel' });
+    expect(routes[2]).toMatchObject({
+      method: 'DELETE',
+      path: '/api/orders/{id}',
+      framework: 'laravel',
+    });
   });
 
   it('extracts FastAPI Python routes from @app and @router decorators', () => {
@@ -69,7 +69,15 @@ describe('Extended Framework Route Extractors (8.5)', () => {
     const routes = springBootRoutes('AccountController.java', javaSource);
     expect(routes).toHaveLength(3);
     expect(routes[0]).toMatchObject({ method: 'GET', path: '/accounts', framework: 'spring' });
-    expect(routes[1]).toMatchObject({ method: 'POST', path: '/accounts/transfer', framework: 'spring' });
-    expect(routes[2]).toMatchObject({ method: 'DELETE', path: '/accounts/{id}', framework: 'spring' });
+    expect(routes[1]).toMatchObject({
+      method: 'POST',
+      path: '/accounts/transfer',
+      framework: 'spring',
+    });
+    expect(routes[2]).toMatchObject({
+      method: 'DELETE',
+      path: '/accounts/{id}',
+      framework: 'spring',
+    });
   });
 });

@@ -40,9 +40,7 @@ describe('Full-Stack Data Lineage & Topology Graph Builder', () => {
         riskFactors: [],
       },
     ],
-    edges: [
-      { from: 'p-checkout', to: 'ep-orders', kind: 'calls', confidence: 'verified' },
-    ],
+    edges: [{ from: 'p-checkout', to: 'ep-orders', kind: 'calls', confidence: 'verified' }],
     stats: {
       pages: 1,
       endpoints: 1,
@@ -60,20 +58,60 @@ describe('Full-Stack Data Lineage & Topology Graph Builder', () => {
       {
         name: 'orders',
         columns: [
-          { name: 'id', type: 'Int', isPrimaryKey: true, isForeignKey: false, isNullable: false, isSensitivePII: false },
-          { name: 'user_id', type: 'String', isPrimaryKey: false, isForeignKey: true, isNullable: false, isSensitivePII: false },
-          { name: 'card_token', type: 'String', isPrimaryKey: false, isForeignKey: false, isNullable: false, isSensitivePII: true },
+          {
+            name: 'id',
+            type: 'Int',
+            isPrimaryKey: true,
+            isForeignKey: false,
+            isNullable: false,
+            isSensitivePII: false,
+          },
+          {
+            name: 'user_id',
+            type: 'String',
+            isPrimaryKey: false,
+            isForeignKey: true,
+            isNullable: false,
+            isSensitivePII: false,
+          },
+          {
+            name: 'card_token',
+            type: 'String',
+            isPrimaryKey: false,
+            isForeignKey: false,
+            isNullable: false,
+            isSensitivePII: true,
+          },
         ],
-        foreignKeys: [
-          { column: 'user_id', foreignTable: 'users', foreignColumn: 'id' },
-        ],
+        foreignKeys: [{ column: 'user_id', foreignTable: 'users', foreignColumn: 'id' }],
       },
       {
         name: 'users',
         columns: [
-          { name: 'id', type: 'String', isPrimaryKey: true, isForeignKey: false, isNullable: false, isSensitivePII: false },
-          { name: 'email', type: 'String', isPrimaryKey: false, isForeignKey: false, isNullable: false, isSensitivePII: true },
-          { name: 'password_hash', type: 'String', isPrimaryKey: false, isForeignKey: false, isNullable: false, isSensitivePII: true },
+          {
+            name: 'id',
+            type: 'String',
+            isPrimaryKey: true,
+            isForeignKey: false,
+            isNullable: false,
+            isSensitivePII: false,
+          },
+          {
+            name: 'email',
+            type: 'String',
+            isPrimaryKey: false,
+            isForeignKey: false,
+            isNullable: false,
+            isSensitivePII: true,
+          },
+          {
+            name: 'password_hash',
+            type: 'String',
+            isPrimaryKey: false,
+            isForeignKey: false,
+            isNullable: false,
+            isSensitivePII: true,
+          },
         ],
         foreignKeys: [],
       },
@@ -127,7 +165,9 @@ describe('Full-Stack Data Lineage & Topology Graph Builder', () => {
       ],
     });
 
-    const endpointNode = topologyWithFailures.nodes.find((n) => n.id === 'endpoint:POST /api/v1/orders');
+    const endpointNode = topologyWithFailures.nodes.find(
+      (n) => n.id === 'endpoint:POST /api/v1/orders',
+    );
     expect(endpointNode?.status).toBe('failed');
   });
 });

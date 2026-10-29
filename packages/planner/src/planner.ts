@@ -112,9 +112,7 @@ export function createExecutionPlan(options: PlanOptions): PlanResult {
   }
 
   const coveragePercent =
-    allReqs.length > 0
-      ? Number(((coveredReqIds.size / allReqs.length) * 100).toFixed(1))
-      : 100.0;
+    allReqs.length > 0 ? Number(((coveredReqIds.size / allReqs.length) * 100).toFixed(1)) : 100.0;
 
   return {
     cases: orderedCases,

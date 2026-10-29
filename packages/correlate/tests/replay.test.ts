@@ -77,7 +77,11 @@ describe('false-positive replay', () => {
   });
 
   it('returns inconclusive for lanes without executable replay', async () => {
-    const repo = finding({ lanes: ['repo'], category: 'quality-debt', ruleId: 'repo-license-missing' });
+    const repo = finding({
+      lanes: ['repo'],
+      category: 'quality-debt',
+      ruleId: 'repo-license-missing',
+    });
     const outcome = await replayFinding(repo, {
       executor: { api: async () => ({ status: 500 }), e2e: async () => ({ matched: false }) },
     });
@@ -137,14 +141,11 @@ describe('false-positive replay', () => {
   });
 
   it('replayAndRecord combines outcome, redaction, and promotion rules', async () => {
-    const result = await replayAndRecord(
-      finding({ requirements: ['REQ-ORDERS-01'] }),
-      {
-        runId: 'run-2',
-        checkedAt: '2026-10-27T00:00:00.000Z',
-        executor: { api: async () => ({ status: 500 }) },
-      },
-    );
+    const result = await replayAndRecord(finding({ requirements: ['REQ-ORDERS-01'] }), {
+      runId: 'run-2',
+      checkedAt: '2026-10-27T00:00:00.000Z',
+      executor: { api: async () => ({ status: 500 }) },
+    });
     expect(result.replay?.result).toBe('confirmed');
     expect(result.confidence).toBe('verified');
   });

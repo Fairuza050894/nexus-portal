@@ -111,7 +111,8 @@ export function generateCrawlCases(options: PlanOptions): PlannedTestCase[] {
         assertionType: 'status-check',
         estDurationMs: 3000,
         modeCompatibility: options.mode === 'prod-safe' ? 'skipped-by-mode' : 'allowed',
-        reason: 'Inferred from detected HTML form elements during crawler traversal; requires human triage',
+        reason:
+          'Inferred from detected HTML form elements during crawler traversal; requires human triage',
       });
     }
   });
@@ -121,7 +122,9 @@ export function generateCrawlCases(options: PlanOptions): PlannedTestCase[] {
 
 export function generateRepoRouteCases(options: PlanOptions): PlannedTestCase[] {
   const cases: PlannedTestCase[] = [];
-  const codeNodes = options.appMap.nodes.filter((n) => n.type === 'code' || n.sources?.includes('repo'));
+  const codeNodes = options.appMap.nodes.filter(
+    (n) => n.type === 'code' || n.sources?.includes('repo'),
+  );
 
   codeNodes.forEach((node, idx) => {
     cases.push({

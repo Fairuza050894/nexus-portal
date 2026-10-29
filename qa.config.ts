@@ -5,7 +5,13 @@ export default defineConfig({
   baseUrl: process.env.QA_BASE_URL || undefined,
   apiUrl: process.env.QA_API_URL || undefined,
   modes: ['sandbox', 'staging', 'prod-safe'],
-  allowlist: ['localhost', '127.0.0.1', '*.local', 'staging-qa-pilot.local', '*.pancaran-group.co.id'],
+  allowlist: [
+    'localhost',
+    '127.0.0.1',
+    '*.local',
+    'staging-qa-pilot.local',
+    '*.pancaran-group.co.id',
+  ],
   gates: {
     criticalPassRate: 1,
     overallPassRate: 0.95,

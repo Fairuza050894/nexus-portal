@@ -18,6 +18,12 @@ export function renderStep5Results(state: PortalState): string {
   const verifiedCount = state.findings.filter((f) => f.confidence === 'verified').length;
   const autoCount = state.findings.filter((f) => f.confidence === 'auto-discovered').length;
   const reviewCount = state.findings.filter((f) => f.confidence === 'needs-review').length;
+  const visualFindings = state.findings.filter((f) => f.lanes.includes('visual'));
+  const hasVisualDrift = visualFindings.length > 0;
+  const visualBadgeTag = hasVisualDrift ? 'tag-review' : 'tag-verified';
+  const visualStatusText = hasVisualDrift
+    ? 'TOLERANCE: 0.1% | OBSERVED: DRIFT DETECTED'
+    : 'TOLERANCE: 0.1% | 0% DRIFT / BASELINE VERIFIED';
 
   return `
     <div class="panel">
@@ -87,12 +93,13 @@ export function renderStep5Results(state: PortalState): string {
                 .map((f) => {
                   let confBadge = 'badge-verified tag-verified';
                   if (f.confidence === 'needs-review') confBadge = 'badge-review tag-review';
-                  else if (f.confidence === 'auto-discovered') confBadge = 'badge-discovered tag-discovered';
+                  else if (f.confidence === 'auto-discovered')
+                    confBadge = 'badge-discovered tag-discovered';
 
                   return `
-                  <tr>
+                  <tr class="finding-row" data-id="${f.id}" style="cursor:pointer;" title="Klik untuk inspeksi detail temuan">
                     <td style="font-family:var(--mono); font-weight:600;">${f.id}</td>
-                    <td><span class="tag tag-meta">${f.severity.toUpperCase()}</span></td>
+                    <td><span class="tag tag-${f.severity}">${f.severity.toUpperCase()}</span></td>
                     <td><span class="tag ${confBadge}">${f.confidence}</span></td>
                     <td><span class="tag tag-meta">${f.lanes.join(', ').toUpperCase()}</span></td>
                     <td>
@@ -107,12 +114,30 @@ export function renderStep5Results(state: PortalState): string {
             </tbody>
           </table>
         </div>
+        <!-- Finding Inspector Drawer -->
+        <div id="finding-inspector-drawer" class="inline-drawer" style="display:none; margin-top:12px; border-color:var(--border-focus);">
+          <div class="inline-drawer-header">
+            <span id="finding-inspector-title" style="color:var(--text-bright); font-weight:700;">FINDING INSPECTOR</span>
+            <div style="display:flex; gap:6px;">
+              <button type="button" id="btn-copy-jira-markdown" class="btn btn-secondary" style="height:22px; padding:0 8px; font-size:10px;">
+                SALIN JIRA MARKDOWN
+              </button>
+              <button type="button" id="btn-close-finding-inspector" class="btn btn-secondary" style="height:22px; padding:0 8px; font-size:10px;">
+                TUTUP [X]
+              </button>
+            </div>
+          </div>
+          <div class="inline-drawer-body" id="finding-inspector-content">
+            <!-- Dynamically populated on finding row click -->
+          </div>
+        </div>
+
 
         <!-- Visual Regression Split-Screen Diff Slider (Phase 8.1) -->
         <div class="panel" id="visual-diff-panel" style="margin-top:20px;">
           <div class="panel-header">
             <span>Visual Regression Diff Inspector (Before vs After)</span>
-            <span class="tag tag-review">TOLERANCE: 0.1% | OBSERVED: 0.42%</span>
+            <span class="tag ${visualBadgeTag}">${visualStatusText}</span>
           </div>
           <div class="panel-body">
             <div style="display:flex; justify-content:space-between; font-size:11px; font-family:var(--mono); color:var(--text-muted); margin-bottom:6px;">
@@ -129,8 +154,13 @@ export function renderStep5Results(state: PortalState): string {
               </div>
               <div id="visual-after" style="position:absolute; top:0; left:0; width:100%; height:100%; background:#090d13; z-index:1;">
                 <div style="padding:14px; padding-left:calc(50% + 16px); font-family:var(--mono); font-size:11px;">
-                  <span class="tag tag-review">STAGING ACTUAL SNAPSHOT</span>
-                  <p style="margin-top:8px; color:var(--warning-fg);">Shifted element detected (+0.42% drift)</p>
+                  ${
+                    hasVisualDrift
+                      ? `<span class="tag tag-review">STAGING ACTUAL SNAPSHOT</span>
+                         <p style="margin-top:8px; color:var(--warning-fg);">${visualFindings[0].title || 'Shifted element detected'}</p>`
+                      : `<span class="tag tag-verified">STAGING BUILD MATCHES BASELINE</span>
+                         <p style="margin-top:8px; color:var(--success-fg);">No visual regression detected (0% drift / Baseline Verified)</p>`
+                  }
                 </div>
               </div>
             </div>

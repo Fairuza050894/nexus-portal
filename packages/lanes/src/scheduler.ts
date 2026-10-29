@@ -72,8 +72,11 @@ export async function runLanes(context: LaneContext, selected: LaneName[]): Prom
     if (context.session) return Promise.resolve(context.session);
     if (!needsSession || targets.length === 0) return Promise.resolve(undefined);
     const authConfig = context.request.auth;
-    const isInteractive = Boolean(authConfig?.interactive || authConfig?.roles?.includes('guided-login'));
-    let cookieList: Array<{ name: string; value: string; domain?: string; path?: string }> | undefined;
+    const isInteractive = Boolean(
+      authConfig?.interactive || authConfig?.roles?.includes('guided-login'),
+    );
+    let cookieList:
+      Array<{ name: string; value: string; domain?: string; path?: string }> | undefined;
     if (authConfig?.cookies && firstTarget) {
       const host = resolveHost(firstTarget);
       cookieList = parseCookieString(authConfig.cookies, host);
@@ -87,6 +90,7 @@ export async function runLanes(context: LaneContext, selected: LaneName[]): Prom
       headless: !isInteractive,
       interactiveLogin: isInteractive,
       cookies: cookieList,
+      storageState: context.storageStatePath,
       maxPages: context.scope === 'quick' ? 5 : context.scope === 'standard' ? 20 : 50,
     });
   })();

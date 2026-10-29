@@ -3,7 +3,6 @@ import type { AppMap } from '@nexus/app-map';
 import {
   createExecutionPlan,
   computeScenarioDiff,
-
   detectSelfHealingSuggestions,
   generateInvariants,
   generateSpecCases,
@@ -141,7 +140,15 @@ describe('Planner Generators (6.1)', () => {
       mode: 'sandbox',
       scope: 'quick',
       requirements: [
-        { id: 'REQ-AUTH-01', title: 'User authentication', area: 'api', severity: 'critical', acceptance: [], tests: [], covered: false },
+        {
+          id: 'REQ-AUTH-01',
+          title: 'User authentication',
+          area: 'api',
+          severity: 'critical',
+          acceptance: [],
+          tests: [],
+          covered: false,
+        },
       ],
     });
     expect(reqCases.length).toBe(1);
@@ -222,8 +229,24 @@ describe('Change-Based Selection and Risk Ordering (6.4)', () => {
       scope: 'standard',
       changedFiles: ['/api/v1/orders', 'routes/orders.js'],
       requirements: [
-        { id: 'REQ-01', title: 'Orders API', area: 'api', severity: 'critical', acceptance: [], tests: [], covered: false },
-        { id: 'REQ-02', title: 'Health probe', area: 'api', severity: 'low', acceptance: [], tests: [], covered: false },
+        {
+          id: 'REQ-01',
+          title: 'Orders API',
+          area: 'api',
+          severity: 'critical',
+          acceptance: [],
+          tests: [],
+          covered: false,
+        },
+        {
+          id: 'REQ-02',
+          title: 'Health probe',
+          area: 'api',
+          severity: 'low',
+          acceptance: [],
+          tests: [],
+          covered: false,
+        },
       ],
     });
 
@@ -242,22 +265,25 @@ describe('Change-Based Selection and Risk Ordering (6.4)', () => {
 
 describe('Self-Healing Suggestions (6.5)', () => {
   it('detects status code drift and emits report-only diff suggestions with needs-review', () => {
-    const suggestions = detectSelfHealingSuggestions([], [
-      {
-        id: 'TC-API-DELETE',
-        lane: 'api',
-        target: 'DELETE /items/1',
-        expected: 'status 200 OK',
-        actual: 'status 204 No Content',
-      },
-      {
-        id: 'TC-API-GET',
-        lane: 'api',
-        target: 'GET /items',
-        expected: 'status 200 OK',
-        actual: 'status 200 OK', // unchanged
-      },
-    ]);
+    const suggestions = detectSelfHealingSuggestions(
+      [],
+      [
+        {
+          id: 'TC-API-DELETE',
+          lane: 'api',
+          target: 'DELETE /items/1',
+          expected: 'status 200 OK',
+          actual: 'status 204 No Content',
+        },
+        {
+          id: 'TC-API-GET',
+          lane: 'api',
+          target: 'GET /items',
+          expected: 'status 200 OK',
+          actual: 'status 200 OK', // unchanged
+        },
+      ],
+    );
 
     expect(suggestions).toHaveLength(1);
     expect(suggestions[0].kind).toBe('status-drift');

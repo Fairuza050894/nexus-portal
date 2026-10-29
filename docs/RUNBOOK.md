@@ -2,7 +2,7 @@
 
 > **Document Status:** OFFICIAL — Operational guidelines for platform administration, CI/CD, scheduling, security, and incident response.  
 > **Milestone:** M3 ("Always On") — Phase 7.5  
-> **Audience:** DevOps, SRE, QA Leads, Platform Administrators  
+> **Audience:** DevOps, SRE, QA Leads, Platform Administrators
 
 ---
 
@@ -37,6 +37,7 @@ Nexus QA Portal is a multi-lane automation platform providing end-to-end target 
 Scheduled runs targeting `staging` or `prod-safe` environments operate under **Renewable Authorization** to prevent orphaned or unmonitored automated execution against live infrastructure.
 
 ### 2.1 Policy Rules
+
 1. **Validity Window:** Renewable authorizations are valid for a maximum of **30 days** (`renewableDays: 30`) from the time of approver sign-off.
 2. **Hard Expiry Block:** If `now >= expiresAt`, the platform **unconditionally blocks** the scheduled run with reason:
    ```
@@ -45,7 +46,9 @@ Scheduled runs targeting `staging` or `prod-safe` environments operate under **R
 3. **Approver Role:** Only actors holding role `approver` or `admin` can sign or renew authorizations.
 
 ### 2.2 Renewal Procedure
+
 To renew an authorization:
+
 1. Review the target environment, synthetic data cleanup scripts, and active lanes.
 2. Call `POST /api/schedules/:id/renew` (or run CLI `qa schedule renew <id> --approver <email>`).
 3. The renewed authorization is timestamped and recorded in the audit log.
@@ -70,6 +73,7 @@ To prevent concurrent test pipelines from corrupting shared test data (`qa_auto_
 ## 4. CI/CD Pipeline Operations
 
 ### 4.1 Workflows
+
 - **`pr-check.yml`**: Runs on every pull request to `main`. Executes static checks, monorepo vitest suite, smoke pipeline, and verifies docs.
 - **`nightly-regression.yml`**: Runs daily at 01:00 WIB (18:00 UTC). Executes the full regression suite, uploads zip bundle, and retains artifacts for 30 days.
 - **`manual-run.yml`**: Triggered via GitHub Actions `workflow_dispatch`. Accepts environment, suite scope, browser engine, and optional notification flag.
@@ -81,12 +85,15 @@ To prevent concurrent test pipelines from corrupting shared test data (`qa_auto_
 ## 5. Secret Management & Rotation
 
 ### 5.1 Non-Negotiable Rules
+
 - **No Plaintext Secrets:** Raw tokens, passwords, or client secrets are strictly banned in repository code, Run Requests, and logs.
 - **Vault References:** All credentials must be formatted as `vault:<path/alias>` (e.g., `vault:qa/staging-admin`).
 - **Log Masking & Verification:** All outputs pass through `redactValue()`. Any secret or PII pattern detected during `npm run docs:verify` fails the pipeline with exit code `3`.
 
 ### 5.2 Secret Rotation Procedure
+
 When rotating test account credentials:
+
 1. Update the credential value in the company vault provider.
 2. Keep the vault alias reference unchanged (`vault:qa/staging-admin`).
 3. Trigger a manual smoke run to verify authentication:
@@ -98,14 +105,15 @@ When rotating test account credentials:
 
 ## 6. Backup, Retention & Archival Policy
 
-| Artifact Class | Storage Location | Retention Window | Purge Policy |
-|---|---|---|---|
-| **Run Documentation Bundles** (`qa-*.zip`) | `artifacts/bundles/` | 90 days | Automated CI artifact expiry / S3 lifecycle |
-| **Individual Run Docs** (`report.html`, PDFs) | `artifacts/docs/<run-id>/` | 30 days | FIFO rolling cleanup |
-| **Stage JSON Data** (`stages/*.json`) | `artifacts/runs/<run-id>/` | 14 days | Resumable cache purge |
-| **Audit Log Records** (`audit.json`) | `artifacts/runs/<run-id>/` | 365 days | Compliance archival |
+| Artifact Class                                | Storage Location           | Retention Window | Purge Policy                                |
+| --------------------------------------------- | -------------------------- | ---------------- | ------------------------------------------- |
+| **Run Documentation Bundles** (`qa-*.zip`)    | `artifacts/bundles/`       | 90 days          | Automated CI artifact expiry / S3 lifecycle |
+| **Individual Run Docs** (`report.html`, PDFs) | `artifacts/docs/<run-id>/` | 30 days          | FIFO rolling cleanup                        |
+| **Stage JSON Data** (`stages/*.json`)         | `artifacts/runs/<run-id>/` | 14 days          | Resumable cache purge                       |
+| **Audit Log Records** (`audit.json`)          | `artifacts/runs/<run-id>/` | 365 days         | Compliance archival                         |
 
 To clean local artifact caches manually:
+
 ```bash
 npm run clean
 ```
@@ -115,17 +123,22 @@ npm run clean
 ## 7. Incident Response & Emergency Procedures
 
 ### 7.1 Circuit Breaker Trip
+
 The discovery and HTTP probe engine trips the circuit breaker under two conditions:
+
 1. Encountering HTTP `429 Too Many Requests`.
 2. HTTP 5xx error rate exceeds `5%` over 20 consecutive requests.
 
 **Action:**
+
 1. Pipeline halts immediately to protect the target server.
 2. The partial report is preserved with status `INCOMPLETE` (exit code `3`).
 3. Check target server logs for capacity bottlenecks or upstream database connection exhaustion.
 
 ### 7.2 Emergency Abort
+
 To abort a runaway test run:
+
 - **Web Console:** Click the `[Cancel Run]` button in Step 4 (Live Run).
 - **API Server:** Dispatch `POST /api/runs/:id/stop`.
 - **CLI / Process:** Send `SIGTERM` to the process; the runner invokes `teardown()` to stop sandbox containers and close browser contexts.

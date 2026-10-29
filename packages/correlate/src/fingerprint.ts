@@ -164,10 +164,7 @@ export function isPreV2Finding(finding: Finding): boolean {
 }
 
 export function findingIdentityKeys(finding: Finding): string[] {
-  return [
-    resolveFindingFingerprint(finding),
-    `legacy:${legacyFindingFingerprint(finding)}`,
-  ];
+  return [resolveFindingFingerprint(finding), `legacy:${legacyFindingFingerprint(finding)}`];
 }
 
 function stableRecordKey(record: Record<string, unknown>): string {
@@ -178,17 +175,15 @@ function stableRecordKey(record: Record<string, unknown>): string {
   );
 }
 
-function uniqueRecords(
-  records: Array<Record<string, unknown>>,
-): Array<Record<string, unknown>> {
+function uniqueRecords(records: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
   const seen = new Map<string, Record<string, unknown>>();
   for (const record of records) {
     const key = stableRecordKey(record);
     if (!seen.has(key)) seen.set(key, record);
   }
-  return [...seen.entries()].sort(([left], [right]) => left.localeCompare(right)).map(
-    ([, record]) => record,
-  );
+  return [...seen.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([, record]) => record);
 }
 
 function mergeDuplicateFindings(left: Finding, right: Finding): Finding {
@@ -225,17 +220,17 @@ function mergeDuplicateFindings(left: Finding, right: Finding): Finding {
     occurrences: left.occurrences + right.occurrences,
     ...(affected.length > 0 ? { affected } : {}),
     evidence,
-    ...(left.expected ?? right.expected ? { expected: left.expected ?? right.expected } : {}),
-    ...(left.actual ?? right.actual ? { actual: left.actual ?? right.actual } : {}),
-    ...(left.reproduction ?? right.reproduction
+    ...((left.expected ?? right.expected) ? { expected: left.expected ?? right.expected } : {}),
+    ...((left.actual ?? right.actual) ? { actual: left.actual ?? right.actual } : {}),
+    ...((left.reproduction ?? right.reproduction)
       ? { reproduction: left.reproduction ?? right.reproduction }
       : {}),
     ...(codeRefs.length > 0 ? { codeRefs } : {}),
     ...(requirements.length > 0 ? { requirements } : {}),
-    ...(left.suggestedOwner ?? right.suggestedOwner
+    ...((left.suggestedOwner ?? right.suggestedOwner)
       ? { suggestedOwner: left.suggestedOwner ?? right.suggestedOwner }
       : {}),
-    ...(left.suggestedFix ?? right.suggestedFix
+    ...((left.suggestedFix ?? right.suggestedFix)
       ? { suggestedFix: left.suggestedFix ?? right.suggestedFix }
       : {}),
   };

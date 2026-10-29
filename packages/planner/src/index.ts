@@ -1,6 +1,4 @@
-export {
-  createExecutionPlan,
-} from './planner.js';
+export { createExecutionPlan } from './planner.js';
 
 export {
   generateInvariants,

@@ -155,7 +155,8 @@ export function runVisualLane(
         affected: [{ page: page.path }],
         expected: 'Visual diff ratio <= 0.1%',
         actual: `${(comparison.diffRatio * 100).toFixed(2)}% visual shift detected`,
-        suggestedFix: 'Review UI layout diff with Before/After visual slider or update baseline if change is intended',
+        suggestedFix:
+          'Review UI layout diff with Before/After visual slider or update baseline if change is intended',
       });
     }
   }

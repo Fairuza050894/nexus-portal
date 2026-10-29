@@ -4,10 +4,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { SessionResult } from '@nexus/session';
 import { QaConfigSchema, RunRequestSchema } from '@nexus/core';
-import {
-  compareScreenshotBuffers,
-  runVisualLane,
-} from '../src/index.js';
+import { compareScreenshotBuffers, runVisualLane } from '../src/index.js';
 import type { LaneContext } from '../src/types.js';
 
 describe('Visual Regression Lane & Diffing Engine (8.1)', () => {

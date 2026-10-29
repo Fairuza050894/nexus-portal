@@ -1,9 +1,4 @@
-import type {
-  Finding,
-  FindingCategory,
-  FindingConfidence,
-  FindingSeverity,
-} from '@nexus/core';
+import type { Finding, FindingCategory, FindingConfidence, FindingSeverity } from '@nexus/core';
 import type { AppMap } from '@nexus/app-map';
 
 export interface RawSignal {
@@ -37,7 +32,10 @@ export interface CorrelationOptions {
   appMap?: AppMap;
   recentCommits?: Array<{ hash: string; author: string; files: string[] }>;
   codeOwners?: Record<string, string>;
-  failureOverrides?: Record<string, { category?: FindingCategory; owner?: string; reason?: string }>;
+  failureOverrides?: Record<
+    string,
+    { category?: FindingCategory; owner?: string; reason?: string }
+  >;
   currentRunId?: string;
 }
 

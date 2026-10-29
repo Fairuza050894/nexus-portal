@@ -69,9 +69,7 @@ export function correlateSignals(
     if (category === 'accessibility') {
       key = `a11y:${signalRuleId}`;
     } else if (category === 'security') {
-      key = `sec:${signalRuleId}${
-        primaryComponent ? `:${primaryComponent.toLowerCase()}` : ''
-      }`;
+      key = `sec:${signalRuleId}${primaryComponent ? `:${primaryComponent.toLowerCase()}` : ''}`;
     } else if (category === 'performance') {
       key = `perf:${signalRuleId}`;
     } else if (primaryEndpoint) {

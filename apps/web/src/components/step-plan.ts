@@ -4,9 +4,13 @@ import type { PortalState } from '../state.js';
 export function renderStep3PlanReview(state: PortalState): string {
   const lang = state.language;
   const cases = state.planCases;
-
-  const toRun = cases.filter((c) => state.approvedCaseIds.has(c.id) && c.modeCompatibility === 'allowed').length;
-  const needsApproval = cases.filter((c) => c.confidence === 'needs-review' && c.modeCompatibility === 'allowed').length;
+  const availableLanes = [...new Set(cases.map((c) => c.lane))];
+  const toRun = cases.filter(
+    (c) => state.approvedCaseIds.has(c.id) && c.modeCompatibility === 'allowed',
+  ).length;
+  const needsApproval = cases.filter(
+    (c) => c.confidence === 'needs-review' && c.modeCompatibility === 'allowed',
+  ).length;
   const skippedByMode = cases.filter((c) => c.modeCompatibility === 'skipped-by-mode').length;
 
   return `
@@ -37,6 +41,26 @@ export function renderStep3PlanReview(state: PortalState): string {
             <div class="kpi-val" style="color:var(--text-muted);">${skippedByMode}</div>
           </div>
         </div>
+        <!-- Filter Controls -->
+        <div class="plan-filters" style="display:flex; gap:16px; margin-bottom:12px; align-items:center; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label for="filter-plan-lane" style="font-size:11px; font-family:var(--mono); color:var(--text-muted); text-transform:uppercase;">Filter Lane:</label>
+            <select id="filter-plan-lane" class="input-mono" style="height:26px; font-size:11px; padding:0 8px; width:140px;">
+              <option value="all">ALL LANES</option>
+              ${availableLanes.map((l) => `<option value="${l}">${l.toUpperCase()}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label for="filter-plan-confidence" style="font-size:11px; font-family:var(--mono); color:var(--text-muted); text-transform:uppercase;">Filter Confidence:</label>
+            <select id="filter-plan-confidence" class="input-mono" style="height:26px; font-size:11px; padding:0 8px; width:160px;">
+              <option value="all">ALL CONFIDENCE</option>
+              <option value="verified">VERIFIED</option>
+              <option value="auto-discovered">AUTO-DISCOVERED</option>
+              <option value="needs-review">NEEDS-REVIEW</option>
+            </select>
+          </div>
+        </div>
+
 
         <!-- Cases Table (Scenarios 3.2, 3.3, 3.8) -->
         <div class="table-container">
@@ -60,10 +84,11 @@ export function renderStep3PlanReview(state: PortalState): string {
 
                   let confBadge = 'badge-verified tag-verified';
                   if (c.confidence === 'needs-review') confBadge = 'badge-review tag-review';
-                  else if (c.confidence === 'auto-discovered') confBadge = 'badge-discovered tag-discovered';
+                  else if (c.confidence === 'auto-discovered')
+                    confBadge = 'badge-discovered tag-discovered';
 
                   return `
-                  <tr class="${isSkipped ? 'row-skipped' : ''}">
+                  <tr class="${isSkipped ? 'row-skipped' : ''}" data-lane="${c.lane}" data-confidence="${c.confidence}">
                     <td>
                       ${
                         isSkipped
@@ -82,7 +107,7 @@ export function renderStep3PlanReview(state: PortalState): string {
                           : `<span class="tag ${confBadge}">${c.confidence}</span>`
                       }
                     </td>
-                    <td><span class="tag tag-meta">${c.priority}</span></td>
+                    <td><span class="tag tag-${c.priority}">${c.priority}</span></td>
                   </tr>
                 `;
                 })

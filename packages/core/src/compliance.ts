@@ -92,10 +92,7 @@ export function loadComplianceMapping(filePath: string): ComplianceMapping {
 }
 
 /** Rule-specific mapping wins over a category mapping. */
-export function matchCompliance(
-  mapping: ComplianceMapping,
-  finding: Finding,
-): ComplianceMatch[] {
+export function matchCompliance(mapping: ComplianceMapping, finding: Finding): ComplianceMatch[] {
   const ruleMatch = finding.ruleId
     ? mapping.mappings.find((entry) => entry.ruleId === finding.ruleId)
     : undefined;

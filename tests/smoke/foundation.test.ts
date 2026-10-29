@@ -200,9 +200,9 @@ describe('foundation pipeline', () => {
     const verification = verifyDocs(result.docsDir!, { requirePdf: true });
     expect(verification.errors).toEqual([]);
     expect(verification.ok).toBe(true);
-    expect(
-      readFileSync(join(result.docsDir!, 'findings-register.html'), 'utf8'),
-    ).toContain('Indicative mapping, not an audit conclusion.');
+    expect(readFileSync(join(result.docsDir!, 'findings-register.html'), 'utf8')).toContain(
+      'Indicative mapping, not an audit conclusion.',
+    );
     expect(result.bundlePath && existsSync(result.bundlePath)).toBe(true);
 
     const zip = readFileSync(result.bundlePath!);
@@ -237,9 +237,9 @@ describe('foundation pipeline', () => {
     expect(summary.appMap.edges).toBeGreaterThanOrEqual(3);
     expect(summary.tests.length).toBe(summary.totals.tests);
     expect(summary.coverage).toMatchObject({ requirementsTotal: 4, requirementsCovered: 0 });
-    expect(summary.findings.every((finding: { firstSeenRun?: string }) => finding.firstSeenRun)).toBe(
-      true,
-    );
+    expect(
+      summary.findings.every((finding: { firstSeenRun?: string }) => finding.firstSeenRun),
+    ).toBe(true);
     expect(
       existsSync(
         join(artifactsRoot, 'artifacts', 'runs', result.runId, 'evidence', 'session', 'root.png'),

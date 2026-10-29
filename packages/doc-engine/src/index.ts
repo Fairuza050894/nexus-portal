@@ -12,7 +12,12 @@ import { dirname, join, relative } from 'node:path';
 import type { ComplianceMapping, RunSummary } from '@nexus/core';
 import { loadComplianceMapping } from '@nexus/core';
 import { createZip, listZipNames, type ZipEntry } from './zip.js';
-import { renderDocumentSet, type AppMapView, type DocContext, type HistoryPoint } from './documents.js';
+import {
+  renderDocumentSet,
+  type AppMapView,
+  type DocContext,
+  type HistoryPoint,
+} from './documents.js';
 import type { DocLanguage } from './i18n.js';
 import { createXlsx, type XlsxSheet } from './xlsx.js';
 import { createSarif } from './sarif.js';
@@ -101,7 +106,18 @@ function workbookSheets(summary: RunSummary): XlsxSheet[] {
   const catalogue: XlsxSheet = {
     name: 'Test Catalogue',
     rows: [
-      ['ID', 'Lane', 'Feature', 'Title', 'Requirements', 'Expected', 'Actual', 'Status', 'DurationMs', 'Reason'],
+      [
+        'ID',
+        'Lane',
+        'Feature',
+        'Title',
+        'Requirements',
+        'Expected',
+        'Actual',
+        'Status',
+        'DurationMs',
+        'Reason',
+      ],
       ...(summary.tests ?? []).map((test) => [
         test.id,
         test.lane,

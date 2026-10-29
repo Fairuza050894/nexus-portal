@@ -13,9 +13,7 @@
     },
     "version": {
       "description": "The SARIF format version of this log file.",
-      "enum": [
-        "2.1.0"
-      ]
+      "enum": ["2.1.0"]
     },
     "runs": {
       "description": "The set of runs contained in this log file.",
@@ -40,10 +38,7 @@
       "$ref": "#/definitions/propertyBag"
     }
   },
-  "required": [
-    "version",
-    "runs"
-  ],
+  "required": ["version", "runs"],
   "definitions": {
     "address": {
       "description": "A physical or virtual address, or a range of addresses, in an 'addressable region' (memory or a binary file).",
@@ -220,10 +215,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "artifactLocation",
-        "replacements"
-      ]
+      "required": ["artifactLocation", "replacements"]
     },
     "artifactContent": {
       "description": "Represents the contents of an artifact.",
@@ -316,9 +308,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "artifactLocation"
-      ]
+      "required": ["artifactLocation"]
     },
     "codeFlow": {
       "description": "A set of threadFlows which together describe a pattern of code execution relevant to detecting a result.",
@@ -343,9 +333,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "threadFlows"
-      ]
+      "required": ["threadFlows"]
     },
     "configurationOverride": {
       "description": "Information about how a specific rule or notification was reconfigured at runtime.",
@@ -365,10 +353,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "configuration",
-        "descriptor"
-      ]
+      "required": ["configuration", "descriptor"]
     },
     "conversion": {
       "description": "Describes how a converter transformed the output of a static analysis tool from the analysis tool's native output format into the SARIF format.",
@@ -398,9 +383,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "tool"
-      ]
+      "required": ["tool"]
     },
     "edge": {
       "description": "Represents a directed edge in a graph.",
@@ -428,11 +411,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "id",
-        "sourceNodeId",
-        "targetNodeId"
-      ]
+      "required": ["id", "sourceNodeId", "targetNodeId"]
     },
     "edgeTraversal": {
       "description": "Represents the traversal of a single edge during a graph traversal.",
@@ -464,9 +443,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "edgeId"
-      ]
+      "required": ["edgeId"]
     },
     "exception": {
       "description": "Describes a runtime exception encountered during the execution of an analysis tool.",
@@ -513,9 +490,7 @@
         },
         "version": {
           "description": "The SARIF format version of this external properties object.",
-          "enum": [
-            "2.1.0"
-          ]
+          "enum": ["2.1.0"]
         },
         "guid": {
           "description": "A stable, unique identifer for this external properties object, in the form of a GUID.",
@@ -701,14 +676,10 @@
       },
       "anyOf": [
         {
-          "required": [
-            "location"
-          ]
+          "required": ["location"]
         },
         {
-          "required": [
-            "guid"
-          ]
+          "required": ["guid"]
         }
       ]
     },
@@ -888,9 +859,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "artifactChanges"
-      ]
+      "required": ["artifactChanges"]
     },
     "graph": {
       "description": "A network of nodes and directed edges that describes some aspect of the structure of the code (for example, a call graph).",
@@ -979,14 +948,10 @@
       },
       "oneOf": [
         {
-          "required": [
-            "runGraphIndex"
-          ]
+          "required": ["runGraphIndex"]
         },
         {
-          "required": [
-            "resultGraphIndex"
-          ]
+          "required": ["resultGraphIndex"]
         }
       ]
     },
@@ -1139,9 +1104,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "executionSuccessful"
-      ]
+      "required": ["executionSuccessful"]
     },
     "location": {
       "description": "A location within a programming artifact.",
@@ -1211,9 +1174,7 @@
         "kinds": {
           "description": "A set of distinct strings that categorize the relationship. Well-known kinds include 'includes', 'isIncludedBy' and 'relevant'.",
           "type": "array",
-          "default": [
-            "relevant"
-          ],
+          "default": ["relevant"],
           "uniqueItems": true,
           "items": {
             "type": "string"
@@ -1228,9 +1189,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "target"
-      ]
+      "required": ["target"]
     },
     "logicalLocation": {
       "description": "A logical location of a construct that produced a result.",
@@ -1305,14 +1264,10 @@
       },
       "anyOf": [
         {
-          "required": [
-            "text"
-          ]
+          "required": ["text"]
         },
         {
-          "required": [
-            "id"
-          ]
+          "required": ["id"]
         }
       ]
     },
@@ -1334,9 +1289,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "text"
-      ]
+      "required": ["text"]
     },
     "node": {
       "description": "Represents a node in a graph.",
@@ -1370,9 +1323,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "id"
-      ]
+      "required": ["id"]
     },
     "notification": {
       "description": "Describes a condition relevant to the tool itself, as opposed to being relevant to a target being analyzed by the tool.",
@@ -1396,12 +1347,7 @@
         "level": {
           "description": "A value specifying the severity level of the notification.",
           "default": "warning",
-          "enum": [
-            "none",
-            "note",
-            "warning",
-            "error"
-          ]
+          "enum": ["none", "note", "warning", "error"]
         },
         "threadId": {
           "description": "The thread identifier of the code that generated the notification.",
@@ -1429,9 +1375,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "message"
-      ]
+      "required": ["message"]
     },
     "physicalLocation": {
       "description": "A physical location relevant to a result. Specifies a reference to a programming artifact together with a range of bytes or characters within that artifact.",
@@ -1461,14 +1405,10 @@
       },
       "anyOf": [
         {
-          "required": [
-            "address"
-          ]
+          "required": ["address"]
         },
         {
-          "required": [
-            "artifactLocation"
-          ]
+          "required": ["artifactLocation"]
         }
       ]
     },
@@ -1603,9 +1543,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "deletedRegion"
-      ]
+      "required": ["deletedRegion"]
     },
     "reportingDescriptor": {
       "description": "Metadata that describes a specific report produced by the tool, as part of the analysis it provides or its runtime reporting.",
@@ -1696,9 +1634,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "id"
-      ]
+      "required": ["id"]
     },
     "reportingConfiguration": {
       "description": "Information about a rule or notification that can be configured at runtime.",
@@ -1713,12 +1649,7 @@
         "level": {
           "description": "Specifies the failure level for the report.",
           "default": "warning",
-          "enum": [
-            "none",
-            "note",
-            "warning",
-            "error"
-          ]
+          "enum": ["none", "note", "warning", "error"]
         },
         "rank": {
           "description": "Specifies the relative priority of the report. Used for analysis output only.",
@@ -1768,19 +1699,13 @@
       },
       "anyOf": [
         {
-          "required": [
-            "index"
-          ]
+          "required": ["index"]
         },
         {
-          "required": [
-            "guid"
-          ]
+          "required": ["guid"]
         },
         {
-          "required": [
-            "id"
-          ]
+          "required": ["id"]
         }
       ]
     },
@@ -1796,9 +1721,7 @@
         "kinds": {
           "description": "A set of distinct strings that categorize the relationship. Well-known kinds include 'canPrecede', 'canFollow', 'willPrecede', 'willFollow', 'superset', 'subset', 'equal', 'disjoint', 'relevant', and 'incomparable'.",
           "type": "array",
-          "default": [
-            "relevant"
-          ],
+          "default": ["relevant"],
           "uniqueItems": true,
           "items": {
             "type": "string"
@@ -1813,9 +1736,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "target"
-      ]
+      "required": ["target"]
     },
     "result": {
       "description": "A result produced by an analysis tool.",
@@ -1839,24 +1760,12 @@
         "kind": {
           "description": "A value that categorizes results by evaluation state.",
           "default": "fail",
-          "enum": [
-            "notApplicable",
-            "pass",
-            "fail",
-            "review",
-            "open",
-            "informational"
-          ]
+          "enum": ["notApplicable", "pass", "fail", "review", "open", "informational"]
         },
         "level": {
           "description": "A value specifying the severity level of the result.",
           "default": "warning",
-          "enum": [
-            "none",
-            "note",
-            "warning",
-            "error"
-          ]
+          "enum": ["none", "note", "warning", "error"]
         },
         "message": {
           "description": "A message that describes the result. The first sentence of the message only will be displayed when visible space is limited.",
@@ -1966,12 +1875,7 @@
         },
         "baselineState": {
           "description": "The state of a result relative to a baseline of a previous run.",
-          "enum": [
-            "new",
-            "unchanged",
-            "updated",
-            "absent"
-          ]
+          "enum": ["new", "unchanged", "updated", "absent"]
         },
         "rank": {
           "description": "A number representing the priority or importance of the result.",
@@ -2042,9 +1946,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "message"
-      ]
+      "required": ["message"]
     },
     "resultProvenance": {
       "description": "Contains information about how and when a result was detected.",
@@ -2219,20 +2121,14 @@
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "default": [
-            "\r\n",
-            "\n"
-          ],
+          "default": ["\r\n", "\n"],
           "items": {
             "type": "string"
           }
         },
         "columnKind": {
           "description": "Specifies the unit in which the tool measures columns.",
-          "enum": [
-            "utf16CodeUnits",
-            "unicodeCodePoints"
-          ]
+          "enum": ["utf16CodeUnits", "unicodeCodePoints"]
         },
         "externalPropertyFileReferences": {
           "description": "References to external property files that should be inlined with the content of a root log file.",
@@ -2317,9 +2213,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "tool"
-      ]
+      "required": ["tool"]
     },
     "runAutomationDetails": {
       "description": "Information that describes a run's identity and role within an engineering system process.",
@@ -2388,9 +2282,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "frames"
-      ]
+      "required": ["frames"]
     },
     "stackFrame": {
       "description": "A function call within a stack trace.",
@@ -2438,18 +2330,11 @@
         },
         "kind": {
           "description": "A string that indicates where the suppression is persisted.",
-          "enum": [
-            "inSource",
-            "external"
-          ]
+          "enum": ["inSource", "external"]
         },
         "state": {
           "description": "A string that indicates the state of the suppression.",
-          "enum": [
-            "accepted",
-            "underReview",
-            "rejected"
-          ]
+          "enum": ["accepted", "underReview", "rejected"]
         },
         "justification": {
           "description": "A string representing the justification for the suppression.",
@@ -2464,9 +2349,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "kind"
-      ]
+      "required": ["kind"]
     },
     "threadFlow": {
       "description": "Describes a sequence of code locations that specify a path through a single thread of execution such as an operating system or fiber.",
@@ -2509,9 +2392,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "locations"
-      ]
+      "required": ["locations"]
     },
     "threadFlowLocation": {
       "description": "A location visited by an analysis tool while simulating or monitoring the execution of a program.",
@@ -2581,11 +2462,7 @@
         },
         "importance": {
           "description": "Specifies the importance of this location in understanding the code flow in which it occurs. The order from most to least important is \"essential\", \"important\", \"unimportant\". Default: \"important\".",
-          "enum": [
-            "important",
-            "essential",
-            "unimportant"
-          ],
+          "enum": ["important", "essential", "unimportant"],
           "default": "important"
         },
         "webRequest": {
@@ -2626,9 +2503,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "driver"
-      ]
+      "required": ["driver"]
     },
     "toolComponent": {
       "description": "A component, such as a plug-in or the driver, of the analysis tool that was run.",
@@ -2751,15 +2626,9 @@
           "description": "The kinds of data contained in this object.",
           "type": "array",
           "uniqueItems": true,
-          "default": [
-            "localizedData",
-            "nonLocalizedData"
-          ],
+          "default": ["localizedData", "nonLocalizedData"],
           "items": {
-            "enum": [
-              "localizedData",
-              "nonLocalizedData"
-            ]
+            "enum": ["localizedData", "nonLocalizedData"]
           }
         },
         "isComprehensive": {
@@ -2798,9 +2667,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "name"
-      ]
+      "required": ["name"]
     },
     "toolComponentReference": {
       "description": "Identifies a particular toolComponent object, either the driver or an extension.",
@@ -2864,9 +2731,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "name"
-      ]
+      "required": ["name"]
     },
     "versionControlDetails": {
       "description": "Specifies the information necessary to retrieve a desired revision from a version control system.",
@@ -2904,9 +2769,7 @@
           "$ref": "#/definitions/propertyBag"
         }
       },
-      "required": [
-        "repositoryUri"
-      ]
+      "required": ["repositoryUri"]
     },
     "webRequest": {
       "description": "Describes an HTTP request.",

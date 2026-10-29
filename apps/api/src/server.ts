@@ -1,4 +1,4 @@
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { join } from 'node:path';
 import { parseAuthHeader, hasMinimumRole } from './auth.js';
@@ -58,6 +58,79 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   return promise;
 }
 
+const defaultAppMap: AppMap = {
+  schemaVersion: '1.0',
+  generatedAt: new Date().toISOString(),
+  nodes: [
+    {
+      id: 'page:/',
+      type: 'page',
+      path: '/',
+      forms: 0,
+      sources: ['crawl'],
+      changedRecently: false,
+      risk: 0.1,
+      riskFactors: [],
+    },
+    {
+      id: 'endpoint:GET /health',
+      type: 'endpoint',
+      path: '/health',
+      method: 'GET',
+      sources: ['spec'],
+      changedRecently: false,
+      risk: 0.1,
+      riskFactors: [],
+      authRequired: false,
+    },
+    {
+      id: 'endpoint:GET /api/todos',
+      type: 'endpoint',
+      path: '/api/todos',
+      method: 'GET',
+      sources: ['spec'],
+      changedRecently: false,
+      risk: 0.2,
+      riskFactors: [],
+      authRequired: false,
+    },
+    {
+      id: 'endpoint:POST /api/todos',
+      type: 'endpoint',
+      path: '/api/todos',
+      method: 'POST',
+      sources: ['spec'],
+      changedRecently: true,
+      risk: 0.5,
+      riskFactors: [],
+      authRequired: false,
+    },
+  ],
+  edges: [
+    { from: 'page:/', to: 'endpoint:GET /health', kind: 'calls', confidence: 'verified' },
+    { from: 'page:/', to: 'endpoint:GET /api/todos', kind: 'calls', confidence: 'verified' },
+  ],
+  stats: { pages: 1, endpoints: 3, code: 0, edges: 2, highRisk: 0, changed: 1 },
+};
+
+function loadAppMapForRun(rootDir: string, runId: string | undefined): AppMap | undefined {
+  if (!runId) return undefined;
+  const possiblePaths = [
+    join(rootDir, 'artifacts', 'runs', runId, 'app-map.json'),
+    join(rootDir, 'runs', runId, 'app-map.json'),
+  ];
+  for (const p of possiblePaths) {
+    if (existsSync(p)) {
+      try {
+        return JSON.parse(readFileSync(p, 'utf8')) as AppMap;
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return undefined;
+}
+
 export function createApiServer(options: ServerOptions = {}): Server {
   const manager = options.runManager ?? defaultRunManager;
   const webDist = options.webDistDir ?? join(manager.getRootDir(), 'apps/web/dist');
@@ -106,6 +179,17 @@ export function createApiServer(options: ServerOptions = {}): Server {
         const body = await readJsonBody(req);
         const estimate = manager.estimateDryRun(body);
         sendJson(res, estimate.valid ? 200 : 400, estimate);
+        return;
+      }
+      // 3b. Plan preview
+      if (method === 'POST' && pathname === '/api/runs/plan-preview') {
+        const body = await readJsonBody(req);
+        try {
+          const plan = manager.buildPlanCases(body);
+          sendJson(res, 200, plan);
+        } catch (err) {
+          sendError(res, 400, (err as Error).message);
+        }
         return;
       }
 
@@ -222,17 +306,7 @@ export function createApiServer(options: ServerOptions = {}): Server {
           const rootDir = manager.getRootDir();
           const dbSchema = extractDatabaseSchema(rootDir);
           const summary = run?.summary ?? RunStore.readSummaryById(rootDir, runId);
-          const appMap: AppMap = {
-            schemaVersion: '1.0',
-            generatedAt: new Date().toISOString(),
-            nodes: [
-              { id: 'page:/', type: 'page', path: '/', forms: 0, sources: ['crawl'], changedRecently: false, risk: 0.1, riskFactors: [] },
-              { id: 'endpoint:GET /health', type: 'endpoint', path: '/health', method: 'GET', sources: ['spec'], changedRecently: false, risk: 0.1, riskFactors: [], authRequired: false },
-              { id: 'endpoint:GET /api/todos', type: 'endpoint', path: '/api/todos', method: 'GET', sources: ['spec'], changedRecently: false, risk: 0.2, riskFactors: [], authRequired: false },
-            ],
-            edges: [],
-            stats: { pages: 1, endpoints: 2, code: 0, edges: 0, highRisk: 0, changed: 0 },
-          };
+          const appMap = loadAppMapForRun(rootDir, runId) ?? defaultAppMap;
           const topology = buildFullStackLineage({
             appMap,
             dbSchema,
@@ -241,7 +315,6 @@ export function createApiServer(options: ServerOptions = {}): Server {
           sendJson(res, 200, topology);
           return;
         }
-
       }
 
       // 7. Scenario suggestions: POST /api/suggest/:type
@@ -276,26 +349,11 @@ export function createApiServer(options: ServerOptions = {}): Server {
       if (pathname === '/api/lineage' && method === 'GET') {
         const rootDir = manager.getRootDir();
         const dbSchema = extractDatabaseSchema(rootDir);
-        const defaultAppMap: AppMap = {
-          schemaVersion: '1.0',
-          generatedAt: new Date().toISOString(),
-          nodes: [
-            { id: 'page:/', type: 'page', path: '/', forms: 0, sources: ['crawl'], changedRecently: false, risk: 0.1, riskFactors: [] },
-            { id: 'endpoint:GET /health', type: 'endpoint', path: '/health', method: 'GET', sources: ['spec'], changedRecently: false, risk: 0.1, riskFactors: [], authRequired: false },
-            { id: 'endpoint:GET /api/todos', type: 'endpoint', path: '/api/todos', method: 'GET', sources: ['spec'], changedRecently: false, risk: 0.2, riskFactors: [], authRequired: false },
-            { id: 'endpoint:POST /api/todos', type: 'endpoint', path: '/api/todos', method: 'POST', sources: ['spec'], changedRecently: true, risk: 0.5, riskFactors: [], authRequired: false },
-          ],
-          edges: [
-            { from: 'page:/', to: 'endpoint:GET /health', kind: 'calls', confidence: 'verified' },
-            { from: 'page:/', to: 'endpoint:GET /api/todos', kind: 'calls', confidence: 'verified' },
-          ],
-          stats: { pages: 1, endpoints: 3, code: 0, edges: 2, highRisk: 0, changed: 1 },
-        };
+
         const topology = buildFullStackLineage({ appMap: defaultAppMap, dbSchema });
         sendJson(res, 200, topology);
         return;
       }
-
 
       // 9. Web App & Static serving
       if (method === 'GET' || method === 'HEAD') {
@@ -305,15 +363,23 @@ export function createApiServer(options: ServerOptions = {}): Server {
           const rootDir = manager.getRootDir();
           const latestId = RunStore.latestRunId(rootDir);
           let targetRunId = url.searchParams.get('runId') || latestId;
-          let realSummary = targetRunId ? RunStore.readSummaryById(rootDir, targetRunId) : undefined;
+          let realSummary = targetRunId
+            ? RunStore.readSummaryById(rootDir, targetRunId)
+            : undefined;
 
           if (
-            (!realSummary || realSummary.run.status !== 'complete' || realSummary.findings.length === 0) &&
+            (!realSummary ||
+              realSummary.run.status !== 'complete' ||
+              realSummary.findings.length === 0) &&
             latestId &&
             latestId !== targetRunId
           ) {
             const latestSummary = RunStore.readSummaryById(rootDir, latestId);
-            if (latestSummary && latestSummary.run.status === 'complete' && latestSummary.findings.length > 0) {
+            if (
+              latestSummary &&
+              latestSummary.run.status === 'complete' &&
+              latestSummary.findings.length > 0
+            ) {
               targetRunId = latestId;
               realSummary = latestSummary;
             }
@@ -327,10 +393,83 @@ export function createApiServer(options: ServerOptions = {}): Server {
             state.gate = realSummary.gate.decision;
             state.gateReasons = realSummary.gate.reasons;
             state.findings = realSummary.findings;
-            state.webUrls = realSummary.environment?.baseUrl ?? 'https://mobospace-sandbox.pancaran-group.co.id/';
+            state.webUrls =
+              realSummary.environment?.baseUrl ?? 'https://mobospace-sandbox.pancaran-group.co.id/';
             state.requestsCount = realSummary.totals.tests;
-          }
 
+            if (realSummary.stages) {
+              const stageKeyMap: Record<string, string> = {
+                preflight: 'preflight',
+                discover: 'discover',
+                model: 'app-map',
+                execute: 'lanes',
+                correlate: 'correlate',
+                document: 'document',
+              };
+
+              const mappedStages: Record<
+                string,
+                'pending' | 'running' | 'ok' | 'failed' | 'skipped'
+              > = {
+                preflight: 'pending',
+                discover: 'pending',
+                'app-map': 'pending',
+                lanes: 'pending',
+                correlate: 'pending',
+                document: 'pending',
+              };
+              const mappedDurations: Record<string, number> = {};
+              const formatTime = (iso?: string) => {
+                if (!iso) return new Date().toLocaleTimeString();
+                try {
+                  return new Date(iso).toLocaleTimeString();
+                } catch {
+                  return iso;
+                }
+              };
+
+              const logs: string[] = [
+                `[${formatTime(realSummary.run.startedAt)}] [RUN] Inisialisasi pipeline untuk target: ${state.webUrls}`,
+                `[${formatTime(realSummary.run.startedAt)}] [RUN] Run ID: ${targetRunId} | Mode: ${realSummary.run.mode.toUpperCase()}`,
+                `[${formatTime(realSummary.run.startedAt)}] [STATUS] Memulai eksekusi stage pipeline...`,
+              ];
+
+              for (const [stKey, stSummary] of Object.entries(realSummary.stages)) {
+                const targetKey = stageKeyMap[stKey] ?? stKey;
+                if (targetKey in mappedStages) {
+                  mappedStages[targetKey] = stSummary.status;
+                }
+                mappedDurations[targetKey] = stSummary.durationMs;
+                const timeStr = formatTime(stSummary.finishedAt || stSummary.startedAt);
+                logs.push(
+                  `[${timeStr}] [STAGE] Stage [${targetKey}]: ${stSummary.status.toUpperCase()} (${stSummary.durationMs}ms)`,
+                );
+              }
+
+              logs.push(
+                `[${formatTime(realSummary.run.finishedAt)}] [COMPLETE] Pipeline selesai dengan Keputusan Gate: ${realSummary.gate.decision} (Total durasi: ${realSummary.run.durationMs}ms)`,
+              );
+
+              state.stages = mappedStages;
+              state.stageDurations = mappedDurations;
+              state.liveLogs = logs;
+            }
+
+            const appMap = loadAppMapForRun(rootDir, targetRunId) ?? defaultAppMap;
+            const dbSchema = extractDatabaseSchema(rootDir);
+            state.topology = buildFullStackLineage({
+              appMap,
+              dbSchema,
+              findings: realSummary.findings ?? [],
+            });
+          } else {
+            const dbSchema = extractDatabaseSchema(rootDir);
+            state.topology = buildFullStackLineage({
+              appMap: defaultAppMap,
+              dbSchema,
+              findings: [],
+            });
+          }
           // Default to Step 5 (Results) if a real run is loaded, otherwise respect ?step=
           if (stepQuery) {
             const s = Number(stepQuery);
@@ -339,16 +478,26 @@ export function createApiServer(options: ServerOptions = {}): Server {
             state.currentStep = 5;
           }
 
-          if (state.currentStep === 3) {
+          try {
             const plan = manager.buildPlanCases({
-              name: 'Sample Plan',
-              mode: 'sandbox',
-              repo: { localPath: 'fixtures/sample-todo-api' },
-              web: { urls: [state.webUrls] },
+              name: state.name || 'Sample Plan',
+              mode: state.mode || 'staging',
+              repo: state.repoUrl
+                ? { localPath: state.repoUrl }
+                : { localPath: 'fixtures/sample-todo-api' },
+              web: { urls: [state.webUrls || 'https://mobospace-sandbox.pancaran-group.co.id/'] },
+              authorization: {
+                ownerConfirmed: true,
+                approvedBy: state.approvedBy || 'approver@company.local',
+              },
+              testRows: state.testRows,
             });
             state.planCases = plan.cases;
             state.approvedCaseIds = new Set(plan.cases.filter((c) => c.approved).map((c) => c.id));
-          } else if (state.currentStep === 4) {
+          } catch {
+            // fallback if build fails
+          }
+          if (state.currentStep === 4 && !realSummary) {
             state.stages = {
               preflight: 'ok',
               discover: 'ok',

@@ -14,9 +14,7 @@ export function buildEvidenceSummary(finding: Finding): string {
   const targets = findingTargets(finding);
   const evidenceTypes = [
     ...new Set(
-      finding.evidence.map((item) =>
-        typeof item.type === 'string' ? item.type : 'unknown',
-      ),
+      finding.evidence.map((item) => (typeof item.type === 'string' ? item.type : 'unknown')),
     ),
   ].sort();
   const lanes = [...new Set(finding.lanes)].sort();

@@ -85,7 +85,12 @@ function mdCell(value: unknown): string {
     .replace(/\n/g, ' ');
 }
 
-function findingRows(summary: RunSummary, language: DocLanguage, ctx: DocContext, findings: Finding[]): string[][] {
+function findingRows(
+  summary: RunSummary,
+  language: DocLanguage,
+  ctx: DocContext,
+  findings: Finding[],
+): string[][] {
   return findings.map((finding) => [
     `<td><strong>${escapeHtml(finding.id)}</strong></td>`,
     `<td>${escapeHtml(finding.title)}</td>`,
@@ -254,11 +259,7 @@ function executiveSummaryHtml(summary: RunSummary, language: DocLanguage, ctx: D
     }
   </div>
 
-  ${
-    trend
-      ? `<div class="card"><h2>${t(language, 'summary.trend')}</h2>${trend}</div>`
-      : ''
-  }
+  ${trend ? `<div class="card"><h2>${t(language, 'summary.trend')}</h2>${trend}</div>` : ''}
 
   <div class="card">
     <h2>${t(language, 'summary.notCoveredHeadline')}</h2>
@@ -391,7 +392,13 @@ function executionReportHtml(summary: RunSummary, language: DocLanguage, ctx: Do
         ? `<p>${t(language, 'execution.noFailures')}</p>`
         : table(
             language,
-            [t(language, 'common.id'), t(language, 'common.title'), t(language, 'common.lane'), t(language, 'common.reason'), t(language, 'common.evidence')],
+            [
+              t(language, 'common.id'),
+              t(language, 'common.title'),
+              t(language, 'common.lane'),
+              t(language, 'common.reason'),
+              t(language, 'common.evidence'),
+            ],
             failureRows,
           )
     }
@@ -736,11 +743,7 @@ function coverageReportHtml(summary: RunSummary, language: DocLanguage): string 
   return htmlPage(language, t(language, 'doc.coverage'), body);
 }
 
-function complianceSection(
-  summary: RunSummary,
-  language: DocLanguage,
-  ctx: DocContext,
-): string {
+function complianceSection(summary: RunSummary, language: DocLanguage, ctx: DocContext): string {
   const mapping = ctx.complianceMapping;
   if (!mapping) return '';
   const rows = summary.findings.map((finding) => {
@@ -980,7 +983,10 @@ function runComparisonHtml(summary: RunSummary, language: DocLanguage): string {
 
 function planApprovalHtml(summary: RunSummary, language: DocLanguage): string {
   const request = summary.request as
-    | { planApproval?: string; authorization?: { ownerConfirmed?: boolean; approvedBy?: string; ticket?: string } }
+    | {
+        planApproval?: string;
+        authorization?: { ownerConfirmed?: boolean; approvedBy?: string; ticket?: string };
+      }
     | undefined;
   const stageRows = Object.values(summary.stages)
     .sort((a, b) => a.startedAt.localeCompare(b.startedAt))

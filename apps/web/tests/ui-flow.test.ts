@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createInitialState,
-  renderPortalHtml,
-  t,
-  type PortalState,
-} from '../src/index.js';
+import { createInitialState, renderPortalHtml, t, type PortalState } from '../src/index.js';
 import { RunManager } from '../../api/src/runs.js';
 import { defaultRegistry } from '@nexus/registry';
 
@@ -31,7 +26,9 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
         web: { urls: ['not-a-valid-url'] },
       });
       expect(estimate.valid).toBe(false);
-      expect(estimate.errors?.some((e) => e.includes('Invalid URL format') || e.includes('http'))).toBe(true);
+      expect(
+        estimate.errors?.some((e) => e.includes('Invalid URL format') || e.includes('http')),
+      ).toBe(true);
     });
 
     it('Scenario 1.3: Mode = sandbox, no repo -> Error sandbox needs repo', () => {
@@ -41,7 +38,9 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
         web: { urls: ['http://127.0.0.1:3100/'] },
       });
       expect(estimate.valid).toBe(false);
-      expect(estimate.errors?.some((e) => e.includes('Sandbox mode requires a repository'))).toBe(true);
+      expect(estimate.errors?.some((e) => e.includes('Sandbox mode requires a repository'))).toBe(
+        true,
+      );
     });
 
     it('Scenario 1.4: Mode = staging/prod-safe, unconfirmed auth or empty approver -> Error', () => {
@@ -52,7 +51,9 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
         authorization: { ownerConfirmed: false, approvedBy: 'Lead' },
       });
       expect(unconfirmed.valid).toBe(false);
-      expect(unconfirmed.errors?.some((e) => e.includes('requires authorization confirmation'))).toBe(true);
+      expect(
+        unconfirmed.errors?.some((e) => e.includes('requires authorization confirmation')),
+      ).toBe(true);
 
       const noApprover = manager.estimateDryRun({
         name: 'Prod Safe Run',
@@ -63,9 +64,7 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       expect(noApprover.valid).toBe(false);
       expect(
         noApprover.errors?.some(
-          (e) =>
-            e.toLowerCase().includes('approver') ||
-            e.toLowerCase().includes('approvedby'),
+          (e) => e.toLowerCase().includes('approver') || e.toLowerCase().includes('approvedby'),
         ),
       ).toBe(true);
     });
@@ -155,6 +154,35 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       const validVaultRef = manager.validateRawSecrets('vault:qa/staging-credentials');
       expect(validVaultRef).toBeUndefined();
     });
+    it('Scenario 1.10: Scope selector, interactive lane chips, and dry-run drawer are rendered', () => {
+      const state = createInitialState();
+      state.mode = 'prod-safe';
+      const html = renderPortalHtml(state);
+      expect(html).toContain('scope-selector');
+      expect(html).toContain('QUICK');
+      expect(html).toContain('STANDARD');
+      expect(html).toContain('DEEP');
+      expect(html).toContain('CUSTOM');
+      expect(html).toContain('chip-interactive');
+      expect(html).toContain('dry-run-drawer');
+      expect(html).toContain('PERF (LOCKED)');
+    });
+    it('Scenario 1.11: Vault credential ref, login path, and dynamic auth form fields are rendered', () => {
+      const state = createInitialState();
+      state.authRef = 'vault:qa/staging-admin';
+      state.loginUrl = '/auth/login';
+      state.authFormFields = [
+        { target: 'select[name="tenant"]', action: 'select', value: 'Pancaran Internal' },
+      ];
+      const html = renderPortalHtml(state);
+      expect(html).toContain('id="input-auth-ref"');
+      expect(html).toContain('vault:qa/staging-admin');
+      expect(html).toContain('id="input-login-url"');
+      expect(html).toContain('/auth/login');
+      expect(html).toContain('id="btn-add-auth-field"');
+      expect(html).toContain('select[name="tenant"]');
+      expect(html).toContain('Pancaran Internal');
+    });
   });
 
   // ==========================================
@@ -166,11 +194,14 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       state.currentStep = 2;
       state.activeBuilderType = 'e2e';
       state.testRows.e2e = [
-        { id: 'TC-E2E-CUSTOM', scenario: 'User cart flow', steps: 'Click cart', expected: 'Cart open' },
+        {
+          id: 'TC-E2E-CUSTOM',
+          scenario: 'User cart flow',
+          steps: 'Click cart',
+          expected: 'Cart open',
+        },
       ];
-      state.testRows.api = [
-        { method: 'GET', endpoint: '/api/v1/user', expectedStatus: 200 },
-      ];
+      state.testRows.api = [{ method: 'GET', endpoint: '/api/v1/user', expectedStatus: 200 }];
 
       // Switch to api
       state.activeBuilderType = 'api';
@@ -221,6 +252,33 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       state.webUrls = 'https://staging.perusahaan.id/';
       expect(state.webUrls).toBe('https://staging.perusahaan.id/');
     });
+    it('Scenario 2.7: Pill count badges, select/boolean column kinds, min-width, and suggest-diff-panel are rendered', () => {
+      const state = createInitialState();
+      state.currentStep = 2;
+      state.activeBuilderType = 'api';
+      state.testRows.api = [
+        {
+          method: 'GET',
+          endpoint: '/health',
+          expectedStatus: 200,
+          schemaCheck: true,
+          severity: 'critical',
+        },
+      ];
+      const html = renderPortalHtml(state);
+      expect(html).toContain('pill-badge');
+      expect(html).toContain('suggest-diff-panel');
+      // SchemaCheck is boolean kind -> rendered as select with true/false
+      expect(html).toContain('<select class="input-mono builder-cell"');
+      expect(html).toContain('<option value="true" selected>true</option>');
+
+      // Switch to E2E to verify min-width on scenario, steps, expected
+      state.activeBuilderType = 'e2e';
+      const e2eHtml = renderPortalHtml(state);
+      expect(e2eHtml).toContain('min-width:220px');
+      expect(e2eHtml).toContain('min-width:260px');
+      expect(e2eHtml).toContain('min-width:240px');
+    });
   });
 
   // ==========================================
@@ -237,9 +295,7 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
         repo: { localPath: 'fixtures/sample-todo-api' },
         web: { urls: ['http://127.0.0.1:3100/'] },
         testRows: {
-          api: [
-            { id: 'TC-API-MUTATE', method: 'POST', endpoint: '/orders' },
-          ],
+          api: [{ id: 'TC-API-MUTATE', method: 'POST', endpoint: '/orders' }],
         },
       });
       state.planCases = plan.cases;
@@ -250,6 +306,21 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       expect(html).toContain('Akan Dijalankan');
       expect(html).toContain(t('id', 'needsApprovalChip'));
       expect(html).toContain('Dilewati Mode');
+    });
+    it('Scenario 3.9: Priority column uses semantic badge colors and filter dropdowns are present', () => {
+      const state = createInitialState();
+      state.currentStep = 3;
+      const plan = manager.buildPlanCases({
+        name: 'Semantic Priority Test',
+        mode: 'staging',
+        repo: { localPath: 'fixtures/sample-todo-api' },
+        web: { urls: ['http://127.0.0.1:3100/'] },
+      });
+      state.planCases = plan.cases;
+      const html = renderPortalHtml(state);
+      expect(html).toContain('filter-plan-lane');
+      expect(html).toContain('filter-plan-confidence');
+      expect(html).toContain('tag-critical');
     });
 
     it('Scenario 3.2: Case with confidence needs-review is unchecked by default', () => {
@@ -273,9 +344,7 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
         mode: 'prod-safe',
         web: { urls: ['http://127.0.0.1:3100/'] },
         testRows: {
-          api: [
-            { id: 'TC-POST-ORDER', method: 'POST', endpoint: '/api/v1/orders' },
-          ],
+          api: [{ id: 'TC-POST-ORDER', method: 'POST', endpoint: '/api/v1/orders' }],
         },
       });
 
@@ -355,9 +424,7 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
         repo: { localPath: 'fixtures/sample-todo-api' },
         web: { urls: ['http://127.0.0.1:3100/'] },
         testRows: {
-          e2e: [
-            { id: 'TC-USER-AUTH', scenario: 'User Auth Check', severity: 'critical' },
-          ],
+          e2e: [{ id: 'TC-USER-AUTH', scenario: 'User Auth Check', severity: 'critical' }],
         },
       });
       state.planCases = plan.cases;
@@ -383,10 +450,7 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       state.stages.discover = 'running';
       state.requestsCount = 42;
       state.circuitBreakerOpen = false;
-      state.liveLogs = [
-        'Stage preflight: ok (120ms)',
-        'Stage discover: running',
-      ];
+      state.liveLogs = ['Stage preflight: ok (120ms)', 'Stage discover: running'];
 
       const html = renderPortalHtml(state);
       expect(html).toContain('PREFLIGHT');
@@ -394,6 +458,21 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       expect(html).toContain('Requests Executed: 42');
       expect(html).toContain('CLOSED (Healthy)');
       expect(html).toContain('Stage preflight: ok');
+      // Phase 3 IDs & elements
+      expect(html).toContain('id="stage-card-preflight"');
+      expect(html).toContain('id="stage-badge-preflight"');
+      expect(html).toContain('id="stage-dur-preflight"');
+      expect(html).toContain('id="stage-card-lanes"');
+      expect(html).toContain('id="stage-badge-lanes"');
+      expect(html).toContain('id="stage-dur-lanes"');
+      expect(html).toContain('id="telemetry-requests"');
+      expect(html).toContain('id="telemetry-circuit"');
+      expect(html).toContain('id="filter-log-level"');
+      expect(html).toContain('live-pulse');
+      expect(html).toContain('id="lane-progress-container"');
+      expect(html).toContain('id="live-elapsed-timer"');
+      expect(html).toContain('id="btn-copy-terminal-logs"');
+      expect(html).toContain('class="log-time"');
     });
 
     it('Scenario 4.4 & 4.5: Cancel / Stop action and view results', () => {
@@ -450,6 +529,54 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       expect(html).toContain('btn-download-bundle');
       expect(html).toContain('btn-start-new-run');
     });
+
+    it('Scenario 5.4: Findings use semantic severity badges and render finding inspector drawer', () => {
+      const state = createInitialState();
+      state.currentStep = 5;
+      state.findings = [
+        {
+          id: 'F-SEC-01',
+          title: 'Critical Auth Bypass',
+          severity: 'critical',
+          confidence: 'verified',
+          category: 'security',
+          lanes: ['security'],
+          occurrences: 1,
+          evidence: [],
+          status: 'new',
+          expected: 'Return 401 Unauthorized',
+          actual: 'Returned 200 OK without token',
+          fingerprint: 'sha256-abc12345',
+          suggestedFix: 'Enforce auth middleware before controller',
+        },
+      ];
+      const html = renderPortalHtml(state);
+      expect(html).toContain('tag-critical');
+      expect(html).toContain('id="finding-inspector-drawer"');
+      expect(html).toContain('id="btn-copy-jira-markdown"');
+      expect(html).toContain('0% DRIFT / BASELINE VERIFIED');
+    });
+
+    it('Scenario 5.5: Visual diff panel displays drift detected when visual lane finding exists', () => {
+      const state = createInitialState();
+      state.currentStep = 5;
+      state.findings = [
+        {
+          id: 'F-VIS-01',
+          title: 'Header button shifted by 15px',
+          severity: 'low',
+          confidence: 'auto-discovered',
+          category: 'visual',
+          lanes: ['visual'],
+          occurrences: 1,
+          evidence: [],
+          status: 'new',
+        },
+      ];
+      const html = renderPortalHtml(state);
+      expect(html).toContain('DRIFT DETECTED');
+      expect(html).toContain('Header button shifted by 15px');
+    });
   });
 
   // ==========================================
@@ -469,6 +596,43 @@ describe('Dogfooding Acceptance Suite (docs/08-UI-FLOW-REFERENCE.md)', () => {
       expect(html).toContain('POST /login');
       expect(html).toContain('users, sessions');
       expect(html).toContain('PII: password');
+    });
+
+    it('Scenario 6.2: Search input, PII filter, SVG node classes, and dynamic lineage are rendered', () => {
+      const state = createInitialState();
+      state.currentStep = 6;
+      state.furthestStep = 6;
+      state.topology = {
+        nodes: [],
+        edges: [],
+        lineage: [
+          {
+            id: 'LIN-01',
+            pageOrFeature: 'Page: /dashboard',
+            endpoint: '/api/v1/metrics',
+            method: 'GET',
+            handler: 'metrics.controller.ts',
+            tables: [
+              {
+                table: 'audit_logs',
+                operations: ['SELECT'],
+                sensitiveColumns: ['ip_address', 'email'],
+              },
+            ],
+          },
+        ],
+        stats: { totalEndpoints: 1, totalPages: 1, totalTables: 1, piiTablesCount: 1 },
+      };
+
+      const html = renderPortalHtml(state);
+      expect(html).toContain('id="lineage-search"');
+      expect(html).toContain('id="check-filter-pii"');
+      expect(html).toContain('svg-topology-node');
+      expect(html).toContain('Page: /dashboard');
+      expect(html).toContain('/api/v1/metrics');
+      expect(html).toContain('audit_logs');
+      expect(html).toContain('PII: ip_address, email');
+      expect(html).toContain('ACTIVE (2 Masked)');
     });
   });
 

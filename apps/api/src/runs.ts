@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import vm from 'node:vm';
 import {
   createRunId,
   DEFAULT_ALLOWLIST,
@@ -41,7 +42,8 @@ export interface PlanReviewState {
 export interface RunRecord {
   id: string;
   request: RunRequest;
-  status: 'pending' | 'reviewing-plan' | 'running' | 'complete' | 'failed' | 'incomplete' | 'cancelled';
+  status:
+    'pending' | 'reviewing-plan' | 'running' | 'complete' | 'failed' | 'incomplete' | 'cancelled';
   gate?: 'GO' | 'GO WITH RISKS' | 'NO-GO';
   createdAt: string;
   startedAt?: string;
@@ -67,16 +69,30 @@ export interface DryRunEstimate {
   errors?: string[];
 }
 
-export class RunManager {
-  private readonly runs = new Map<string, RunRecord>();
-  private readonly rootDir: string;
-  private readonly config: QaConfig;
+function loadQaConfigSync(rootDir: string): QaConfig {
+  const cfgPath = join(rootDir, 'qa.config.ts');
+  if (existsSync(cfgPath)) {
+    try {
+      const content = readFileSync(cfgPath, 'utf8');
+      // Strip TS import statements
+      let code = content.replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '').trim();
 
-  constructor(rootDir: string = process.cwd()) {
-    this.rootDir = resolve(rootDir);
-    let loadedAllowlist = [...DEFAULT_ALLOWLIST];
-    const cfgPath = join(this.rootDir, 'qa.config.ts');
-    if (existsSync(cfgPath)) {
+      // Convert export default [defineConfig](...) to assignment to __config__
+      code = code.replace(/export\s+default\s+(?:defineConfig\s*)?\(/, '__config__ = (');
+      code = code.replace(/export\s+default\s+/, '__config__ = ');
+
+      const sandbox: Record<string, unknown> = {
+        process: { env: { ...process.env } },
+        defineConfig: (c: unknown) => c,
+        __config__: undefined,
+      };
+      vm.createContext(sandbox);
+      vm.runInContext(code, sandbox, { timeout: 500 });
+
+      if (sandbox.__config__ && typeof sandbox.__config__ === 'object') {
+        return QaConfigSchema.parse(sandbox.__config__);
+      }
+    } catch {
       try {
         const content = readFileSync(cfgPath, 'utf8');
         const match = content.match(/allowlist:\s*\[([\s\S]*?)\]/);
@@ -86,18 +102,79 @@ export class RunManager {
             .map((s) => s.replace(/['"\s]/g, ''))
             .filter(Boolean);
           if (items.length > 0) {
-            loadedAllowlist = items;
+            return QaConfigSchema.parse({
+              env: 'development',
+              modes: ['sandbox', 'staging', 'prod-safe'],
+              allowlist: items,
+            });
           }
         }
       } catch {
-        // fallback
+        // ignore fallback
       }
     }
-    this.config = QaConfigSchema.parse({
-      env: 'development',
-      modes: ['sandbox', 'staging', 'prod-safe'],
-      allowlist: loadedAllowlist,
-    });
+  }
+
+  return QaConfigSchema.parse({
+    env: 'development',
+    modes: ['sandbox', 'staging', 'prod-safe'],
+    allowlist: [...DEFAULT_ALLOWLIST],
+  });
+}
+
+function resolveSpecUrl(specUrl: string, base: string): string {
+  try {
+    const trimmedBase = base.trim();
+    const trimmedSpec = specUrl.trim();
+    if (/^https?:\/\//i.test(trimmedSpec)) {
+      return trimmedSpec;
+    }
+    const baseWithSlash = trimmedBase.endsWith('/') ? trimmedBase : `${trimmedBase}/`;
+    return new URL(trimmedSpec, trimmedSpec.startsWith('/') ? trimmedBase : baseWithSlash).href;
+  } catch {
+    return specUrl;
+  }
+}
+
+export class RunManager {
+  private readonly runs = new Map<string, RunRecord>();
+  private readonly rootDir: string;
+  private readonly config: QaConfig;
+
+  constructor(rootDir: string = process.cwd(), initialConfig?: QaConfig) {
+    this.rootDir = resolve(rootDir);
+    this.config = initialConfig
+      ? QaConfigSchema.parse(initialConfig)
+      : loadQaConfigSync(this.rootDir);
+  }
+
+  normalizeRequest(rawRequest: unknown): unknown {
+    if (!rawRequest || typeof rawRequest !== 'object') return rawRequest;
+    const req = { ...rawRequest } as Record<string, unknown>;
+    if (req.api && typeof req.api === 'object') {
+      const api = { ...(req.api as Record<string, unknown>) };
+      if (typeof api.specUrl === 'string' && api.specUrl.trim().length > 0) {
+        const specUrl = api.specUrl.trim();
+        const baseUrl =
+          typeof api.baseUrl === 'string' && api.baseUrl.trim().length > 0
+            ? api.baseUrl.trim()
+            : undefined;
+        let webUrl: string | undefined;
+        if (req.web && typeof req.web === 'object') {
+          const webObj = req.web as Record<string, unknown>;
+          if (Array.isArray(webObj.urls) && typeof webObj.urls[0] === 'string') {
+            const first = webObj.urls[0].trim();
+            if (first.length > 0) webUrl = first;
+          }
+        }
+        const base = baseUrl ?? webUrl;
+        if (base) {
+          api.specUrl = resolveSpecUrl(specUrl, base);
+        }
+      }
+      req.api = api;
+    }
+    return req;
   }
 
   getRootDir(): string {
@@ -145,7 +222,8 @@ export class RunManager {
   }
 
   estimateDryRun(rawRequest: unknown): DryRunEstimate {
-    const parseResult = RunRequestSchema.safeParse(rawRequest);
+    const normalized = this.normalizeRequest(rawRequest);
+    const parseResult = RunRequestSchema.safeParse(normalized);
     if (!parseResult.success) {
       const errors = parseResult.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`);
       return {
@@ -167,7 +245,7 @@ export class RunManager {
     // Check targets presence (1.1)
     const hasRepo = Boolean(request.repo?.url || request.repo?.localPath);
     const hasWeb = Boolean(request.web?.urls && request.web.urls.length > 0);
-    const hasApi = Boolean(request.api?.baseUrl);
+    const hasApi = Boolean(request.api?.baseUrl || request.api?.specUrl);
 
     if (!hasRepo && !hasWeb && !hasApi) {
       errors.push('Provide a repo link or web URL to test');
@@ -183,7 +261,10 @@ export class RunManager {
       if (!request.authorization?.ownerConfirmed) {
         errors.push(`Mode "${request.mode}" requires authorization confirmation`);
       }
-      if (!request.authorization?.approvedBy || request.authorization.approvedBy.trim().length === 0) {
+      if (
+        !request.authorization?.approvedBy ||
+        request.authorization.approvedBy.trim().length === 0
+      ) {
         errors.push(`Mode "${request.mode}" requires an authorized approver ("approvedBy")`);
       }
     }
@@ -201,6 +282,10 @@ export class RunManager {
     }
     if (request.api?.baseUrl) {
       const allowErr = this.checkAllowlist(request.api.baseUrl);
+      if (allowErr) errors.push(allowErr);
+    }
+    if (request.api?.specUrl) {
+      const allowErr = this.checkAllowlist(request.api.specUrl);
       if (allowErr) errors.push(allowErr);
     }
 
@@ -222,7 +307,13 @@ export class RunManager {
     // Rate limits and estimation
     const rateLimit = request.mode === 'prod-safe' ? 2 : request.mode === 'staging' ? 10 : 20;
     const scopeMultiplier =
-      request.scope === 'quick' ? 1 : request.scope === 'standard' ? 3 : request.scope === 'deep' ? 8 : 2;
+      request.scope === 'quick'
+        ? 1
+        : request.scope === 'standard'
+          ? 3
+          : request.scope === 'deep'
+            ? 8
+            : 2;
 
     const estimatedRequests = Math.round(15 * filteredLanes.length * scopeMultiplier);
     const estimatedDurationSeconds = Math.round(estimatedRequests / Math.min(rateLimit, 10)) + 5;
@@ -237,6 +328,8 @@ export class RunManager {
     if (request.repo?.localPath) targets.push(request.repo.localPath);
     for (const u of request.web?.urls ?? []) targets.push(u);
     if (request.api?.baseUrl) targets.push(request.api.baseUrl);
+    if (request.api?.specUrl && !targets.includes(request.api.specUrl))
+      targets.push(request.api.specUrl);
 
     return {
       valid: errors.length === 0,
@@ -253,7 +346,8 @@ export class RunManager {
   }
 
   buildPlanCases(rawRequest: unknown): PlanReviewState {
-    const request = RunRequestSchema.parse(rawRequest);
+    const normalized = this.normalizeRequest(rawRequest);
+    const request = RunRequestSchema.parse(normalized);
     const cases: PlanCase[] = [];
     const hasRepo = Boolean(request.repo?.url || request.repo?.localPath);
     const hasWeb = Boolean(request.web?.urls && request.web.urls.length > 0);
@@ -328,8 +422,12 @@ export class RunManager {
         if (Array.isArray(rows)) {
           rows.forEach((row, idx) => {
             const r = row as Record<string, unknown>;
-            const caseId = typeof r.id === 'string' ? r.id : `TC-USER-${lane.toUpperCase()}-${String(idx + 1).padStart(3, '0')}`;
-            const title = typeof r.scenario === 'string' ? r.scenario : `User row ${lane} #${idx + 1}`;
+            const caseId =
+              typeof r.id === 'string'
+                ? r.id
+                : `TC-USER-${lane.toUpperCase()}-${String(idx + 1).padStart(3, '0')}`;
+            const title =
+              typeof r.scenario === 'string' ? r.scenario : `User row ${lane} #${idx + 1}`;
             const isStateChanging =
               lane === 'api' &&
               ['POST', 'PUT', 'PATCH', 'DELETE'].includes(String(r.method ?? '').toUpperCase());
@@ -368,7 +466,9 @@ export class RunManager {
     }
 
     const toRun = cases.filter((c) => c.approved && c.modeCompatibility === 'allowed').length;
-    const needsApproval = cases.filter((c) => c.confidence === 'needs-review' && c.modeCompatibility === 'allowed').length;
+    const needsApproval = cases.filter(
+      (c) => c.confidence === 'needs-review' && c.modeCompatibility === 'allowed',
+    ).length;
     const skippedByMode = cases.filter((c) => c.modeCompatibility === 'skipped-by-mode').length;
 
     return {
@@ -383,12 +483,13 @@ export class RunManager {
   }
 
   async createRun(rawRequest: unknown, user: AuthUser): Promise<RunRecord> {
-    const dryRun = this.estimateDryRun(rawRequest);
+    const normalized = this.normalizeRequest(rawRequest);
+    const dryRun = this.estimateDryRun(normalized);
     if (!dryRun.valid) {
       throw new Error(`Invalid Run Request: ${(dryRun.errors ?? []).join('; ')}`);
     }
 
-    const request = RunRequestSchema.parse(rawRequest);
+    const request = RunRequestSchema.parse(normalized);
 
     // Mode permission check
     if (request.mode !== 'sandbox' && user.role !== 'approver' && user.role !== 'admin') {
@@ -435,7 +536,9 @@ export class RunManager {
       throw new Error(`Run "${runId}" not found`);
     }
     if (record.status !== 'reviewing-plan') {
-      throw new Error(`Run "${runId}" is not in reviewing-plan status (current: "${record.status}")`);
+      throw new Error(
+        `Run "${runId}" is not in reviewing-plan status (current: "${record.status}")`,
+      );
     }
 
     // Require at least one approved case (3.6)
@@ -539,7 +642,11 @@ export class RunManager {
     if (!record) {
       throw new Error(`Run "${runId}" not found`);
     }
-    if (record.status === 'running' || record.status === 'pending' || record.status === 'reviewing-plan') {
+    if (
+      record.status === 'running' ||
+      record.status === 'pending' ||
+      record.status === 'reviewing-plan'
+    ) {
       record.status = 'cancelled';
       record.finishedAt = new Date().toISOString();
       defaultEventStream.broadcast(runId, 'cancelled', { runId, timestamp: record.finishedAt });
@@ -562,7 +669,10 @@ export class RunManager {
     return existsSync(bundlePath) ? bundlePath : undefined;
   }
 
-  getDocContent(runId: string, docName: string): { content: Buffer; contentType: string } | undefined {
+  getDocContent(
+    runId: string,
+    docName: string,
+  ): { content: Buffer; contentType: string } | undefined {
     const docsDir = join(this.rootDir, 'artifacts', 'docs', runId);
     const safeDocName = docName.replace(/[^A-Za-z0-9._-]/g, '');
     const filePath = join(docsDir, safeDocName);
@@ -572,7 +682,8 @@ export class RunManager {
     const content = readFileSync(filePath);
     let contentType = 'application/octet-stream';
     if (safeDocName.endsWith('.html')) contentType = 'text/html; charset=utf-8';
-    else if (safeDocName.endsWith('.json') || safeDocName.endsWith('.sarif')) contentType = 'application/json';
+    else if (safeDocName.endsWith('.json') || safeDocName.endsWith('.sarif'))
+      contentType = 'application/json';
     else if (safeDocName.endsWith('.xml')) contentType = 'application/xml';
     else if (safeDocName.endsWith('.pdf')) contentType = 'application/pdf';
     else if (safeDocName.endsWith('.md')) contentType = 'text/markdown; charset=utf-8';

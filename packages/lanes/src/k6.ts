@@ -19,10 +19,7 @@ export interface K6RunResult {
   reason?: string;
 }
 
-export function generateK6Script(
-  baseUrl: string,
-  scenarios: K6ScenarioConfig[],
-): string {
+export function generateK6Script(baseUrl: string, scenarios: K6ScenarioConfig[]): string {
   const p95Limit = scenarios[0]?.p95MaxMs ?? 500;
   const errorRateLimit = (scenarios[0]?.errorRateMaxPercent ?? 1) / 100;
 
@@ -53,10 +50,7 @@ ${scenarios
 `;
 }
 
-export function executeK6Scenario(
-  scenario: K6ScenarioConfig,
-  context?: LaneContext,
-): K6RunResult {
+export function executeK6Scenario(scenario: K6ScenarioConfig, context?: LaneContext): K6RunResult {
   void context;
   const p95Max = scenario.p95MaxMs ?? 500;
   const maxErr = scenario.errorRateMaxPercent ?? 1.0;
@@ -77,10 +71,7 @@ export function executeK6Scenario(
   };
 }
 
-export function runK6LoadLane(
-  context: LaneContext,
-  scenarios: K6ScenarioConfig[],
-): LaneResult {
+export function runK6LoadLane(context: LaneContext, scenarios: K6ScenarioConfig[]): LaneResult {
   const startedAt = Date.now();
 
   // Mode Guard Check (8.2)
@@ -135,7 +126,8 @@ export function runK6LoadLane(
         affected: [{ endpoint: scenario.endpoint }],
         expected: `p95 <= ${scenario.p95MaxMs ?? 500}ms`,
         actual: `p95 was ${result.p95Ms}ms`,
-        suggestedFix: 'Optimize database indexes, query complexity, or configure horizontal autoscaling',
+        suggestedFix:
+          'Optimize database indexes, query complexity, or configure horizontal autoscaling',
       });
     }
   }

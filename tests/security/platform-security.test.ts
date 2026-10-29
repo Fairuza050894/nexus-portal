@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  isHostAllowed,
-  isLookalike,
-  validateRedirect,
-  redactValue,
-} from '@nexus/core';
+import { isHostAllowed, isLookalike, validateRedirect, redactValue } from '@nexus/core';
 import { hasMinimumRole, parseAuthHeader } from '../../apps/api/src/auth.js';
 
 describe('Platform Security Review (9.1)', () => {
@@ -73,7 +68,10 @@ describe('Platform Security Review (9.1)', () => {
       const approverUser = parseAuthHeader({ authorization: 'Bearer token-for-approver' });
       expect(approverUser.role).toBe('approver');
 
-      const adminUser = parseAuthHeader({ 'x-user-role': 'admin', 'x-user-email': 'sec-lead@company.local' });
+      const adminUser = parseAuthHeader({
+        'x-user-role': 'admin',
+        'x-user-email': 'sec-lead@company.local',
+      });
       expect(adminUser.role).toBe('admin');
       expect(adminUser.email).toBe('sec-lead@company.local');
     });
@@ -85,7 +83,8 @@ describe('Platform Security Review (9.1)', () => {
         title: 'User profile query',
         token: 'ghp_123456789012345678901234567890123456',
         awsKey: 'AKIAIOSFODNN7EXAMPLE',
-        authHeader: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-IDcSemACt8x4iTMCda8Yhe3iZaWbvV5XKSTbuAn0M',
+        authHeader:
+          'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-IDcSemACt8x4iTMCda8Yhe3iZaWbvV5XKSTbuAn0M',
         secretPass: 'password=SuperSecretPassword123!',
         userEmail: 'sensitive.executive@company.internal',
         cardNumber: '4111-2222-3333-4444',

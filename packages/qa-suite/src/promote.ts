@@ -66,7 +66,8 @@ export async function promoteTestCase(
   }
 
   // 4. Construct PromotedTest and add to catalogue
-  const targetSummary = candidate.target.endpoint ?? candidate.target.page ?? candidate.target.component ?? 'app';
+  const targetSummary =
+    candidate.target.endpoint ?? candidate.target.page ?? candidate.target.component ?? 'app';
   const promotedTest: PromotedTest = {
     id: candidate.id,
     title: candidate.title,

@@ -1,20 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import { classifySignal, compareWithBaseline, correlateSignals, determineConfidence } from '../src/index.js';
+import {
+  classifySignal,
+  compareWithBaseline,
+  correlateSignals,
+  determineConfidence,
+} from '../src/index.js';
 import type { AppMap } from '@nexus/app-map';
 
 describe('packages/correlate', () => {
   it('classifies signals deterministically', () => {
     expect(classifySignal({ title: 'Connection ECONNREFUSED', lane: 'e2e' })).toBe('environment');
-    expect(classifySignal({ title: 'axe rule violation: color-contrast', lane: 'a11y' })).toBe('accessibility');
-    expect(classifySignal({ title: 'Missing Content-Security-Policy', lane: 'security-passive' })).toBe('security');
-    expect(classifySignal({ title: 'LCP exceeded 2500ms', lane: 'vitals-perf' })).toBe('performance');
-    expect(classifySignal({ title: 'GET /api/todos status mismatch: expected 200 got 500', lane: 'api' })).toBe('app-bug');
+    expect(classifySignal({ title: 'axe rule violation: color-contrast', lane: 'a11y' })).toBe(
+      'accessibility',
+    );
+    expect(
+      classifySignal({ title: 'Missing Content-Security-Policy', lane: 'security-passive' }),
+    ).toBe('security');
+    expect(classifySignal({ title: 'LCP exceeded 2500ms', lane: 'vitals-perf' })).toBe(
+      'performance',
+    );
+    expect(
+      classifySignal({
+        title: 'GET /api/todos status mismatch: expected 200 got 500',
+        lane: 'api',
+      }),
+    ).toBe('app-bug');
   });
 
   it('determines confidence based on honesty rules', () => {
     expect(determineConfidence({ lane: 'api', requirements: ['REQ-01'] })).toBe('verified');
     expect(determineConfidence({ lane: 'api', expected: 'status 200' })).toBe('verified');
-    expect(determineConfidence({ lane: 'a11y', category: 'accessibility' })).toBe('auto-discovered');
+    expect(determineConfidence({ lane: 'a11y', category: 'accessibility' })).toBe(
+      'auto-discovered',
+    );
     expect(determineConfidence({ lane: 'repo', category: 'quality-debt' })).toBe('needs-review');
   });
 
@@ -69,7 +87,12 @@ describe('packages/correlate', () => {
         },
       ],
       edges: [
-        { from: 'page:/checkout', to: 'endpoint:post_/orders', kind: 'calls', confidence: 'verified' },
+        {
+          from: 'page:/checkout',
+          to: 'endpoint:post_/orders',
+          kind: 'calls',
+          confidence: 'verified',
+        },
         {
           from: 'endpoint:post_/orders',
           to: 'code:src/orders.ts',

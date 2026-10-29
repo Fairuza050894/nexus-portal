@@ -61,7 +61,9 @@ describe('QA Suite Test Promotion Pipeline (6.3)', () => {
     expect(result.promoted).toBe(false);
     expect(result.runsPassed).toBe(1);
     expect(result.runsTotal).toBe(3);
-    expect(result.error).toContain('verification run #2 failed (requires 3x consecutive green passes with 0% flakiness)');
+    expect(result.error).toContain(
+      'verification run #2 failed (requires 3x consecutive green passes with 0% flakiness)',
+    );
   });
 
   it('successfully promotes test when 3x green check passes and updates catalogue & traceability', async () => {

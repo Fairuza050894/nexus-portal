@@ -1,6 +1,9 @@
 export { discoverTargets } from './discover.js';
 export { resolveAuth } from './auth.js';
+export { resolveVaultCredentials } from './auth.js';
+export type { VaultCredentials } from './auth.js';
 export type { ResolvedAuth } from './auth.js';
+export { reverseEngineerBundle, type ReverseEngineeredArtifacts } from './bundle-extractor.js';
 export { crawl } from './crawler.js';
 export { importOpenApi } from './openapi.js';
 export {

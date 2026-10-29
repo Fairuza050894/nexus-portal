@@ -12,7 +12,12 @@ export function orderCasesByRisk(
     let effectiveRisk = c.riskScore;
 
     // Check if target matches changed file directly
-    const targetPath = (c.target.page ?? c.target.endpoint ?? c.target.component ?? '').toLowerCase();
+    const targetPath = (
+      c.target.page ??
+      c.target.endpoint ??
+      c.target.component ??
+      ''
+    ).toLowerCase();
     const isDirectlyChanged = Array.from(normalizedChanged).some(
       (cf) => targetPath.includes(cf) || cf.includes(targetPath),
     );
@@ -22,7 +27,9 @@ export function orderCasesByRisk(
     } else if (appMap) {
       // Check if target is adjacent to a changed node in AppMap
       const adjacentToChanged = appMap.nodes.some(
-        (n) => n.changedRecently && (n.path?.toLowerCase().includes(targetPath) || targetPath.includes(n.id.toLowerCase())),
+        (n) =>
+          n.changedRecently &&
+          (n.path?.toLowerCase().includes(targetPath) || targetPath.includes(n.id.toLowerCase())),
       );
       if (adjacentToChanged) {
         effectiveRisk = Math.min(1.0, effectiveRisk * 1.25 + 0.15);

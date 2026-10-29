@@ -122,12 +122,7 @@ export function determineConfidence(signal: {
 
   // Auto-discovered: objectively observable invariant failure
   const cat = signal.category;
-  if (
-    cat === 'app-bug' ||
-    cat === 'accessibility' ||
-    cat === 'security' ||
-    cat === 'environment'
-  ) {
+  if (cat === 'app-bug' || cat === 'accessibility' || cat === 'security' || cat === 'environment') {
     return 'auto-discovered';
   }
 

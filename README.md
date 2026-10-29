@@ -18,7 +18,6 @@ and operational Runbook (`docs/RUNBOOK.md`) are fully implemented and verified.
 
 The platform delivers all three core milestones: M1 ("One command"), M2 ("One click"), and M3 ("Always on").
 
-
 The product specification and phase plan live in [`ketentuan/`](ketentuan/README.md).
 
 ## Requirements
@@ -55,6 +54,7 @@ npm run api
 ```
 
 Open `http://127.0.0.1:3000` in any web browser. The console is fully interactive client-side:
+
 - **01 TARGET & MODE**: Select execution mode (`sandbox`, `staging`, `prod-safe`), configure repo or target URLs, dynamic active lanes calculation, and one-click "Jalankan Semua (Run Everything)" or "Uji Kering (Dry Run)".
 - **02 TEST BUILDER**: Data-driven test authoring across 6 types (`e2e`, `api`, `a11y`, `perf`, `visual`, `security-passive`) with inline table editing and "Sarankan Skenario (Suggest)".
 - **03 REVIEW PLAN**: Review auto-generated cases, toggle checkboxes (`needs-review` unchecked by default), "Setujui Semua Kasus Aman", and "Setujui dan Jalankan Rencana".
@@ -138,7 +138,7 @@ headers/cookies. Lanes share that session:
 | `a11y`     | axe WCAG 2A/AA inside the E2E session                                                                    |
 | `perf`     | LCP/CLS/TTFB from the same load (load testing stays opt-in)                                              |
 | `security` | passive headers, cookies, mixed content, server disclosure                                               |
-| `visual`   | screenshots only; baseline comparison is Phase 8                                                         |
+| `visual`   | screenshots and baseline comparison (with visual diff slider in web console)                             |
 
 Lanes run in parallel where possible; a lane error does not abort the others.
 Findings carry `confidence` labels; docs never present inferred items as
@@ -183,31 +183,31 @@ Everything under `artifacts/` is generated and gitignored.
 
 ## Layout
 
-| Path                       | Purpose                                                                                |
-| -------------------------- | -------------------------------------------------------------------------------------- |
-| `apps/cli`                 | `qa` command, pipeline orchestration, HTTP probes                                      |
-| `packages/core`            | Run Request schema, mode guard, allowlist/redirect checks, redaction, audit, run store |
-| `packages/sandbox`         | Stack detection, `.qa/recipe.yaml`, process/container runner, health, teardown         |
-| `packages/discover`        | Crawler, robots/rate/circuit policy, OpenAPI importer, repo analyzer, traffic log      |
-| `packages/app-map`         | Application Map builder, edges, and risk scoring                                       |
-| `packages/session`         | Playwright instrumented session: probes, axe, vitals, screenshots, security            |
+| Path                       | Purpose                                                                                        |
+| -------------------------- | ---------------------------------------------------------------------------------------------- |
+| `apps/cli`                 | `qa` command, pipeline orchestration, HTTP probes                                              |
+| `packages/core`            | Run Request schema, mode guard, allowlist/redirect checks, redaction, audit, run store         |
+| `packages/sandbox`         | Stack detection, `.qa/recipe.yaml`, process/container runner, health, teardown                 |
+| `packages/discover`        | Crawler, robots/rate/circuit policy, OpenAPI importer, repo analyzer, traffic log              |
+| `packages/app-map`         | Application Map builder, edges, and risk scoring                                               |
+| `packages/session`         | Playwright instrumented session: probes, axe, vitals, screenshots, security                    |
 | `packages/lanes`           | Lane planning/scheduling, repo/API/E2E/a11y/perf/security lanes, LanePlugin contract, findings |
-| `apps/api`                 | REST API server, OIDC/role auth, run lifecycle, live SSE streaming, bundle download    |
-| `apps/web`                 | 5-step engineering console (Target, Test Builder, Plan Review, Live Run, Results)      |
-| `packages/registry`        | Dynamic test type catalogue (`e2e`, `api`, `a11y`, `perf`, `visual`, `security-passive`) |
-| `packages/correlate`       | Fingerprint/dedupe, FP replay, external SARIF ingestion, confidence labels, baseline    |
-| `packages/gate`            | Per-confidence quality gate (GO / GO WITH RISKS / NO-GO) with rule evidence             |
-| `packages/doc-engine`      | 15 documents + SARIF/JUnit exports, i18n, compliance section, verification, zip bundle  |
-| `packages/planner`         | 5 test generators, diff suggester, change-based risk ordering, self-healing suggestions |
-| `packages/qa-suite`        | Test promotion pipeline (conventions, verified-only, 3x green check), catalogue matrix   |
-| `compliance/`              | Optional example compliance mapping (disabled by default)                              |
-| `fixtures/sample-todo-api` | Dependency-free sample target used by smoke tests                                      |
-| `run-requests/`            | Example run requests                                                                   |
-| `docs/`                    | Decisions, ADRs, and tool evaluations (`docs/evaluations/deep-eye.md`)                 |
-| `ketentuan/`               | Frozen product specification, rules, and roadmap                                       |
-| `docs/RUNBOOK.md`          | Comprehensive operational procedures, scheduling, retention, secret rotation, incidents |
-| `.github/workflows/`       | Complete CI/CD suite: PR check, nightly regression, manual dispatch, release gate, docs |
-| `CONTRIBUTING.md`          | Comprehensive onboarding & extension guide (lanes, types, extractors, docs)             |
+| `apps/api`                 | REST API server, OIDC/role auth, run lifecycle, live SSE streaming, bundle download            |
+| `apps/web`                 | 5-step engineering console (Target, Test Builder, Plan Review, Live Run, Results)              |
+| `packages/registry`        | Dynamic test type catalogue (`e2e`, `api`, `a11y`, `perf`, `visual`, `security-passive`)       |
+| `packages/correlate`       | Fingerprint/dedupe, FP replay, external SARIF ingestion, confidence labels, baseline           |
+| `packages/gate`            | Per-confidence quality gate (GO / GO WITH RISKS / NO-GO) with rule evidence                    |
+| `packages/doc-engine`      | 15 documents + SARIF/JUnit exports, i18n, compliance section, verification, zip bundle         |
+| `packages/planner`         | 5 test generators, diff suggester, change-based risk ordering, self-healing suggestions        |
+| `packages/qa-suite`        | Test promotion pipeline (conventions, verified-only, 3x green check), catalogue matrix         |
+| `compliance/`              | Optional example compliance mapping (disabled by default)                                      |
+| `fixtures/sample-todo-api` | Dependency-free sample target used by smoke tests                                              |
+| `run-requests/`            | Example run requests                                                                           |
+| `docs/`                    | Decisions, ADRs, and tool evaluations (`docs/evaluations/deep-eye.md`)                         |
+| `ketentuan/`               | Frozen product specification, rules, and roadmap                                               |
+| `docs/RUNBOOK.md`          | Comprehensive operational procedures, scheduling, retention, secret rotation, incidents        |
+| `.github/workflows/`       | Complete CI/CD suite: PR check, nightly regression, manual dispatch, release gate, docs        |
+| `CONTRIBUTING.md`          | Comprehensive onboarding & extension guide (lanes, types, extractors, docs)                    |
 
 ## Safety limitations in this phase
 
@@ -217,12 +217,10 @@ Everything under `artifacts/` is generated and gitignored.
   automatic teardown.
 - Container egress filtering is **not enforced yet**; tracked for the hardening
   phase. Do not use remote untrusted repositories until that is implemented.
-- The browser session covers crawled pages, not multi-step business journeys;
-  Test Builder rows and journey scripting land with the UI in Phase 5.
+- The browser session covers crawled pages, while multi-step business journeys
+  and custom test scenarios are authored through the Test Builder and Journey
+  Scripting in the Web Console or specified via testRows.
 - Repo developer tests are discovered but not executed yet; the repo lane is
   static analysis only.
-- Visual baselines, load testing, test generation, and the web dashboard
-  remain later phases (5–8). Requested visual lanes mark the run
-  `INCOMPLETE` (exit 3) instead of pretending to pass.
 - Requirement coverage is reported as `uncovered` unless a test or finding
   references the requirement ID; the sample fixture has no such links yet.

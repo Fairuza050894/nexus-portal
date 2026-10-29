@@ -53,7 +53,8 @@ const id: Messages = {
   'common.id': 'ID',
   'common.environment': 'Lingkungan',
   'common.build': 'Build',
-  'common.generated': 'Dihasilkan otomatis oleh nexus-portal dari data run. Tidak ada hasil yang disintesis.',
+  'common.generated':
+    'Dihasilkan otomatis oleh nexus-portal dari data run. Tidak ada hasil yang disintesis.',
   'common.verified': 'verified',
   'common.autoDiscovered': 'auto-discovered',
   'common.needsReview': 'needs-review',
@@ -84,7 +85,8 @@ const id: Messages = {
   'catalogue.feature': 'Fitur',
   'catalogue.expected': 'Ekspektasi',
   'catalogue.actual': 'Aktual',
-  'traceability.help': 'Requirement hanya ditandai tercakup jika ada tes atau temuan yang merujuk ID-nya secara eksplisit.',
+  'traceability.help':
+    'Requirement hanya ditandai tercakup jika ada tes atau temuan yang merujuk ID-nya secara eksplisit.',
   'traceability.empty': 'Sumber requirement tidak dimuat atau tidak memiliki requirement.',
   'traceability.coverage': 'Cakupan',
   'traceability.covered': 'Tercakup',
@@ -115,7 +117,8 @@ const id: Messages = {
   'coverage.coveredRequirements': 'Requirement tercakup',
   'coverage.executedTests': 'Tes dieksekusi',
   'coverage.noRequirements': 'Tidak ada requirement yang dimuat.',
-  'findings.help': 'Label confidence tidak pernah dicampur: verified, auto-discovered, dan needs-review dipisah.',
+  'findings.help':
+    'Label confidence tidak pernah dicampur: verified, auto-discovered, dan needs-review dipisah.',
   'findings.empty': 'Tidak ada temuan pada run ini.',
   'findings.byConfidence': 'Temuan per label confidence',
   'findings.status': 'Status',
@@ -125,7 +128,8 @@ const id: Messages = {
   'compliance.unmapped': 'Belum dipetakan',
   'compliance.finding': 'Temuan',
   'compliance.controls': 'Kontrol indikatif',
-  'appmap.help': 'Peta offline: cari node, klik baris untuk menyorot relasi. Overlay cakupan menandai node yang benar-benar disentuh run ini.',
+  'appmap.help':
+    'Peta offline: cari node, klik baris untuk menyorot relasi. Overlay cakupan menandai node yang benar-benar disentuh run ini.',
   'appmap.nodes': 'Node',
   'appmap.edges': 'Relasi',
   'appmap.search': 'Cari node…',
@@ -150,12 +154,14 @@ const id: Messages = {
   'env.baseUrl': 'Base URL',
   'env.apiUrl': 'API URL',
   'env.browser': 'Browser',
-  'comparison.help': 'Dibandingkan dengan baseline run sebelumnya. Status dihitung dari fingerprint temuan.',
+  'comparison.help':
+    'Dibandingkan dengan baseline run sebelumnya. Status dihitung dari fingerprint temuan.',
   'comparison.empty': 'Tidak ada baseline untuk run ini.',
   'comparison.mode': 'Mode baseline',
   'comparison.retestNew': 'retest-new',
   'comparison.standard': 'standard',
-  'comparison.retestHelp': 'Mode retest-new hanya menyorot temuan baru/regresi. Temuan berulang tetap ada di lampiran dan tetap dihitung gate.',
+  'comparison.retestHelp':
+    'Mode retest-new hanya menyorot temuan baru/regresi. Temuan berulang tetap ada di lampiran dan tetap dihitung gate.',
   'comparison.recurringAppendix': 'Lampiran: temuan berulang (tetap dihitung gate)',
   'comparison.baseline': 'Baseline',
   'comparison.new': 'Baru',
@@ -164,7 +170,8 @@ const id: Messages = {
   'comparison.regressed': 'Regresi',
   'comparison.passDelta': 'Delta pass rate',
   'comparison.findings': 'Temuan pada run ini',
-  'plan.help': 'Rencana berasal dari pipeline run. Persetujuan hanya tercatat jika ada pada audit run request.',
+  'plan.help':
+    'Rencana berasal dari pipeline run. Persetujuan hanya tercatat jika ada pada audit run request.',
   'plan.requestedBy': 'Diminta oleh',
   'plan.approvedBy': 'Disetujui oleh',
   'plan.ownerConfirmed': 'Owner confirmed',
@@ -271,7 +278,8 @@ const en: Messages = {
   'catalogue.feature': 'Feature',
   'catalogue.expected': 'Expected',
   'catalogue.actual': 'Actual',
-  'traceability.help': 'A requirement is marked covered only when a test or finding references its ID explicitly.',
+  'traceability.help':
+    'A requirement is marked covered only when a test or finding references its ID explicitly.',
   'traceability.empty': 'No requirements source was loaded or it contains no requirements.',
   'traceability.coverage': 'Coverage',
   'traceability.covered': 'Covered',
@@ -302,17 +310,20 @@ const en: Messages = {
   'coverage.coveredRequirements': 'Covered requirements',
   'coverage.executedTests': 'Executed tests',
   'coverage.noRequirements': 'No requirements were loaded.',
-  'findings.help': 'Confidence labels are never mixed: verified, auto-discovered, and needs-review are separated.',
+  'findings.help':
+    'Confidence labels are never mixed: verified, auto-discovered, and needs-review are separated.',
   'findings.empty': 'No findings in this run.',
   'findings.byConfidence': 'Findings by confidence label',
   'findings.status': 'Status',
   'findings.evidenceSummary': 'Ringkasan bukti',
   'compliance.title': 'Compliance mapping (indicative)',
-  'compliance.help': 'This mapping only points reviewers at evidence; it is not an audit conclusion.',
+  'compliance.help':
+    'This mapping only points reviewers at evidence; it is not an audit conclusion.',
   'compliance.unmapped': 'Unmapped',
   'compliance.finding': 'Finding',
   'compliance.controls': 'Indicative controls',
-  'appmap.help': 'Offline map: search a node, click a row to highlight relations. The coverage overlay marks nodes this run actually touched.',
+  'appmap.help':
+    'Offline map: search a node, click a row to highlight relations. The coverage overlay marks nodes this run actually touched.',
   'appmap.nodes': 'Nodes',
   'appmap.edges': 'Edges',
   'appmap.search': 'Search nodes…',
@@ -337,12 +348,14 @@ const en: Messages = {
   'env.baseUrl': 'Base URL',
   'env.apiUrl': 'API URL',
   'env.browser': 'Browser',
-  'comparison.help': 'Compared with the previous baseline run. Status is computed from finding fingerprints.',
+  'comparison.help':
+    'Compared with the previous baseline run. Status is computed from finding fingerprints.',
   'comparison.empty': 'No baseline for this run.',
   'comparison.mode': 'Baseline mode',
   'comparison.retestNew': 'retest-new',
   'comparison.standard': 'standard',
-  'comparison.retestHelp': 'retest-new only highlights new/regressed findings. Recurring findings stay in an appendix and still count in the gate.',
+  'comparison.retestHelp':
+    'retest-new only highlights new/regressed findings. Recurring findings stay in an appendix and still count in the gate.',
   'comparison.recurringAppendix': 'Appendix: recurring findings (still counted by the gate)',
   'comparison.baseline': 'Baseline',
   'comparison.new': 'New',
@@ -351,7 +364,8 @@ const en: Messages = {
   'comparison.regressed': 'Regressed',
   'comparison.passDelta': 'Pass rate delta',
   'comparison.findings': 'Findings in this run',
-  'plan.help': 'The plan comes from the pipeline run. Approval is only recorded when present in the run request audit.',
+  'plan.help':
+    'The plan comes from the pipeline run. Approval is only recorded when present in the run request audit.',
   'plan.requestedBy': 'Requested by',
   'plan.approvedBy': 'Approved by',
   'plan.ownerConfirmed': 'Owner confirmed',
@@ -378,7 +392,11 @@ const en: Messages = {
 
 const MESSAGES: Record<DocLanguage, Messages> = { id, en };
 
-export function t(language: DocLanguage, key: string, vars?: Record<string, string | number>): string {
+export function t(
+  language: DocLanguage,
+  key: string,
+  vars?: Record<string, string | number>,
+): string {
   const template = MESSAGES[language][key] ?? MESSAGES.en[key] ?? key;
   if (!vars) return template;
   return template.replace(/\{(\w+)\}/g, (match, name: string) =>

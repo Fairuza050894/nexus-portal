@@ -1,8 +1,18 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { chromium, firefox, webkit, type Browser, type BrowserContext, type Page, type Response } from 'playwright';
+import {
+  chromium,
+  firefox,
+  webkit,
+  type Browser,
+  type BrowserContext,
+  type Page,
+  type Response,
+} from 'playwright';
 import axe from 'axe-core';
 import { isHostAllowed, resolveHost } from '@nexus/core';
+export { bootstrapAuthenticatedSession } from './auth-bootstrap.js';
+export type { BootstrapAuthOptions, BootstrapAuthResult } from './auth-bootstrap.js';
 
 export interface SessionPageTarget {
   url: string;
@@ -73,6 +83,7 @@ export interface SessionOptions {
   interactiveLogin?: boolean;
   loginTimeoutMs?: number;
   cookies?: Array<{ name: string; value: string; domain?: string; path?: string }>;
+  storageState?: string;
   onLog?: (message: string) => void;
 }
 
@@ -379,6 +390,7 @@ export async function runInstrumentedSession(options: SessionOptions): Promise<S
       viewport: options.viewport ?? { width: 1366, height: 768 },
       isMobile: options.viewport?.isMobile ?? false,
       ignoreHTTPSErrors: false,
+      ...(options.storageState ? { storageState: options.storageState } : {}),
     });
     await injectVitalsObserver(context);
 
@@ -428,7 +440,9 @@ export async function runInstrumentedSession(options: SessionOptions): Promise<S
           navOk = true;
         } catch (navErr) {
           options.onLog?.(`Guided login navigation alert: ${(navErr as Error).message}`);
-          await loginPage.setContent(`
+          await loginPage
+            .setContent(
+              `
             <div style="font-family:ui-monospace,sans-serif; background:#090d13; color:#f0f6fc; padding:40px; height:100vh; box-sizing:border-box;">
               <div style="max-width:600px; margin:0 auto; background:#161b22; border:1px solid #30363d; border-radius:6px; padding:24px;">
                 <h3 style="color:#f85149; margin-top:0;">Koneksi Ditolak: Server Target Sedang Menolak Port 443</h3>
@@ -436,64 +450,79 @@ export async function runInstrumentedSession(options: SessionOptions): Promise<S
                 <p style="font-size:12px; color:#8b949e; margin-top:12px;">Penyebab umum: Layanan Apache/web di server sandbox kantor sedang mati/restart, atau membutuhkan koneksi VPN kantor.</p>
               </div>
             </div>
-          `).catch(() => undefined);
+          `,
+            )
+            .catch(() => undefined);
           await new Promise((r) => setTimeout(r, 8000));
         }
 
         if (navOk) {
           // Wait up to 10s for the login page / form to settle
-          await loginPage.waitForSelector('input[type="password"]', { timeout: 10_000 }).catch(() => undefined);
-        // Inject helper banner
-        await loginPage.evaluate(() => {
-          if (document.getElementById('__nexus_login_banner__')) return;
-          const banner = document.createElement('div');
-          banner.id = '__nexus_login_banner__';
-          banner.innerHTML =
-            '<div style="position:fixed;top:0;left:0;right:0;background:#0f172a;color:#f8fafc;padding:10px 16px;z-index:99999999;font-family:sans-serif;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,0.5);display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #3b82f6;">' +
-            '<span><strong>Nexus QA Guided Login:</strong> Silakan login dengan akun Anda. Begitu Anda masuk ke dashboard, pengujian otomatis akan langsung berjalan.</span>' +
-            '<button id="__nexus_resume_btn__" style="background:#2563eb;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">Sudah Login, Lanjutkan!</button>' +
-            '</div>';
-          document.body.prepend(banner);
-          document.body.style.paddingTop = '50px';
-          const btn = document.getElementById('__nexus_resume_btn__');
-          if (btn) btn.onclick = () => { window.sessionStorage.setItem('__nexus_resume__', '1'); };
-        }).catch(() => undefined);
+          await loginPage
+            .waitForSelector('input[type="password"]', { timeout: 10_000 })
+            .catch(() => undefined);
+          // Inject helper banner
+          await loginPage
+            .evaluate(() => {
+              if (document.getElementById('__nexus_login_banner__')) return;
+              const banner = document.createElement('div');
+              banner.id = '__nexus_login_banner__';
+              banner.innerHTML =
+                '<div style="position:fixed;top:0;left:0;right:0;background:#0f172a;color:#f8fafc;padding:10px 16px;z-index:99999999;font-family:sans-serif;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,0.5);display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #3b82f6;">' +
+                '<span><strong>Nexus QA Guided Login:</strong> Silakan login dengan akun Anda. Begitu Anda masuk ke dashboard, pengujian otomatis akan langsung berjalan.</span>' +
+                '<button id="__nexus_resume_btn__" style="background:#2563eb;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">Sudah Login, Lanjutkan!</button>' +
+                '</div>';
+              document.body.prepend(banner);
+              document.body.style.paddingTop = '50px';
+              const btn = document.getElementById('__nexus_resume_btn__');
+              if (btn)
+                btn.onclick = () => {
+                  window.sessionStorage.setItem('__nexus_resume__', '1');
+                };
+            })
+            .catch(() => undefined);
 
-        options.onLog?.('Browser window ready. Please enter your credentials and log in...');
+          options.onLog?.('Browser window ready. Please enter your credentials and log in...');
 
-        // Await either button click, password field detachment, or URL navigation away from login
-        const timeoutLimit = options.loginTimeoutMs ?? 120_000;
-        const pollStart = Date.now();
+          // Await either button click, password field detachment, or URL navigation away from login
+          const timeoutLimit = options.loginTimeoutMs ?? 120_000;
+          const pollStart = Date.now();
 
-        while (Date.now() - pollStart < timeoutLimit) {
-          const isDone = await loginPage.evaluate(() => {
-            if (window.sessionStorage.getItem('__nexus_resume__') === '1') return true;
-            const hasPass = Boolean(document.querySelector('input[type="password"]'));
-            const isLoginUrl = window.location.pathname.includes('/login');
-            return !hasPass && !isLoginUrl;
-          }).catch(() => false);
+          while (Date.now() - pollStart < timeoutLimit) {
+            const isDone = await loginPage
+              .evaluate(() => {
+                if (window.sessionStorage.getItem('__nexus_resume__') === '1') return true;
+                const hasPass = Boolean(document.querySelector('input[type="password"]'));
+                const isLoginUrl = window.location.pathname.includes('/login');
+                return !hasPass && !isLoginUrl;
+              })
+              .catch(() => false);
 
-          if (isDone) {
-            options.onLog?.('Login success detected! Extracting authenticated session...');
-            break;
+            if (isDone) {
+              options.onLog?.('Login success detected! Extracting authenticated session...');
+              break;
+            }
+            await new Promise((r) => setTimeout(r, 1000));
           }
-          await new Promise((r) => setTimeout(r, 1000));
-        }
 
-        // Harvest internal links from the authenticated dashboard
-        const internalPaths = await loginPage.$$eval('a[href]', (anchors) =>
-          anchors
-            .map((a) => (a as HTMLAnchorElement).pathname)
-            .filter((p) => p && !p.startsWith('#') && !p.includes('logout') && !p.includes('login')),
-        ).catch(() => []);
+          // Harvest internal links from the authenticated dashboard
+          const internalPaths = await loginPage
+            .$$eval('a[href]', (anchors) =>
+              anchors
+                .map((a) => (a as HTMLAnchorElement).pathname)
+                .filter(
+                  (p) => p && !p.startsWith('#') && !p.includes('logout') && !p.includes('login'),
+                ),
+            )
+            .catch(() => []);
 
-        for (const p of [...new Set(internalPaths)].slice(0, 5)) {
-          const origin = new URL(targets[0].url).origin;
-          const fullUrl = `${origin}${p.startsWith('/') ? '' : '/'}${p}`;
-          if (!targets.some((t) => t.path === p)) {
-            targets.push({ url: fullUrl, path: p });
+          for (const p of [...new Set(internalPaths)].slice(0, 5)) {
+            const origin = new URL(targets[0].url).origin;
+            const fullUrl = `${origin}${p.startsWith('/') ? '' : '/'}${p}`;
+            if (!targets.some((t) => t.path === p)) {
+              targets.push({ url: fullUrl, path: p });
+            }
           }
-        }
           options.onLog?.('Authenticated session captured! Commencing automated testing...');
         }
       } catch (err) {
@@ -502,7 +531,6 @@ export async function runInstrumentedSession(options: SessionOptions): Promise<S
         await loginPage.close().catch(() => undefined);
       }
     }
-
 
     const pages: SessionPageResult[] = [];
     for (const target of targets) {

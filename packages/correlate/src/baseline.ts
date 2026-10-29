@@ -63,7 +63,7 @@ export function compareWithBaseline(
       findings: currentFindings.map((finding) => ({
         ...finding,
         status: 'new',
-        ...(finding.firstSeenRun ?? options.currentRunId
+        ...((finding.firstSeenRun ?? options.currentRunId)
           ? { firstSeenRun: finding.firstSeenRun ?? options.currentRunId }
           : {}),
         ...(options.currentRunId ? { lastSeenRun: options.currentRunId } : {}),
@@ -106,8 +106,7 @@ export function compareWithBaseline(
     if (baseline) {
       matchedBaseline.add(baseline);
       recurringCount += 1;
-      const firstSeen =
-        baseline.firstSeenRun ?? firstSeenFor(finding) ?? options.baselineRunId;
+      const firstSeen = baseline.firstSeenRun ?? firstSeenFor(finding) ?? options.baselineRunId;
       return stamp(finding, 'recurring', firstSeen, options.currentRunId);
     }
 

@@ -59,11 +59,12 @@ export function formatSlackNotification(
     data.decision === 'GO' ? '#238636' : data.decision === 'GO WITH RISKS' ? '#d29922' : '#da3633';
 
   const sanitizedFeatures = data.topFailingFeatures.map((f) => redactString(f));
-  const featuresText =
-    sanitizedFeatures.length > 0 ? sanitizedFeatures.join(', ') : 'None';
+  const featuresText = sanitizedFeatures.length > 0 ? sanitizedFeatures.join(', ') : 'None';
 
   return {
-    text: redactString(`QA Pipeline Gate Decision: *${data.decision}* (Pass Rate: ${data.passRate})`),
+    text: redactString(
+      `QA Pipeline Gate Decision: *${data.decision}* (Pass Rate: ${data.passRate})`,
+    ),
     attachments: [
       {
         color,
@@ -76,7 +77,13 @@ export function formatSlackNotification(
           { title: 'Pass Rate', value: data.passRate, short: true },
           { title: 'Failing Areas', value: featuresText, short: false },
           ...(data.bundleUrl
-            ? [{ title: 'Artifacts', value: `<${data.bundleUrl}|Download ZIP Bundle>`, short: false }]
+            ? [
+                {
+                  title: 'Artifacts',
+                  value: `<${data.bundleUrl}|Download ZIP Bundle>`,
+                  short: false,
+                },
+              ]
             : []),
         ],
       },
@@ -126,7 +133,10 @@ export function formatTeamsNotification(
           { name: 'Critical Findings', value: String(data.criticalFindings) },
           {
             name: 'Failing Areas',
-            value: data.topFailingFeatures.length > 0 ? data.topFailingFeatures.map((f) => redactString(f)).join(', ') : 'None',
+            value:
+              data.topFailingFeatures.length > 0
+                ? data.topFailingFeatures.map((f) => redactString(f)).join(', ')
+                : 'None',
           },
         ],
       },
@@ -181,7 +191,9 @@ export function formatEmailNotification(
       (data.topFailingFeatures.length > 0
         ? `<p><strong>Top Failing Areas:</strong> ${data.topFailingFeatures.join(', ')}</p>`
         : '') +
-      (data.bundleUrl ? `<p><a href="${data.bundleUrl}">Download Documentation & Artifact Bundle (ZIP)</a></p>` : '') +
+      (data.bundleUrl
+        ? `<p><a href="${data.bundleUrl}">Download Documentation & Artifact Bundle (ZIP)</a></p>`
+        : '') +
       `</div>`,
   );
 
@@ -243,7 +255,9 @@ export function exportFindingToGitHubIssue(
     `- **First Seen:** \`${runId}\``,
     ``,
     `### Evidence Summary`,
-    finding.evidenceSummary ? redactString(finding.evidenceSummary) : '_No evidence summary recorded._',
+    finding.evidenceSummary
+      ? redactString(finding.evidenceSummary)
+      : '_No evidence summary recorded._',
     ``,
   ];
 

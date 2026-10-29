@@ -235,7 +235,9 @@ export async function executePlugin(
             tool: manifest.id,
             version: manifest.version,
             ...(finding.provenance?.ruleId ? { ruleId: finding.provenance.ruleId } : {}),
-            ...(finding.provenance?.rawSeverity ? { rawSeverity: finding.provenance.rawSeverity } : {}),
+            ...(finding.provenance?.rawSeverity
+              ? { rawSeverity: finding.provenance.rawSeverity }
+              : {}),
           },
         };
         findings.push(enforcedFinding);

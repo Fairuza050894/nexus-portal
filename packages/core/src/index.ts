@@ -12,6 +12,8 @@ export {
   HttpUrlSchema,
   PIIPattern,
   DEFAULT_ALLOWLIST,
+  AuthFormFieldSchema,
+  AuthConfigSchema,
 } from './types.js';
 export type {
   RunMode,
@@ -19,6 +21,8 @@ export type {
   Lanes,
   RunRequest,
   Authorization,
+  AuthFormField,
+  AuthConfig,
   StageStatus,
   StageSummary,
   AuditRecord,
@@ -72,11 +76,7 @@ export {
   EnvironmentLockManager,
   defaultEnvironmentLockManager,
 } from './schedules.js';
-export type {
-  RenewableAuthorization,
-  SavedRunRequest,
-  EnvironmentLock,
-} from './schedules.js';
+export type { RenewableAuthorization, SavedRunRequest, EnvironmentLock } from './schedules.js';
 export {
   extractNotificationSummary,
   formatSlackNotification,

@@ -55,7 +55,9 @@ export interface BuildLineageOptions {
   findings?: Finding[];
 }
 
-function inferOperationsForMethod(method: string): Array<'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE'> {
+function inferOperationsForMethod(
+  method: string,
+): Array<'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE'> {
   const m = method.toUpperCase();
   if (m === 'GET') return ['SELECT'];
   if (m === 'POST') return ['INSERT'];
@@ -64,7 +66,10 @@ function inferOperationsForMethod(method: string): Array<'SELECT' | 'INSERT' | '
   return ['SELECT'];
 }
 
-function matchTablesForEndpoint(endpointPath: string, dbSchema?: DatabaseSchema): LineageTableTouch[] {
+function matchTablesForEndpoint(
+  endpointPath: string,
+  dbSchema?: DatabaseSchema,
+): LineageTableTouch[] {
   if (!dbSchema || dbSchema.tables.length === 0) {
     return [];
   }
@@ -74,7 +79,9 @@ function matchTablesForEndpoint(endpointPath: string, dbSchema?: DatabaseSchema)
 
   for (const table of dbSchema.tables) {
     const tableNameLower = table.name.toLowerCase();
-    const singularName = tableNameLower.endsWith('s') ? tableNameLower.slice(0, -1) : tableNameLower;
+    const singularName = tableNameLower.endsWith('s')
+      ? tableNameLower.slice(0, -1)
+      : tableNameLower;
 
     if (normalizedPath.includes(tableNameLower) || normalizedPath.includes(singularName)) {
       const sensitiveCols = table.columns.filter((c) => c.isSensitivePII).map((c) => c.name);
@@ -172,11 +179,12 @@ export function buildFullStackLineage(options: BuildLineageOptions): FullStackTo
     const method = (ep.method ?? 'GET').toUpperCase();
     const path = ep.path ?? '/';
     const epId = `${method} ${path}`;
-    const status = failedTargets.has(epId) || failedTargets.has(path)
-      ? 'failed'
-      : warningTargets.has(epId)
-        ? 'warning'
-        : 'ok';
+    const status =
+      failedTargets.has(epId) || failedTargets.has(path)
+        ? 'failed'
+        : warningTargets.has(epId)
+          ? 'warning'
+          : 'ok';
 
     addNode({
       id: `endpoint:${epId}`,

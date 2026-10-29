@@ -73,6 +73,30 @@ export const LanesSchema = z
   })
   .strict();
 export type Lanes = z.infer<typeof LanesSchema>;
+export const AuthFormFieldSchema = z
+  .object({
+    target: z.string().min(1),
+    action: z.enum(['select', 'fill', 'click', 'check']),
+    value: z.string(),
+  })
+  .strict();
+export type AuthFormField = z.infer<typeof AuthFormFieldSchema>;
+
+export const AuthConfigSchema = z
+  .object({
+    ref: SecretRefSchema.optional(),
+    roles: z.array(z.string()).optional(),
+    interactive: z.boolean().optional(),
+    cookies: z.string().optional(),
+    loginUrl: z.string().optional(),
+    successUrlPattern: z.string().optional(),
+    usernameSelector: z.string().optional(),
+    passwordSelector: z.string().optional(),
+    submitSelector: z.string().optional(),
+    formFields: z.array(AuthFormFieldSchema).optional(),
+  })
+  .strict();
+export type AuthConfig = z.infer<typeof AuthConfigSchema>;
 
 export const RunRequestSchema = z
   .object({
@@ -83,15 +107,7 @@ export const RunRequestSchema = z
     repo: RepoSchema.optional(),
     web: WebSchema.optional(),
     api: ApiSchema.optional(),
-    auth: z
-      .object({
-        ref: SecretRefSchema.optional(),
-        roles: z.array(z.string()).optional(),
-        interactive: z.boolean().optional(),
-        cookies: z.string().optional(),
-      })
-      .strict()
-      .optional(),
+    auth: AuthConfigSchema.optional(),
     requirements: z
       .object({ source: z.string().min(1), location: z.string().min(1) })
       .strict()
@@ -150,12 +166,7 @@ export type FindingCategory =
   | 'quality-debt'
   | 'unknown';
 export type FindingStatus =
-  | 'new'
-  | 'recurring'
-  | 'fixed'
-  | 'regressed'
-  | 'known-defect'
-  | 'accepted-risk';
+  'new' | 'recurring' | 'fixed' | 'regressed' | 'known-defect' | 'accepted-risk';
 
 export type ReplayResult = 'confirmed' | 'not-reproduced' | 'inconclusive';
 

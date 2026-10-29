@@ -43,9 +43,7 @@ describe('finding fingerprint v2', () => {
   it('normalizes numeric ids, uuids, timestamps, tokens, and query strings', () => {
     expect(normalizeTarget('/users/42')).toBe('/users/:id');
     expect(normalizeTarget('https://app.test/users/42?tab=profile#top')).toBe('/users/:id');
-    expect(normalizeTarget('/orders/550e8400-e29b-41d4-a716-446655440000')).toBe(
-      '/orders/:uuid',
-    );
+    expect(normalizeTarget('/orders/550e8400-e29b-41d4-a716-446655440000')).toBe('/orders/:uuid');
     expect(normalizeTarget('/events/2026-10-27T08:00:00Z')).toBe('/events/:timestamp');
     expect(normalizeTarget('/callback/abcdefabcdefabcdefabcdef')).toBe('/callback/:token');
     expect(normalizeTarget('/')).toBe('/');
@@ -96,7 +94,10 @@ describe('finding fingerprint v2', () => {
       occurrences: 3,
       lanes: ['api'],
       affected: [{ endpoint: 'POST /orders' }, { page: '/checkout' }],
-      evidence: [{ type: 'network', status: 500 }, { type: 'screenshot', path: 'a.png' }],
+      evidence: [
+        { type: 'network', status: 500 },
+        { type: 'screenshot', path: 'a.png' },
+      ],
       severity: 'critical',
       confidence: 'verified',
     });
@@ -178,7 +179,10 @@ describe('finding fingerprint v2', () => {
     ]);
 
     expect(secrets.findings).toHaveLength(2);
-    expect(secrets.findings.map((item) => item.ruleId)).toEqual(['secret:api-key', 'secret:api-key']);
+    expect(secrets.findings.map((item) => item.ruleId)).toEqual([
+      'secret:api-key',
+      'secret:api-key',
+    ]);
     expect(secrets.findings.every((item) => item.affected?.length === 1)).toBe(true);
   });
 

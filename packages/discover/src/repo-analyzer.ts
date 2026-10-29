@@ -202,7 +202,8 @@ export function fastApiRoutes(file: string, source: string): RepoRoute[] {
 
 export function springBootRoutes(file: string, source: string): RepoRoute[] {
   const routes: RepoRoute[] = [];
-  const routeRegex = /@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\(\s*(?:(?:value|path)\s*=\s*)?["']([^"']+)["']/gi;
+  const routeRegex =
+    /@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\(\s*(?:(?:value|path)\s*=\s*)?["']([^"']+)["']/gi;
   const methodMap: Record<string, string> = {
     getmapping: 'GET',
     postmapping: 'POST',

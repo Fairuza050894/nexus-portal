@@ -45,7 +45,10 @@ export const E2E_DEFINITION: TestTypeRegistryDefinition = {
       label: { id: 'Vault Auth Ref', en: 'Vault Auth Ref' },
       kind: 'secretRef',
       placeholder: 'vault:qa/user-credentials',
-      help: { id: 'Gunakan alias vault:..., bukan password mentah', en: 'Use vault:... reference, not raw passwords' },
+      help: {
+        id: 'Gunakan alias vault:..., bukan password mentah',
+        en: 'Use vault:... reference, not raw passwords',
+      },
     },
   ],
   columns: [
@@ -136,7 +139,10 @@ export const API_DEFINITION: TestTypeRegistryDefinition = {
       label: { id: 'OpenAPI Spec URL', en: 'OpenAPI Spec URL' },
       kind: 'path',
       placeholder: '/openapi.json',
-      help: { id: 'Path atau URL lengkap ke spesifikasi OpenAPI 3.x', en: 'Path or full URL to OpenAPI 3.x spec' },
+      help: {
+        id: 'Path atau URL lengkap ke spesifikasi OpenAPI 3.x',
+        en: 'Path or full URL to OpenAPI 3.x spec',
+      },
     },
     {
       key: 'authType',
@@ -243,7 +249,10 @@ export const A11Y_DEFINITION: TestTypeRegistryDefinition = {
       label: { id: 'Standar WCAG', en: 'WCAG Standard' },
       kind: 'select',
       options: [
-        { value: 'wcag21aa', label: { id: 'WCAG 2.1 AA (Direkomendasikan)', en: 'WCAG 2.1 AA (Recommended)' } },
+        {
+          value: 'wcag21aa',
+          label: { id: 'WCAG 2.1 AA (Direkomendasikan)', en: 'WCAG 2.1 AA (Recommended)' },
+        },
         { value: 'wcag22aa', label: { id: 'WCAG 2.2 AA', en: 'WCAG 2.2 AA' } },
         { value: 'wcag21a', label: { id: 'WCAG 2.1 A', en: 'WCAG 2.1 A' } },
       ],
@@ -277,8 +286,14 @@ export const A11Y_DEFINITION: TestTypeRegistryDefinition = {
       required: true,
       options: [
         { value: 'critical', label: { id: 'Critical saja', en: 'Critical only' } },
-        { value: 'serious', label: { id: 'Critical & Serious (Default)', en: 'Critical & Serious (Default)' } },
-        { value: 'moderate', label: { id: 'Semua (Critical, Serious, Moderate)', en: 'All (incl. Moderate)' } },
+        {
+          value: 'serious',
+          label: { id: 'Critical & Serious (Default)', en: 'Critical & Serious (Default)' },
+        },
+        {
+          value: 'moderate',
+          label: { id: 'Semua (Critical, Serious, Moderate)', en: 'All (incl. Moderate)' },
+        },
       ],
     },
   ],
@@ -317,8 +332,14 @@ export const PERF_DEFINITION: TestTypeRegistryDefinition = {
       label: { id: 'Engine Kinerja', en: 'Performance Engine' },
       kind: 'select',
       options: [
-        { value: 'vitals', label: { id: 'Web Vitals (Pasif / Aman)', en: 'Web Vitals (Passive / Safe)' } },
-        { value: 'k6', label: { id: 'k6 Load Testing (Staging Only)', en: 'k6 Load Testing (Staging Only)' } },
+        {
+          value: 'vitals',
+          label: { id: 'Web Vitals (Pasif / Aman)', en: 'Web Vitals (Passive / Safe)' },
+        },
+        {
+          value: 'k6',
+          label: { id: 'k6 Load Testing (Staging Only)', en: 'k6 Load Testing (Staging Only)' },
+        },
       ],
     },
     {
@@ -477,10 +498,22 @@ export const SECURITY_PASSIVE_DEFINITION: TestTypeRegistryDefinition = {
       kind: 'select',
       required: true,
       options: [
-        { value: 'security-headers', label: { id: 'Security Headers (CSP, HSTS, XFO)', en: 'Security Headers' } },
-        { value: 'cookie-security', label: { id: 'Cookie Flags (Secure, HttpOnly, SameSite)', en: 'Cookie Flags' } },
-        { value: 'cors-misconfig', label: { id: 'Konfigurasi CORS Terbuka', en: 'CORS Configuration' } },
-        { value: 'info-disclosure', label: { id: 'Kebocoran Info Versi & Server Banner', en: 'Information Disclosure' } },
+        {
+          value: 'security-headers',
+          label: { id: 'Security Headers (CSP, HSTS, XFO)', en: 'Security Headers' },
+        },
+        {
+          value: 'cookie-security',
+          label: { id: 'Cookie Flags (Secure, HttpOnly, SameSite)', en: 'Cookie Flags' },
+        },
+        {
+          value: 'cors-misconfig',
+          label: { id: 'Konfigurasi CORS Terbuka', en: 'CORS Configuration' },
+        },
+        {
+          value: 'info-disclosure',
+          label: { id: 'Kebocoran Info Versi & Server Banner', en: 'Information Disclosure' },
+        },
       ],
     },
     {

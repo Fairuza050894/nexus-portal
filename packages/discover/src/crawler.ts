@@ -6,6 +6,7 @@ import {
   type HttpClientOptions,
 } from './http.js';
 import { loadRobots, type RobotsRules } from './robots.js';
+import { reverseEngineerBundle } from './bundle-extractor.js';
 import type {
   CrawlResult,
   CrawlWarning,
@@ -51,6 +52,14 @@ function normalizeUrl(raw: string, base: string): string | undefined {
     const url = new URL(decodeEntities(raw), base);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined;
     url.hash = '';
+    const baseUrl = new URL(base);
+    if (
+      baseUrl.protocol === 'https:' &&
+      url.protocol === 'http:' &&
+      url.hostname === baseUrl.hostname
+    ) {
+      url.protocol = 'https:';
+    }
     return url.href;
   } catch {
     return undefined;
@@ -69,6 +78,8 @@ function extractPage(
   title?: string;
   links: string[];
   forms: DiscoveredForm[];
+  scripts: string[];
+  inlineScripts: string[];
 } {
   const title = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1]?.trim();
   const links = new Set<string>();
@@ -93,7 +104,25 @@ function extractPage(
       method: (methodMatch?.[1] ?? methodMatch?.[2] ?? methodMatch?.[3] ?? 'GET').toUpperCase(),
     });
   }
-  return { title, links: [...links], forms };
+
+  const scripts: string[] = [];
+  const scriptSrcPattern = /<script\b[^>]*\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
+  for (const match of html.matchAll(scriptSrcPattern)) {
+    const normalized = normalizeUrl(match[1] ?? match[2] ?? match[3] ?? '', baseUrl);
+    if (normalized) scripts.push(normalized);
+  }
+
+  const inlineScripts: string[] = [];
+  const inlineScriptPattern =
+    /<script\b(?![^>]*\btype\s*=\s*['"](?:application\/ld\+json|application\/json)['"])[^>]*>([\s\S]*?)<\/script>/gi;
+  for (const match of html.matchAll(inlineScriptPattern)) {
+    const code = match[1]?.trim();
+    if (code && code.length > 10) {
+      inlineScripts.push(code);
+    }
+  }
+
+  return { title, links: [...links], forms, scripts, inlineScripts };
 }
 
 function isExcluded(url: URL, excludePaths: string[]): boolean {
@@ -143,6 +172,7 @@ export async function crawl(options: CrawlOptions): Promise<CrawlResult> {
   const endpoints: DiscoveredEndpoint[] = [];
   const seenEndpoints = new Set<string>();
   const visited = new Set<string>();
+  const visitedScripts = new Set<string>();
   const retriedAfter = new Set<string>();
   const queue: QueueItem[] = [];
   const maxDepth = maxDepthFor(options.scope, options.maxDepth);
@@ -241,6 +271,52 @@ export async function crawl(options: CrawlOptions): Promise<CrawlResult> {
           if (!seenEndpoints.has(key)) {
             seenEndpoints.add(key);
             endpoints.push(endpoint);
+          }
+        }
+
+        // Reverse-engineer client-side bundles & inline scripts (REA methodology)
+        for (const inlineCode of extracted.inlineScripts) {
+          const reResult = reverseEngineerBundle(inlineCode);
+          for (const ep of reResult.endpoints) {
+            const key = `${ep.method} ${ep.path}`;
+            if (!seenEndpoints.has(key)) {
+              seenEndpoints.add(key);
+              endpoints.push(ep);
+            }
+          }
+          if (item.depth < maxDepth) {
+            for (const route of reResult.clientRoutes) {
+              const fullUrl = normalizeUrl(route, response.url);
+              if (fullUrl && !visited.has(fullUrl)) {
+                queue.push({ url: fullUrl, depth: item.depth + 1 });
+              }
+            }
+          }
+        }
+
+        for (const scriptUrl of extracted.scripts) {
+          try {
+            const sUrl = new URL(scriptUrl);
+            if (
+              allowedOrigins.has(sUrl.origin) &&
+              !visitedScripts.has(scriptUrl) &&
+              visitedScripts.size < 5
+            ) {
+              visitedScripts.add(scriptUrl);
+              const scriptRes = await client.get(scriptUrl, 'page');
+              if (scriptRes.status === 200 && scriptRes.body) {
+                const reResult = reverseEngineerBundle(scriptRes.body);
+                for (const ep of reResult.endpoints) {
+                  const key = `${ep.method} ${ep.path}`;
+                  if (!seenEndpoints.has(key)) {
+                    seenEndpoints.add(key);
+                    endpoints.push(ep);
+                  }
+                }
+              }
+            }
+          } catch {
+            // Ignore script bundle download errors during crawl
           }
         }
       } else if (response.status < 500) {

@@ -31,6 +31,13 @@ export interface PortalState {
   apiSpecUrl: string;
   authorizationConfirmed: boolean;
   approvedBy: string;
+  authRef?: string;
+  loginUrl?: string;
+  authFormFields?: Array<{
+    target: string;
+    action: 'select' | 'fill' | 'click' | 'check';
+    value: string;
+  }>;
 
   // Step 2: Builder State
   activeBuilderType: string;
@@ -45,6 +52,7 @@ export interface PortalState {
   runId?: string;
   runStatus?: string;
   stages: Record<string, 'pending' | 'running' | 'ok' | 'failed' | 'skipped'>;
+  stageDurations?: Record<string, number>;
   liveLogs: string[];
   requestsCount: number;
   circuitBreakerOpen: boolean;
@@ -81,6 +89,9 @@ export function createInitialState(): PortalState {
     apiSpecUrl: '',
     authorizationConfirmed: true,
     approvedBy: 'ristafariz@gmail.com',
+    authRef: '',
+    loginUrl: '',
+    authFormFields: [],
 
     activeBuilderType: 'e2e',
     builderGlobals: {},
@@ -117,6 +128,7 @@ export function createInitialState(): PortalState {
       correlate: 'pending',
       document: 'pending',
     },
+    stageDurations: {},
     liveLogs: [],
     requestsCount: 0,
     circuitBreakerOpen: false,

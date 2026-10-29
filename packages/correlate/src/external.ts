@@ -92,7 +92,15 @@ function rawSeverityOf(
   const numeric = typeof securitySeverity === 'string' ? Number(securitySeverity) : NaN;
   if (Number.isFinite(numeric)) {
     const severity: Finding['severity'] =
-      numeric >= 9 ? 'critical' : numeric >= 7 ? 'high' : numeric >= 4 ? 'medium' : numeric > 0 ? 'low' : 'info';
+      numeric >= 9
+        ? 'critical'
+        : numeric >= 7
+          ? 'high'
+          : numeric >= 4
+            ? 'medium'
+            : numeric > 0
+              ? 'low'
+              : 'info';
     return { severity, raw: String(securitySeverity) };
   }
 
@@ -108,9 +116,7 @@ function confidenceOf(
   hasLocation: boolean,
 ): Finding['confidence'] {
   const precision =
-    result.properties?.precision ??
-    rule?.properties?.precision ??
-    rule?.properties?.confidence;
+    result.properties?.precision ?? rule?.properties?.precision ?? rule?.properties?.confidence;
   const normalized = typeof precision === 'string' ? precision.toLowerCase() : '';
   if (!hasLocation) return 'needs-review';
   if (result.kind === 'review' || normalized === 'low' || normalized === 'medium') {
@@ -152,11 +158,7 @@ function affectedOf(result: SarifResult): {
   return { affected, evidence };
 }
 
-function importResult(
-  result: SarifResult,
-  run: SarifRun,
-  index: number,
-): Finding {
+function importResult(result: SarifResult, run: SarifRun, index: number): Finding {
   const driver = run.tool?.driver;
   const rule =
     (result.ruleIndex !== undefined ? driver?.rules?.[result.ruleIndex] : undefined) ??

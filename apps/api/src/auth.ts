@@ -18,20 +18,16 @@ export function hasMinimumRole(userRole: UserRole, requiredRole: UserRole): bool
   return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
 }
 
-export function parseAuthHeader(
-  headers: Record<string, string | string[] | undefined>,
-): AuthUser {
-  const authHeader = typeof headers['authorization'] === 'string'
-    ? headers['authorization']
-    : '';
+export function parseAuthHeader(headers: Record<string, string | string[] | undefined>): AuthUser {
+  const authHeader = typeof headers['authorization'] === 'string' ? headers['authorization'] : '';
 
-  const explicitRole = typeof headers['x-user-role'] === 'string'
-    ? (headers['x-user-role'].toLowerCase() as UserRole)
-    : undefined;
+  const explicitRole =
+    typeof headers['x-user-role'] === 'string'
+      ? (headers['x-user-role'].toLowerCase() as UserRole)
+      : undefined;
 
-  const email = typeof headers['x-user-email'] === 'string'
-    ? headers['x-user-email']
-    : 'user@company.local';
+  const email =
+    typeof headers['x-user-email'] === 'string' ? headers['x-user-email'] : 'user@company.local';
 
   // Check explicit role header
   if (explicitRole && ['viewer', 'runner', 'approver', 'admin'].includes(explicitRole)) {

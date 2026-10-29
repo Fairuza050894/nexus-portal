@@ -86,7 +86,9 @@ export function parsePrismaSchema(content: string, filePath?: string): DatabaseT
 
       // Foreign key parsing from @relation
       let isForeignKey = false;
-      const relationMatch = line.match(/@relation\([^)]*fields:\s*\[([^\]]+)\],[^)]*references:\s*\[([^\]]+)\]/);
+      const relationMatch = line.match(
+        /@relation\([^)]*fields:\s*\[([^\]]+)\],[^)]*references:\s*\[([^\]]+)\]/,
+      );
       if (relationMatch) {
         isForeignKey = true;
         const fkCols = relationMatch[1].split(',').map((s) => s.trim());
@@ -123,7 +125,8 @@ export function parsePrismaSchema(content: string, filePath?: string): DatabaseT
 
 export function parseSqlSchema(content: string, filePath?: string): DatabaseTable[] {
   const tables: DatabaseTable[] = [];
-  const tableRegex = /CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+["`]?([A-Za-z0-9_]+)["`]?\s*\(([\s\S]*?)\);/gi;
+  const tableRegex =
+    /CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+["`]?([A-Za-z0-9_]+)["`]?\s*\(([\s\S]*?)\);/gi;
   let match: RegExpExecArray | null;
 
   while ((match = tableRegex.exec(content)) !== null) {
@@ -132,11 +135,16 @@ export function parseSqlSchema(content: string, filePath?: string): DatabaseTabl
     const columns: DatabaseColumn[] = [];
     const foreignKeys: DatabaseForeignKey[] = [];
 
-    const statements = body.split(',\n').map((s) => s.trim()).filter(Boolean);
+    const statements = body
+      .split(',\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     for (const stmt of statements) {
       // Check for standalone FOREIGN KEY statement
-      const fkMatch = stmt.match(/FOREIGN\s+KEY\s*\(([^)]+)\)\s+REFERENCES\s+["`]?([A-Za-z0-9_]+)["`]?\s*\(([^)]+)\)/i);
+      const fkMatch = stmt.match(
+        /FOREIGN\s+KEY\s*\(([^)]+)\)\s+REFERENCES\s+["`]?([A-Za-z0-9_]+)["`]?\s*\(([^)]+)\)/i,
+      );
       if (fkMatch) {
         foreignKeys.push({
           column: fkMatch[1].replace(/["`]/g, '').trim(),
@@ -228,7 +236,13 @@ export function extractDatabaseSchema(repoDir: string): DatabaseSchema {
         const stat = statSync(full);
         if (stat.isDirectory()) {
           searchSql(full, depth + 1);
-        } else if (entry.endsWith('.sql') && (entry.includes('schema') || entry.includes('init') || entry.includes('migration') || dir.includes('migration'))) {
+        } else if (
+          entry.endsWith('.sql') &&
+          (entry.includes('schema') ||
+            entry.includes('init') ||
+            entry.includes('migration') ||
+            dir.includes('migration'))
+        ) {
           sqlFiles.push(full);
         }
       }

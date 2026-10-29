@@ -3,6 +3,17 @@ import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+for (const envName of ['.env', '.env.local']) {
+  const envPath = resolve(process.cwd(), envName);
+  if (existsSync(envPath)) {
+    try {
+      process.loadEnvFile(envPath);
+    } catch {
+      // abaikan error parse jika file kosong atau sudah termuat
+    }
+  }
+}
 import {
   QaConfigSchema,
   RunRequestSchema,
@@ -104,17 +115,17 @@ function printPlan(request: RunRequest, config: QaConfig): void {
       run: [
         'intake',
         'preflight',
-        'discover (crawl, OpenAPI, repo analysis)',
-        'model (Application Map)',
-        'plan (lane selection)',
-        'execute (repo, API, E2E, a11y, Web Vitals, passive security)',
+        'discover (crawl, OpenAPI, repo analysis, DB schema, framework routes)',
+        'model (Application Map, data lineage)',
+        'plan (lane selection, multi-source test planner)',
+        'execute (repo, API, E2E, a11y, visual regression, perf, passive security)',
         'correlate (dedupe, classify, Application Map correlation)',
-        'analyze (baseline comparison)',
+        'analyze (baseline comparison, flaky quarantine)',
         'gate',
         'document (15 documents, PDF/XLSX, verify)',
         'bundle',
       ],
-      notImplemented: ['visual baseline', 'test generation'],
+      notImplemented: [],
     },
   };
   process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`);
@@ -226,10 +237,7 @@ async function docsCommand(args: ParsedArgs, rootDir: string): Promise<number> {
   }
   const docsDir = join(rootDir, 'artifacts', 'docs', runId);
   const complianceMappingPath = config.docs.compliance.enabled
-    ? resolve(
-        rootDir,
-        config.docs.compliance.mappingPath ?? 'compliance/mapping.yaml',
-      )
+    ? resolve(rootDir, config.docs.compliance.mappingPath ?? 'compliance/mapping.yaml')
     : undefined;
   generateDocs(summary, docsDir, {
     language: config.docs.language,

@@ -34,7 +34,7 @@ import {
   type LaneResult,
   type LaneRunResult,
 } from '@nexus/lanes';
-import type { SessionResult } from '@nexus/session';
+import { bootstrapAuthenticatedSession, type SessionResult } from '@nexus/session';
 import {
   copyLatestDocs,
   createBundle,
@@ -177,9 +177,7 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
   };
   const runStartedMs = Date.parse(audit.startedAt);
   const stages: Record<string, StageSummary> = {};
-  const limitations: string[] = [
-    'visual baseline comparison (Phase 8) is not implemented yet; visual lanes collect screenshots only',
-  ];
+  const limitations: string[] = [];
   let incomplete = false;
   let gateDecision: RunSummary['gate']['decision'] = 'GO WITH RISKS';
   let gateReasons: string[] = [];
@@ -188,6 +186,9 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
   let sandboxSession: SandboxSession | undefined;
   let sessionResult: SessionResult | undefined;
   let laneResults: LaneResult[] = [];
+  let bootstrappedStorageStatePath: string | undefined;
+  let bootstrappedCookieHeader: string | undefined;
+  let bootstrappedFinalUrl: string | undefined;
   let laneTotals: RunSummary['totals'] = {
     tests: 0,
     passed: 0,
@@ -314,16 +315,55 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
     let discovery: DiscoveryResult | undefined;
     let repoAnalysis: RepoAnalysis | undefined;
     let sandbox: SandboxResult | undefined;
+    const targetUrl = request.web?.urls?.[0] || request.api?.baseUrl;
+    const hasAuth = Boolean(
+      request.auth &&
+      (request.auth.ref ||
+        request.auth.interactive ||
+        request.auth.cookies ||
+        (request.auth.formFields && request.auth.formFields.length > 0)) &&
+      targetUrl,
+    );
+
+    if (hasAuth && targetUrl) {
+      try {
+        const authSession = await bootstrapAuthenticatedSession({
+          targetUrl,
+          auth: request.auth,
+          allowlist: config.allowlist,
+          artifactDir: join(store.runDir, 'auth'),
+          env: process.env,
+        });
+        if (authSession.used) {
+          bootstrappedStorageStatePath = authSession.storageStatePath;
+          bootstrappedCookieHeader = authSession.cookieHeader;
+          bootstrappedFinalUrl = authSession.finalUrl;
+        }
+        if (authSession.warnings?.length) {
+          limitations.push(...authSession.warnings);
+        }
+      } catch (authErr) {
+        failures.push(`auth bootstrap failed: ${(authErr as Error).message}`);
+      }
+    }
 
     const safeDiscover = async (): Promise<DiscoveryResult> => {
       try {
+        const startUrls = [
+          ...(bootstrappedFinalUrl && !request.web?.urls.includes(bootstrappedFinalUrl)
+            ? [bootstrappedFinalUrl]
+            : []),
+          ...(request.web?.urls ?? []),
+        ];
+
         return await discoverTargets({
           mode: request.mode,
           scope: request.scope,
           allowlist: config.allowlist,
-          web: request.web,
+          web: request.web ? { ...request.web, urls: startUrls } : undefined,
           api: request.api,
           authRef: request.auth?.ref,
+          cookieHeader: bootstrappedCookieHeader,
         });
       } catch (error) {
         return emptyDiscovery(`discovery failed: ${(error as Error).message}`);
@@ -458,6 +498,7 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
           discovery: discoveryOutput.discovery,
           appMap: builtAppMap,
           env: process.env,
+          storageStatePath: bootstrappedStorageStatePath,
         },
         lanePlan.lanes,
       );
@@ -706,10 +747,7 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
   // DOCUMENT + BUNDLE
   const docsDir = join(artifactsRoot, 'artifacts', 'docs', runId);
   const complianceMappingPath = config.docs.compliance.enabled
-    ? resolve(
-        rootDir,
-        config.docs.compliance.mappingPath ?? 'compliance/mapping.yaml',
-      )
+    ? resolve(rootDir, config.docs.compliance.mappingPath ?? 'compliance/mapping.yaml')
     : undefined;
   const bundlePath = join(artifactsRoot, 'artifacts', 'bundles', `qa-${runId}.zip`);
 
@@ -831,7 +869,13 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
     }
     stages.document = stageRecord('document', docsVerified ? 'ok' : 'failed', docsStartedMs, {
       ...(docsVerified
-        ? { output: { dir: relativeTo(artifactsRoot, docsDir), pdf: pdfGenerated, files: verifiedCount } }
+        ? {
+            output: {
+              dir: relativeTo(artifactsRoot, docsDir),
+              pdf: pdfGenerated,
+              files: verifiedCount,
+            },
+          }
         : { reason: 'docs verification failed' }),
     });
     store.writeStage(stages.document);

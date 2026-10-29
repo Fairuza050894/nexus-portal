@@ -28,9 +28,7 @@ export class TestCatalogue {
     const testList = this.list();
 
     for (const reqId of requirementIds) {
-      const coveringCases = testList
-        .filter((t) => t.requirements.includes(reqId))
-        .map((t) => t.id);
+      const coveringCases = testList.filter((t) => t.requirements.includes(reqId)).map((t) => t.id);
 
       matrix.push({
         requirementId: reqId,

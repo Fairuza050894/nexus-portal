@@ -312,7 +312,9 @@ export class TestTypeRegistry {
     if (type === 'e2e') {
       const pages: string[] = context.pages?.length
         ? context.pages
-        : context.appMap?.nodes.filter((n) => n.type === 'page').map((n) => n.path ?? '/') ?? ['/'];
+        : (context.appMap?.nodes.filter((n) => n.type === 'page').map((n) => n.path ?? '/') ?? [
+            '/',
+          ]);
       pages.forEach((page, idx) => {
         suggestions.push({
           id: `SUG-E2E-${String(idx + 1).padStart(3, '0')}`,
@@ -334,9 +336,9 @@ export class TestTypeRegistry {
     } else if (type === 'api') {
       const endpoints: string[] = context.endpoints?.length
         ? context.endpoints
-        : context.appMap?.nodes
+        : (context.appMap?.nodes
             .filter((n) => n.type === 'endpoint')
-            .map((n) => `${n.method ?? 'GET'} ${n.path ?? '/'}`) ?? ['GET /health'];
+            .map((n) => `${n.method ?? 'GET'} ${n.path ?? '/'}`) ?? ['GET /health']);
       endpoints.forEach((ep, idx) => {
         const [method, path] = ep.split(' ');
         suggestions.push({
@@ -358,7 +360,9 @@ export class TestTypeRegistry {
     } else if (type === 'a11y') {
       const pages: string[] = context.pages?.length
         ? context.pages
-        : context.appMap?.nodes.filter((n) => n.type === 'page').map((n) => n.path ?? '/') ?? ['/'];
+        : (context.appMap?.nodes.filter((n) => n.type === 'page').map((n) => n.path ?? '/') ?? [
+            '/',
+          ]);
       pages.forEach((page, idx) => {
         suggestions.push({
           id: `SUG-A11Y-${String(idx + 1).padStart(3, '0')}`,

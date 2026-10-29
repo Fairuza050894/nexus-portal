@@ -181,8 +181,11 @@ export async function writeZipStream(
   await writeChunk(centralDirectory);
   await writeChunk(end);
 
-  const { promise: finishPromise, resolve: finishResolve, reject: finishReject } =
-    Promise.withResolvers<void>();
+  const {
+    promise: finishPromise,
+    resolve: finishResolve,
+    reject: finishReject,
+  } = Promise.withResolvers<void>();
   outStream.end(() => finishResolve());
   outStream.on('error', finishReject);
   await finishPromise;

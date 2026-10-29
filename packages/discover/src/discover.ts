@@ -18,7 +18,10 @@ export async function discoverTargets(options: DiscoverOptions): Promise<Discove
     now: options.now,
     sleep: options.sleep,
     fetchImpl: options.fetchImpl,
-    authHeaders: resolvedAuth.headers,
+    authHeaders: {
+      ...resolvedAuth.headers,
+      ...(options.cookieHeader ? { cookie: options.cookieHeader } : {}),
+    },
     authHost,
   });
 
@@ -72,7 +75,7 @@ export async function discoverTargets(options: DiscoverOptions): Promise<Discove
   if (options.authRef && resolvedAuth.reason) {
     warnings.push(`authentication not applied: ${resolvedAuth.reason}`);
   }
-  const authUsed = resolvedAuth.used && Boolean(authHost);
+  const authUsed = (resolvedAuth.used || Boolean(options.cookieHeader)) && Boolean(authHost);
 
   return {
     pages,

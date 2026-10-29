@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { QaConfigSchema, RunRequestSchema } from '@nexus/core';
-import {
-  generateK6Script,
-  runK6LoadLane,
-  type K6ScenarioConfig,
-} from '../src/index.js';
+import { generateK6Script, runK6LoadLane, type K6ScenarioConfig } from '../src/index.js';
 import type { LaneContext } from '../src/types.js';
 
 describe('k6 Load Testing Engine & SLA Thresholds (8.2)', () => {
-  function makeContext(mode: 'sandbox' | 'staging' | 'prod-safe', perfApproved: boolean = false): LaneContext {
+  function makeContext(
+    mode: 'sandbox' | 'staging' | 'prod-safe',
+    perfApproved: boolean = false,
+  ): LaneContext {
     return {
       runId: 'RUN-K6-01',
       runDir: '/tmp',
@@ -18,7 +17,10 @@ describe('k6 Load Testing Engine & SLA Thresholds (8.2)', () => {
         name: 'k6 test',
         mode,
         web: { urls: ['http://127.0.0.1:3100/'] },
-        authorization: mode !== 'sandbox' ? { ownerConfirmed: true, approvedBy: 'Lead', perfApproved } : undefined,
+        authorization:
+          mode !== 'sandbox'
+            ? { ownerConfirmed: true, approvedBy: 'Lead', perfApproved }
+            : undefined,
       }),
       config: QaConfigSchema.parse({ env: 'test', allowlist: ['127.0.0.1'] }),
       discovery: {

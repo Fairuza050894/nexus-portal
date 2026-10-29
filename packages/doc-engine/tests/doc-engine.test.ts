@@ -248,9 +248,9 @@ describe('doc engine', () => {
     expect(register).toContain('auto-discovered (1)');
     expect(register).toContain('needs-review (0)');
     expect(register).toContain('high app-bug; rule e2e-page-load');
-    expect(
-      readFileSync(join(docsDir, 'findings-register.csv'), 'utf8'),
-    ).toContain('high app-bug; rule e2e-page-load');
+    expect(readFileSync(join(docsDir, 'findings-register.csv'), 'utf8')).toContain(
+      'high app-bug; rule e2e-page-load',
+    );
     expect(verifyDocs(docsDir).ok).toBe(true);
   });
 
@@ -261,15 +261,26 @@ describe('doc engine', () => {
         totals: { tests: 5, passed: 4, failed: 0, skipped: 0, flaky: 1, lanes: ['e2e'] },
         gate: { decision: 'GO WITH RISKS', reasons: ['flaky rate 20.0% exceeds threshold of 2%'] },
         tests: [
-          { id: 'TC-9', lane: 'e2e', title: 'Login', status: 'flaky', durationMs: 40, reason: 'passed on retry' },
+          {
+            id: 'TC-9',
+            lane: 'e2e',
+            title: 'Login',
+            status: 'flaky',
+            durationMs: 40,
+            reason: 'passed on retry',
+          },
         ],
-        findings: [finding({ category: 'flaky', confidence: 'auto-discovered', severity: 'medium' })],
+        findings: [
+          finding({ category: 'flaky', confidence: 'auto-discovered', severity: 'medium' }),
+        ],
       }),
       flakyDir,
       { language: 'en' },
     );
     expect(readFileSync(join(flakyDir, 'trend-stability.html'), 'utf8')).toContain('Login');
-    expect(readFileSync(join(flakyDir, 'execution-report.html'), 'utf8')).toContain('passed on retry');
+    expect(readFileSync(join(flakyDir, 'execution-report.html'), 'utf8')).toContain(
+      'passed on retry',
+    );
     expect(verifyDocs(flakyDir).ok).toBe(true);
 
     const incompleteDir = tempDir();
@@ -329,12 +340,8 @@ describe('doc engine', () => {
     const enDir = tempDir();
     generateDocs(allPass(), idDir, { language: 'id' });
     generateDocs(allPass(), enDir, { language: 'en' });
-    expect(readFileSync(join(idDir, 'executive-summary.html'), 'utf8')).toContain(
-      'Keputusan',
-    );
-    expect(readFileSync(join(enDir, 'executive-summary.html'), 'utf8')).toContain(
-      'Decision',
-    );
+    expect(readFileSync(join(idDir, 'executive-summary.html'), 'utf8')).toContain('Keputusan');
+    expect(readFileSync(join(enDir, 'executive-summary.html'), 'utf8')).toContain('Decision');
   });
 
   it('fails verification on placeholders, broken links, secrets, PII, and bad PDFs', () => {
@@ -342,9 +349,9 @@ describe('doc engine', () => {
     generateDocs(allPass(), docsDir);
 
     writeFileSync(join(docsDir, 'bad-template.html'), '<div>{{ placeholder }} TODO</div>', 'utf8');
-    expect(verifyDocs(docsDir).errors.some((error) => error.includes('Unrendered placeholder'))).toBe(
-      true,
-    );
+    expect(
+      verifyDocs(docsDir).errors.some((error) => error.includes('Unrendered placeholder')),
+    ).toBe(true);
     rmSync(join(docsDir, 'bad-template.html'));
 
     writeFileSync(join(docsDir, 'bad-link.html'), '<a href="missing.html">x</a>', 'utf8');

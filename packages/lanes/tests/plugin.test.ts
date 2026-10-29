@@ -23,17 +23,13 @@ describe('Plugin Manifest Validation and Contract', () => {
       ...plugin.manifest,
       requiredMode: 'staging' as unknown as 'sandbox',
     };
-    expect(() => validatePluginManifest(manifest)).toThrow(
-      /requiredMode must be "sandbox"/,
-    );
+    expect(() => validatePluginManifest(manifest)).toThrow(/requiredMode must be "sandbox"/);
   });
 
   it('rejects a manifest missing any mandatory forbidden option', () => {
     const plugin = new NoopPlugin();
     for (const option of MANDATORY_FORBIDDEN_OPTIONS) {
-      const incompleteForbidden = plugin.manifest.forbiddenOptions.filter(
-        (opt) => opt !== option,
-      );
+      const incompleteForbidden = plugin.manifest.forbiddenOptions.filter((opt) => opt !== option);
       const manifest: PluginManifest = {
         ...plugin.manifest,
         forbiddenOptions: incompleteForbidden,
@@ -46,21 +42,19 @@ describe('Plugin Manifest Validation and Contract', () => {
 
   it('rejects a manifest missing essential metadata (id, version, license, commit)', () => {
     const plugin = new NoopPlugin();
-    expect(() =>
-      validatePluginManifest({ ...plugin.manifest, id: '' }),
-    ).toThrow(/id is required/);
-    expect(() =>
-      validatePluginManifest({ ...plugin.manifest, version: '' }),
-    ).toThrow(/version is required/);
-    expect(() =>
-      validatePluginManifest({ ...plugin.manifest, license: '' }),
-    ).toThrow(/license is required/);
-    expect(() =>
-      validatePluginManifest({ ...plugin.manifest, commit: '' }),
-    ).toThrow(/commit SHA or digest is required/);
-    expect(() =>
-      validatePluginManifest({ ...plugin.manifest, capabilities: [] }),
-    ).toThrow(/capabilities must be a non-empty array/);
+    expect(() => validatePluginManifest({ ...plugin.manifest, id: '' })).toThrow(/id is required/);
+    expect(() => validatePluginManifest({ ...plugin.manifest, version: '' })).toThrow(
+      /version is required/,
+    );
+    expect(() => validatePluginManifest({ ...plugin.manifest, license: '' })).toThrow(
+      /license is required/,
+    );
+    expect(() => validatePluginManifest({ ...plugin.manifest, commit: '' })).toThrow(
+      /commit SHA or digest is required/,
+    );
+    expect(() => validatePluginManifest({ ...plugin.manifest, capabilities: [] })).toThrow(
+      /capabilities must be a non-empty array/,
+    );
   });
 });
 
@@ -90,9 +84,7 @@ describe('Plugin Registry', () => {
       normalize: () => [],
       teardown: async () => {},
     };
-    expect(() => registry.register(invalidPlugin)).toThrow(
-      /manifest\.id is required/,
-    );
+    expect(() => registry.register(invalidPlugin)).toThrow(/manifest\.id is required/);
   });
 
   it('defaultPluginRegistry is instantiated empty by default', () => {
@@ -213,9 +205,7 @@ describe('Plugin Execution Guard Rules', () => {
         },
         normalizeContext: { runId: 'run-egress' },
       }),
-    ).rejects.toThrow(
-      /container egress filtering is not enforced yet \(fail closed\)/,
-    );
+    ).rejects.toThrow(/container egress filtering is not enforced yet \(fail closed\)/);
   });
 
   it('executes no-op plugin in test context, enforces lane security-external and redaction', async () => {

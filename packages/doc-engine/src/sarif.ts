@@ -60,9 +60,7 @@ export function createSarif(summary: RunSummary): Record<string, unknown> {
       ruleIndex: ruleIndex.get(ruleId),
       level: SEVERITY_TO_LEVEL[finding.severity] ?? 'warning',
       message: {
-        text: finding.actual
-          ? `${finding.title}: ${finding.actual}`
-          : finding.title,
+        text: finding.actual ? `${finding.title}: ${finding.actual}` : finding.title,
       },
       ...(locations.length > 0 ? { locations } : {}),
       partialFingerprints: {
@@ -86,8 +84,7 @@ export function createSarif(summary: RunSummary): Record<string, unknown> {
   });
 
   return {
-    $schema:
-      'https://docs.oasis-open.org/sarif/sarif/v2.1.0/cs01/schemas/sarif-schema-2.1.0.json',
+    $schema: 'https://docs.oasis-open.org/sarif/sarif/v2.1.0/cs01/schemas/sarif-schema-2.1.0.json',
     version: '2.1.0',
     runs: [
       {
@@ -104,9 +101,7 @@ export function createSarif(summary: RunSummary): Record<string, unknown> {
             executionSuccessful: summary.run.status === 'complete',
             startTimeUtc: summary.run.startedAt,
             endTimeUtc: summary.run.finishedAt,
-            ...(summary.run.status !== 'complete'
-              ? { toolExecutionNotifications: [] }
-              : {}),
+            ...(summary.run.status !== 'complete' ? { toolExecutionNotifications: [] } : {}),
           },
         ],
         results,

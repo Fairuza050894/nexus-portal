@@ -135,7 +135,10 @@ describe('Sanitized Notifications & Issue Exports (7.3 & 7.4)', () => {
       evidence: [],
       status: 'new',
       evidenceSummary: 'Token leaked in error header',
-      reproduction: ['GET /admin with token ghp_123456789012345678901234567890123456', 'Verify 200 returned'],
+      reproduction: [
+        'GET /admin with token ghp_123456789012345678901234567890123456',
+        'Verify 200 returned',
+      ],
       expected: 'HTTP 401 Unauthorized',
       actual: 'HTTP 200 OK with secret admin data',
       suggestedFix: 'Enforce JWT signature validation middleware',

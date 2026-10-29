@@ -1,9 +1,12 @@
-import type { GateDecision, GateEvaluationInput, GatePolicy, GateResult, GateRuleResult } from './types.js';
+import type {
+  GateDecision,
+  GateEvaluationInput,
+  GatePolicy,
+  GateResult,
+  GateRuleResult,
+} from './types.js';
 
-export function evaluateGate(
-  input: GateEvaluationInput,
-  policy: GatePolicy = {},
-): GateResult {
+export function evaluateGate(input: GateEvaluationInput, policy: GatePolicy = {}): GateResult {
   const minPassRate = policy.minPassRatePercent ?? 95;
   const maxFlakyRate = policy.maxFlakyRatePercent ?? 2;
   const minReqCoverage = policy.minReqCoveragePercent ?? 80;
@@ -68,7 +71,9 @@ export function evaluateGate(
 
   // 4. Verified failures check (Immediate NO-GO if any failed)
   if (confidenceCounts.verified.total > 0) {
-    reasons.push(`${confidenceCounts.verified.total} verified defect(s) / test assertion failure(s)`);
+    reasons.push(
+      `${confidenceCounts.verified.total} verified defect(s) / test assertion failure(s)`,
+    );
     rules.push({
       name: 'verified_defects',
       threshold: '0',

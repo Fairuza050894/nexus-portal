@@ -55,9 +55,7 @@ describe('external findings ingestion', () => {
   });
 
   it('rejects invalid SARIF instead of producing partial findings', () => {
-    expect(() => importSarifFindings({ version: '2.0.0', runs: [] })).toThrow(
-      'version 2.1.0',
-    );
+    expect(() => importSarifFindings({ version: '2.0.0', runs: [] })).toThrow('version 2.1.0');
     expect(() => importSarifFindings({ version: '2.1.0' })).toThrow('runs array');
     expect(() => importSarifFindings(null)).toThrow('object');
   });

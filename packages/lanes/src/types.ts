@@ -58,6 +58,7 @@ export interface LaneContext {
   appMap: AppMap;
   session?: SessionResult;
   env?: NodeJS.ProcessEnv;
+  storageStatePath?: string;
 }
 
 export interface LanePlan {

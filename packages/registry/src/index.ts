@@ -1,7 +1,4 @@
-export {
-  TestTypeRegistry,
-  defaultRegistry,
-} from './registry.js';
+export { TestTypeRegistry, defaultRegistry } from './registry.js';
 
 export {
   E2E_DEFINITION,
