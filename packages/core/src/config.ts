@@ -32,6 +32,25 @@ export const QaConfigSchema = z
       })
       .strict()
       .default({}),
+    notifications: z
+      .object({
+        slackWebhookUrl: z.string().url().optional(),
+        teamsWebhookUrl: z.string().url().optional(),
+        genericWebhookUrl: z.string().url().optional(),
+        onlyOnFailure: z.boolean().default(false),
+      })
+      .strict()
+      .optional(),
+    k8s: z
+      .object({
+        enabled: z.boolean().default(false),
+        namespace: z.string().min(1).default('default'),
+        kubeconfig: z.string().optional(),
+        parallelism: z.number().int().min(1).max(50).default(2),
+        runnerImage: z.string().min(1).default('grafana/k6:latest'),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 

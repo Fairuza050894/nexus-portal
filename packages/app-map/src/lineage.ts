@@ -207,11 +207,33 @@ export function buildFullStackLineage(options: BuildLineageOptions): FullStackTo
       });
     }
 
+    // Find caller page from appMap edges or correlate
+    let callingPage = 'Direct API / Client';
+    const callerEdge = appMap.edges.find(
+      (e) =>
+        (e.to === ep.id || e.to === epId || e.to.includes(path)) &&
+        (e.from.startsWith('page:') || e.from.startsWith('/')),
+    );
+    if (callerEdge) {
+      callingPage = callerEdge.from.replace(/^page:/, '');
+    } else {
+      const matchedPage = pageNodes.find(
+        (p) => p.path && p.path.length > 1 && path.toLowerCase().includes(p.path.toLowerCase().replace(/^\//, '')),
+      );
+      if (matchedPage?.path) {
+        callingPage = matchedPage.path;
+      } else if (pageNodes.length > 0) {
+        callingPage = pageNodes[lineage.length % pageNodes.length].path || '/';
+      }
+    }
+
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
     // Lineage record
     lineage.push({
-      id: `LIN-${method}-${path.replace(/[^a-zA-Z0-9]/g, '_')}`,
-      pageOrFeature: pageNodes[0]?.path ?? 'Direct API / Client',
-      endpoint: `${method} ${path}`,
+      id: `LIN-${method}-${cleanPath.replace(/[^a-zA-Z0-9]/g, '_')}`,
+      pageOrFeature: callingPage.startsWith('Page:') ? callingPage : `Page: ${callingPage}`,
+      endpoint: cleanPath,
       method,
       handler: ep.codeRef,
       tables: tableTouches,

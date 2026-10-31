@@ -13,12 +13,19 @@ export function renderStep2Builder(state: PortalState): string {
   return `
     <div class="panel">
       <div class="panel-header">
-        <span>Test Builder — Registry Type Catalog</span>
+        <span>Test Builder — Katalog & Konfigurasi Skenario Uji</span>
         <button id="btn-suggest-scenarios" class="btn btn-secondary" style="height:24px; padding:0 8px; font-size:11px;">
-          ${t(lang, 'suggestScenarios')}
+          ⚡ ${t(lang, 'suggestScenarios')}
         </button>
       </div>
       <div class="panel-body">
+        <!-- Guidance Banner for Step 2 -->
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px; padding:8px 12px; background:var(--bg); border:1px solid var(--border); border-radius:3px; display:flex; justify-content:space-between; align-items:center;">
+          <span>
+            💡 <strong>Panduan Test Builder:</strong> Tambahkan skenario uji per-kategori di bawah ini atau klik <strong>"Sarankan Skenario"</strong> untuk rekomendasi otomatis. Setelah siap, klik <strong>"Lanjut ke Review Plan (Langkah 03) &rarr;"</strong>.
+          </span>
+        </div>
+
         <!-- Type Switcher Tabs (Scenario 2.1) -->
         <div class="type-switcher" id="type-switcher">
           ${defaultRegistry
@@ -153,12 +160,12 @@ export function renderStep2Builder(state: PortalState): string {
           </table>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:10px; border-top:1px solid var(--border);">
           <button id="btn-add-row" class="btn btn-secondary">
             + ${t(lang, 'addRow')}
           </button>
           <button id="btn-builder-to-plan" class="btn btn-primary">
-            Review Plan & Run ->
+            Lanjut ke Review Plan (Langkah 03) &rarr;
           </button>
         </div>
       </div>

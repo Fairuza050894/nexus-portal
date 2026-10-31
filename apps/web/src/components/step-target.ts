@@ -217,20 +217,49 @@ export function renderStep1Target(state: PortalState): string {
           <div class="inline-drawer-body" id="dry-run-drawer-content"></div>
         </div>
 
-
-        <!-- Action Bar -->
-        <div style="display:flex; justify-content:space-between; align-items:center; padding-top:10px; border-top:1px solid var(--border);">
-          <div style="display:flex; gap:8px;">
-            <button id="btn-run-everything" class="btn btn-primary">
-              ${t(lang, 'runEverything')}
-            </button>
-            <button id="btn-dry-run" class="btn btn-secondary">
-              ${t(lang, 'dryRun')}
-            </button>
+        <!-- Action Pathways: Fast-Track vs Gated Plan -->
+        <div style="margin-top:16px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px;">
+          <div style="font-size:11px; font-weight:700; font-family:var(--mono); color:var(--text-muted); text-transform:uppercase; margin-bottom:8px;">
+            Pilih Alur Eksekusi Pengujian (Execution Workflow):
           </div>
-          <button id="btn-goto-builder" class="btn btn-secondary">
-            ${t(lang, 'customizeBuilder')} ->
-          </button>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">
+            <!-- Opsi A: Jalur Cepat Auto-Pilot -->
+            <div style="border:1px solid var(--border); border-radius:3px; padding:12px; background:var(--surface); display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <span style="font-size:12px; font-weight:700; color:var(--text-bright);">1. Jalur Cepat (Auto-Pilot)</span>
+                  <span class="tag tag-verified" style="font-size:9px;">1-KLIK</span>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); line-height:1.4; margin-bottom:10px;">
+                  Sistem otomatis menyusun rencana uji, meng-approve kandidat aman, dan langsung melompat ke <strong>Langkah 04 Live Run</strong>.
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button id="btn-run-everything" class="btn btn-primary" style="flex:1;">
+                  ${t(lang, 'runEverything')} &rarr;
+                </button>
+                <button id="btn-dry-run" class="btn btn-secondary">
+                  ${t(lang, 'dryRun')}
+                </button>
+              </div>
+            </div>
+
+            <!-- Opsi B: Jalur Bertahap (QA Governance) -->
+            <div style="border:1px solid var(--border); border-radius:3px; padding:12px; background:var(--surface); display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <span style="font-size:12px; font-weight:700; color:var(--accent-fg);">2. Jalur Terkontrol (QA Gated)</span>
+                  <span class="tag tag-discovered" style="font-size:9px;">BERTAHAP</span>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); line-height:1.4; margin-bottom:10px;">
+                  Atur skenario uji kustom di <strong>Langkah 02 (Test Builder)</strong>, lalu tinjau & berikan persetujuan di <strong>Langkah 03 (Review Plan)</strong>.
+                </div>
+              </div>
+              <button id="btn-goto-builder" class="btn btn-secondary" style="width:100%; height:32px;">
+                ${t(lang, 'customizeBuilder')} (Langkah 02) &rarr;
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

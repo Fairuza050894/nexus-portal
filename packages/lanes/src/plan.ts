@@ -5,6 +5,7 @@ import { LANE_NAMES, type LaneName, type LanePlan } from './types.js';
 export function planLanes(request: RunRequest, discovery: DiscoveryResult): LanePlan {
   const hasWeb = Boolean(request.web?.urls.length);
   const hasRepo = Boolean(request.repo);
+  const hasMobile = Boolean(request.mobile);
   const hasApi =
     Boolean(request.api?.baseUrl || request.api?.specUrl) ||
     discovery.endpoints.some(
@@ -27,6 +28,7 @@ export function planLanes(request: RunRequest, discovery: DiscoveryResult): Lane
         (lane === 'a11y' && hasWeb) ||
         (lane === 'security' && hasWeb) ||
         (lane === 'perf' && hasWeb) ||
+        (lane === 'mobile' && hasMobile) ||
         false;
     }
     if (enabled) lanes.push(lane);
@@ -41,6 +43,9 @@ export function planLanes(request: RunRequest, discovery: DiscoveryResult): Lane
   }
   if (supported.includes('api') && !hasApi) {
     reasons.push('api lane has no API base URL or spec');
+  }
+  if (supported.includes('mobile') && !hasMobile) {
+    reasons.push('mobile lane has no mobile target configured');
   }
   if (discovery.pages.length === 0 && hasWeb) {
     reasons.push('no crawled pages; browser lanes will be skipped');

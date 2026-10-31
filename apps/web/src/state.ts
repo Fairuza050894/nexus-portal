@@ -56,6 +56,14 @@ export interface PortalState {
   liveLogs: string[];
   requestsCount: number;
   circuitBreakerOpen: boolean;
+  lanes?: Array<{
+    lane: string;
+    status: 'passed' | 'failed' | 'skipped' | 'running' | 'pending';
+    tests?: number;
+    passed?: number;
+    failed?: number;
+    skipped?: number;
+  }>;
 
   // Step 5: Results State
   gate?: 'GO' | 'GO WITH RISKS' | 'NO-GO';

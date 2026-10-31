@@ -6,7 +6,7 @@ import { defaultEventStream } from './events.js';
 import { defaultRunManager, type RunManager } from './runs.js';
 import { defaultRegistry } from '@nexus/registry';
 import { renderPortalHtml, createInitialState } from '@nexus/web';
-import { RunStore } from '@nexus/core';
+import { RunStore, sendWebhookPayload } from '@nexus/core';
 import { extractDatabaseSchema } from '@nexus/discover';
 import { buildFullStackLineage, type AppMap } from '@nexus/app-map';
 
@@ -190,6 +190,104 @@ export function createApiServer(options: ServerOptions = {}): Server {
         } catch (err) {
           sendError(res, 400, (err as Error).message);
         }
+        return;
+      }
+
+      // 3c. Git Webhook Ingestion: POST /api/webhooks/git & POST /api/webhooks/github
+      if (
+        method === 'POST' &&
+        (pathname === '/api/webhooks/git' || pathname === '/api/webhooks/github')
+      ) {
+        const body = (await readJsonBody(req)) as Record<string, any>;
+        const ref =
+          body.ref || (body.pull_request ? body.pull_request.head?.ref : 'main') || 'main';
+        const branch = String(ref).replace(/^refs\/heads\//, '');
+        const commit = body.after || (body.head_commit ? body.head_commit.id : '') || 'c23db59';
+        const repoUrl = body.repository?.clone_url || body.repository?.html_url || body.repo;
+        const sender = body.sender?.login || body.pusher?.name || 'git-webhook';
+        const action = body.action || (body.commits ? 'push' : 'webhook');
+
+        const runPayload = {
+          name: `Git Webhook [${action}]: ${branch}@${commit ? String(commit).slice(0, 7) : 'head'}`,
+          mode: 'sandbox',
+          repo: repoUrl ? { url: repoUrl } : { localPath: 'fixtures/sample-todo-api' },
+          web: { urls: ['http://127.0.0.1:3100'] },
+          authorization: {
+            ownerConfirmed: true,
+            approvedBy: sender,
+          },
+        };
+
+        try {
+          const run = await manager.createRun(runPayload, {
+            id: `webhook:${sender}`,
+            email: `webhook-${sender}@nexus.local`,
+            role: 'runner',
+          });
+          sendJson(res, 202, {
+            ok: true,
+            runId: run.id,
+            status: run.status,
+            branch,
+            commit: commit ? String(commit).slice(0, 7) : undefined,
+            message: `Automated QA pipeline triggered by ${sender} on ${branch}`,
+          });
+        } catch (err) {
+          sendError(res, 400, (err as Error).message);
+        }
+        return;
+      }
+
+      // 3d. Test Notification Dispatch: POST /api/notify/test
+      if (method === 'POST' && pathname === '/api/notify/test') {
+        const body = (await readJsonBody(req)) as {
+          channel?: 'slack' | 'teams' | 'generic';
+          webhookUrl?: string;
+          message?: string;
+        };
+
+        const channel = body.channel ?? 'slack';
+        const webhookUrl = body.webhookUrl;
+
+        if (!webhookUrl) {
+          sendError(res, 400, 'Missing webhookUrl in request body');
+          return;
+        }
+
+        const payload =
+          channel === 'slack'
+            ? {
+                text:
+                  body.message || '🔔 [Test Alert] Nexus-Portal notification delivery verified!',
+                attachments: [
+                  {
+                    color: '#238636',
+                    title: 'Nexus-Portal Real-Time Alert System',
+                    text: 'Webhook connection established and operational.',
+                  },
+                ],
+              }
+            : channel === 'teams'
+              ? {
+                  '@type': 'MessageCard',
+                  '@context': 'https://schema.org/extensions',
+                  themeColor: '238636',
+                  summary: 'Nexus-Portal Test Alert',
+                  sections: [
+                    {
+                      activityTitle: 'Nexus-Portal Real-Time Alert System',
+                      activitySubtitle: body.message || 'Webhook connection verified',
+                    },
+                  ],
+                }
+              : {
+                  event: 'test.alert',
+                  message: body.message || 'Nexus-Portal test notification',
+                  timestamp: new Date().toISOString(),
+                };
+
+        const dispatchResult = await sendWebhookPayload(webhookUrl, payload, channel);
+        sendJson(res, dispatchResult.success ? 200 : 502, dispatchResult);
         return;
       }
 
@@ -453,6 +551,7 @@ export function createApiServer(options: ServerOptions = {}): Server {
               state.stages = mappedStages;
               state.stageDurations = mappedDurations;
               state.liveLogs = logs;
+              state.lanes = realSummary.lanes as unknown as typeof state.lanes;
             }
 
             const appMap = loadAppMapForRun(rootDir, targetRunId) ?? defaultAppMap;
@@ -499,18 +598,15 @@ export function createApiServer(options: ServerOptions = {}): Server {
           }
           if (state.currentStep === 4 && !realSummary) {
             state.stages = {
-              preflight: 'ok',
-              discover: 'ok',
-              'app-map': 'running',
+              preflight: 'pending',
+              discover: 'pending',
+              'app-map': 'pending',
               lanes: 'pending',
               correlate: 'pending',
               document: 'pending',
             };
             state.liveLogs = [
-              'Stage preflight: ok (45ms)',
-              `Target: ${state.webUrls}`,
-              'Stage discover: ok (320ms) - pages and endpoints crawled',
-              'Stage lanes: executing e2e, a11y, perf, security',
+              `[${new Date().toLocaleTimeString()}] [STATUS] Menunggu eksekusi pipeline dimulai...`,
             ];
           }
           const html = renderPortalHtml(state);

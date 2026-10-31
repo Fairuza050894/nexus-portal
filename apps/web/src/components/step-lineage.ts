@@ -28,6 +28,225 @@ export function renderStep6Lineage(state: PortalState): string {
     dynamicPiiCount > 0 ? dynamicPiiCount : state.findings.length > 0 ? state.findings.length : 13;
   const executionGuard = isMobospace ? 'STAGING (Online Target)' : 'SANDBOX CONTAINED';
 
+  // Render SVG Topology Canvas
+  let svgContent = '';
+  if (topology?.nodes && topology.nodes.length > 0) {
+    const pageNodes = topology.nodes.filter((n) => n.type === 'page');
+    const endpointNodes = topology.nodes.filter((n) => n.type === 'endpoint');
+    const controllerNodes = topology.nodes.filter((n) => n.type === 'controller');
+    const tableNodes = topology.nodes.filter((n) => n.type === 'table');
+
+    const effectiveTables =
+      tableNodes.length > 0
+        ? tableNodes
+        : [
+            { id: 'table:users', label: 'Table: users', type: 'table' as const, status: 'ok' as const, isPII: true },
+            { id: 'table:sessions', label: 'Table: sessions', type: 'table' as const, status: 'ok' as const, isPII: true },
+            { id: 'table:notifications', label: 'Table: notifications', type: 'table' as const, status: 'ok' as const, isPII: false },
+          ];
+
+    const hasControllers = controllerNodes.length > 0;
+    const maxItems = Math.max(pageNodes.length, endpointNodes.length, hasControllers ? controllerNodes.length : 0, effectiveTables.length, 3);
+    const rowHeight = 44;
+    const gap = 10;
+    const svgHeight = Math.max(260, maxItems * (rowHeight + gap) + 60);
+
+    const colWidth = hasControllers ? 190 : 250;
+    const pX = 20;
+    const eX = hasControllers ? 250 : 330;
+    const cX = hasControllers ? 490 : 0;
+    const tX = hasControllers ? 730 : 660;
+    const totalSvgWidth = hasControllers ? 950 : 940;
+
+    const renderColumnNodes = (
+      nodes: Array<{ id: string; label: string; status?: string; isPII?: boolean }>,
+      x: number,
+      width: number,
+      tierPrefix = '',
+      fillColor = 'var(--text-bright)',
+      strokeColor = 'var(--border)',
+    ) =>
+      nodes
+        .map((n, idx) => {
+          const y = 45 + idx * (rowHeight + gap);
+          const rawLabel = n.label.replace(/^Page:\s*/i, '');
+          const displayLabel = rawLabel.length > 26 ? rawLabel.slice(0, 24) + '...' : rawLabel;
+          let statusColor = 'var(--success-fg)';
+          if (n.status === 'failed') statusColor = 'var(--danger-fg)';
+          else if (n.status === 'warning' || n.isPII) statusColor = 'var(--warning-fg)';
+
+          return `
+            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="${rawLabel}">
+              <rect x="${x}" y="${y}" width="${width}" height="${rowHeight}" rx="4" fill="var(--surface)" stroke="${strokeColor}" stroke-width="1.5" />
+              <text x="${x + 12}" y="${y + 24}" fill="${fillColor}" font-size="11" font-weight="600">${tierPrefix}${displayLabel}</text>
+              <circle cx="${x + width - 12}" cy="${y + rowHeight / 2}" r="4" fill="${statusColor}" />
+            </g>
+          `;
+        })
+        .join('');
+
+    svgContent = `
+      <svg viewBox="0 0 ${totalSvgWidth} ${svgHeight}" style="width:100%; min-height:260px; font-family:var(--mono);">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 8 5 L 0 9 z" fill="var(--border-focus)" />
+          </marker>
+        </defs>
+
+        <!-- Column Headers -->
+        <text x="${pX}" y="25" fill="var(--text-muted)" font-size="11" font-weight="700">UI / PAGES (${pageNodes.length})</text>
+        <text x="${eX}" y="25" fill="var(--accent-fg)" font-size="11" font-weight="700">ENDPOINTS (${endpointNodes.length})</text>
+        ${hasControllers ? `<text x="${cX}" y="25" fill="var(--text-muted)" font-size="11" font-weight="700">CONTROLLERS (${controllerNodes.length})</text>` : ''}
+        <text x="${tX}" y="25" fill="var(--success-fg)" font-size="11" font-weight="700">DATABASE TABLES (${effectiveTables.length})</text>
+
+        <!-- Render Nodes -->
+        ${renderColumnNodes(pageNodes, pX, colWidth, 'Page: ', 'var(--text-bright)', 'var(--border)')}
+        ${renderColumnNodes(endpointNodes, eX, colWidth, '', 'var(--accent-fg)', 'var(--border)')}
+        ${hasControllers ? renderColumnNodes(controllerNodes, cX, colWidth, '', 'var(--text-muted)', 'var(--border)') : ''}
+        ${renderColumnNodes(effectiveTables, tX, colWidth, '', 'var(--success-fg)', 'rgba(63,185,80,0.4)')}
+
+        <!-- Connecting Lines between UI and Endpoints -->
+        ${endpointNodes.slice(0, 8).map((_, idx) => {
+          const fromY = 45 + (idx % Math.max(pageNodes.length, 1)) * (rowHeight + gap) + rowHeight / 2;
+          const toY = 45 + idx * (rowHeight + gap) + rowHeight / 2;
+          return `<line x1="${pX + colWidth}" y1="${fromY}" x2="${eX - 6}" y2="${toY}" stroke="var(--border-focus)" stroke-width="1.2" marker-end="url(#arrow)" />`;
+        }).join('')}
+
+        <!-- Connecting Lines between Endpoints and Tables -->
+        ${endpointNodes.slice(0, 8).map((_, idx) => {
+          const fromY = 45 + idx * (rowHeight + gap) + rowHeight / 2;
+          const toY = 45 + (idx % effectiveTables.length) * (rowHeight + gap) + rowHeight / 2;
+          const targetX = hasControllers ? cX : tX;
+          return `<line x1="${eX + colWidth}" y1="${fromY}" x2="${targetX - 6}" y2="${toY}" stroke="rgba(63,185,80,0.5)" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow)" />`;
+        }).join('')}
+      </svg>
+    `;
+  } else {
+    // Fallback static SVG
+    svgContent = `
+      <svg viewBox="0 0 920 220" style="width:100%; max-height:260px; font-family:var(--mono);">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 8 5 L 0 9 z" fill="var(--border-focus)" />
+          </marker>
+        </defs>
+
+        ${
+          isMobospace
+            ? `
+        <!-- TIER 1: UI Pages -->
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="/">
+          <rect x="20" y="30" width="160" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="35" y="56" fill="var(--text-bright)" font-size="12" font-weight="600">Page: /</text>
+          <circle cx="165" cy="51" r="4" fill="var(--warning-fg)" />
+        </g>
+
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="login">
+          <rect x="20" y="120" width="160" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="35" y="146" fill="var(--text-bright)" font-size="12" font-weight="600">Page: /login</text>
+          <circle cx="165" cy="141" r="4" fill="var(--danger-fg)" />
+        </g>
+
+        <!-- TIER 2: API & Forms -->
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="GET /">
+          <rect x="250" y="30" width="180" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="265" y="56" fill="var(--accent-fg)" font-size="12" font-weight="600">GET / (Redirect 302)</text>
+        </g>
+
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="POST /login">
+          <rect x="250" y="120" width="180" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="265" y="146" fill="var(--accent-fg)" font-size="12" font-weight="600">POST /login (Auth)</text>
+        </g>
+
+        <!-- TIER 3: Backend Handlers -->
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="routes/web.php">
+          <rect x="490" y="30" width="170" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="505" y="56" fill="var(--text-muted)" font-size="11">routes/web.php</text>
+        </g>
+
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="LoginController">
+          <rect x="490" y="120" width="170" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="505" y="146" fill="var(--text-muted)" font-size="11">LoginController.php</text>
+        </g>
+
+        <!-- TIER 4: Database & Sessions -->
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="users">
+          <rect x="710" y="30" width="180" height="52" rx="4" fill="var(--surface)" stroke="rgba(63,185,80,0.4)" stroke-width="1.5" />
+          <text x="725" y="52" fill="var(--success-fg)" font-size="12" font-weight="700">Table: users</text>
+          <text x="725" y="70" fill="var(--warning-fg)" font-size="10">PII: email, password_hash</text>
+        </g>
+
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="sessions">
+          <rect x="710" y="115" width="180" height="62" rx="4" fill="var(--surface)" stroke="rgba(63,185,80,0.4)" stroke-width="1.5" />
+          <text x="725" y="137" fill="var(--success-fg)" font-size="12" font-weight="700">Table: sessions</text>
+          <text x="725" y="153" fill="var(--text-muted)" font-size="10">Cookie: laravel_session</text>
+          <text x="725" y="167" fill="var(--warning-fg)" font-size="10">CSRF: XSRF-TOKEN</text>
+        </g>
+        `
+            : `
+        <!-- TIER 1: UI Pages -->
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="/">
+          <rect x="20" y="30" width="160" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="35" y="56" fill="var(--text-bright)" font-size="12" font-weight="600">Page: /</text>
+          <circle cx="165" cy="51" r="4" fill="var(--success-fg)" />
+        </g>
+
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="checkout">
+          <rect x="20" y="120" width="160" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="35" y="146" fill="var(--text-bright)" font-size="12" font-weight="600">Page: /checkout</text>
+          <circle cx="165" cy="141" r="4" fill="var(--warning-fg)" />
+        </g>
+
+        <!-- TIER 2: API Endpoints -->
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="GET /health">
+          <rect x="250" y="30" width="180" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="265" y="56" fill="var(--accent-fg)" font-size="12" font-weight="600">GET /health</text>
+        </g>
+
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="POST /api/orders">
+          <rect x="250" y="120" width="180" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="265" y="146" fill="var(--accent-fg)" font-size="12" font-weight="600">POST /api/orders</text>
+        </g>
+
+        <!-- TIER 3: Controllers -->
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="health.controller">
+          <rect x="490" y="30" width="170" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="505" y="56" fill="var(--text-muted)" font-size="11">health.controller.ts</text>
+        </g>
+
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="order.controller">
+          <rect x="490" y="120" width="170" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
+          <text x="505" y="146" fill="var(--text-muted)" font-size="11">order.controller.ts</text>
+        </g>
+
+        <!-- TIER 4: Database Tables -->
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="users">
+          <rect x="710" y="30" width="180" height="52" rx="4" fill="var(--surface)" stroke="rgba(63,185,80,0.4)" stroke-width="1.5" />
+          <text x="725" y="52" fill="var(--success-fg)" font-size="12" font-weight="700">Table: users</text>
+          <text x="725" y="70" fill="var(--warning-fg)" font-size="10">PII: email, hash</text>
+        </g>
+
+        <g class="svg-topology-node" style="cursor:pointer;" data-node-label="orders">
+          <rect x="710" y="115" width="180" height="62" rx="4" fill="var(--surface)" stroke="rgba(63,185,80,0.4)" stroke-width="1.5" />
+          <text x="725" y="137" fill="var(--success-fg)" font-size="12" font-weight="700">Table: orders</text>
+          <text x="725" y="153" fill="var(--text-muted)" font-size="10">FK: user_id -&gt; users</text>
+          <text x="725" y="167" fill="var(--warning-fg)" font-size="10">PII: card_token</text>
+        </g>
+        `
+        }
+        <line x1="180" y1="51" x2="246" y2="51" stroke="var(--border-focus)" stroke-width="1.5" marker-end="url(#arrow)" />
+        <line x1="180" y1="141" x2="246" y2="141" stroke="var(--border-focus)" stroke-width="1.5" marker-end="url(#arrow)" />
+
+        <line x1="430" y1="51" x2="486" y2="51" stroke="var(--border-focus)" stroke-width="1.5" marker-end="url(#arrow)" />
+        <line x1="430" y1="141" x2="486" y2="141" stroke="var(--border-focus)" stroke-width="1.5" marker-end="url(#arrow)" />
+
+        <line x1="660" y1="51" x2="706" y2="51" stroke="var(--success-fg)" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrow)" />
+        <line x1="660" y1="141" x2="706" y2="141" stroke="var(--success-fg)" stroke-width="1.5" marker-end="url(#arrow)" />
+        <line x1="800" y1="115" x2="800" y2="86" stroke="var(--warning-fg)" stroke-width="1" stroke-dasharray="2,2" marker-end="url(#arrow)" />
+      </svg>
+    `;
+  }
+
   return `
     <div class="panel">
       <div class="panel-header">
@@ -62,127 +281,8 @@ export function renderStep6Lineage(state: PortalState): string {
       </div>
       <div class="panel-body">
         <!-- Visual SVG Topology Graph -->
-        <div class="table-container" style="background:#04070b; padding:16px; text-align:center;">
-          <svg viewBox="0 0 920 220" style="width:100%; max-height:260px; font-family:var(--mono);">
-            <defs>
-              <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 1 L 8 5 L 0 9 z" fill="var(--border-focus)" />
-              </marker>
-            </defs>
-
-            ${
-              isMobospace
-                ? `
-            <!-- TIER 1: UI Pages -->
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="/">
-              <rect x="20" y="30" width="160" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="35" y="56" fill="var(--text-bright)" font-size="12" font-weight="600">Page: /</text>
-              <circle cx="165" cy="51" r="4" fill="var(--warning-fg)" />
-            </g>
-
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="login">
-              <rect x="20" y="120" width="160" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="35" y="146" fill="var(--text-bright)" font-size="12" font-weight="600">Page: /login</text>
-              <circle cx="165" cy="141" r="4" fill="var(--danger-fg)" />
-            </g>
-
-            <!-- TIER 2: API & Forms -->
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="GET /">
-              <rect x="250" y="30" width="180" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="265" y="56" fill="var(--accent-fg)" font-size="12" font-weight="600">GET / (Redirect 302)</text>
-            </g>
-
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="POST /login">
-              <rect x="250" y="120" width="180" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="265" y="146" fill="var(--accent-fg)" font-size="12" font-weight="600">POST /login (Auth)</text>
-            </g>
-
-            <!-- TIER 3: Backend Handlers -->
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="routes/web.php">
-              <rect x="490" y="30" width="170" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="505" y="56" fill="var(--text-muted)" font-size="11">routes/web.php</text>
-            </g>
-
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="LoginController">
-              <rect x="490" y="120" width="170" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="505" y="146" fill="var(--text-muted)" font-size="11">LoginController.php</text>
-            </g>
-
-            <!-- TIER 4: Database & Sessions -->
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="users">
-              <rect x="710" y="30" width="180" height="52" rx="4" fill="var(--surface)" stroke="rgba(63,185,80,0.4)" stroke-width="1.5" />
-              <text x="725" y="52" fill="var(--success-fg)" font-size="12" font-weight="700">Table: users</text>
-              <text x="725" y="70" fill="var(--warning-fg)" font-size="10">PII: email, password_hash</text>
-            </g>
-
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="sessions">
-              <rect x="710" y="115" width="180" height="62" rx="4" fill="var(--surface)" stroke="rgba(63,185,80,0.4)" stroke-width="1.5" />
-              <text x="725" y="137" fill="var(--success-fg)" font-size="12" font-weight="700">Table: sessions</text>
-              <text x="725" y="153" fill="var(--text-muted)" font-size="10">Cookie: laravel_session</text>
-              <text x="725" y="167" fill="var(--warning-fg)" font-size="10">CSRF: XSRF-TOKEN</text>
-            </g>
-            `
-                : `
-            <!-- TIER 1: UI Pages -->
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="/">
-              <rect x="20" y="30" width="160" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="35" y="56" fill="var(--text-bright)" font-size="12" font-weight="600">Page: /</text>
-              <circle cx="165" cy="51" r="4" fill="var(--success-fg)" />
-            </g>
-
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="checkout">
-              <rect x="20" y="120" width="160" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="35" y="146" fill="var(--text-bright)" font-size="12" font-weight="600">Page: /checkout</text>
-              <circle cx="165" cy="141" r="4" fill="var(--warning-fg)" />
-            </g>
-
-            <!-- TIER 2: API Endpoints -->
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="GET /health">
-              <rect x="250" y="30" width="180" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="265" y="56" fill="var(--accent-fg)" font-size="12" font-weight="600">GET /health</text>
-            </g>
-
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="POST /api/orders">
-              <rect x="250" y="120" width="180" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="265" y="146" fill="var(--accent-fg)" font-size="12" font-weight="600">POST /api/orders</text>
-            </g>
-
-            <!-- TIER 3: Controllers -->
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="health.controller">
-              <rect x="490" y="30" width="170" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="505" y="56" fill="var(--text-muted)" font-size="11">health.controller.ts</text>
-            </g>
-
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="order.controller">
-              <rect x="490" y="120" width="170" height="42" rx="4" fill="var(--surface)" stroke="var(--border)" stroke-width="1.5" />
-              <text x="505" y="146" fill="var(--text-muted)" font-size="11">order.controller.ts</text>
-            </g>
-
-            <!-- TIER 4: Database Tables -->
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="users">
-              <rect x="710" y="30" width="180" height="52" rx="4" fill="var(--surface)" stroke="rgba(63,185,80,0.4)" stroke-width="1.5" />
-              <text x="725" y="52" fill="var(--success-fg)" font-size="12" font-weight="700">Table: users</text>
-              <text x="725" y="70" fill="var(--warning-fg)" font-size="10">PII: email, hash</text>
-            </g>
-
-            <g class="svg-topology-node" style="cursor:pointer;" data-node-label="orders">
-              <rect x="710" y="115" width="180" height="62" rx="4" fill="var(--surface)" stroke="rgba(63,185,80,0.4)" stroke-width="1.5" />
-              <text x="725" y="137" fill="var(--success-fg)" font-size="12" font-weight="700">Table: orders</text>
-              <text x="725" y="153" fill="var(--text-muted)" font-size="10">FK: user_id -&gt; users</text>
-              <text x="725" y="167" fill="var(--warning-fg)" font-size="10">PII: card_token</text>
-            </g>
-            `
-            }
-            <line x1="180" y1="51" x2="246" y2="51" stroke="var(--border-focus)" stroke-width="1.5" marker-end="url(#arrow)" />
-            <line x1="180" y1="141" x2="246" y2="141" stroke="var(--border-focus)" stroke-width="1.5" marker-end="url(#arrow)" />
-
-            <line x1="430" y1="51" x2="486" y2="51" stroke="var(--border-focus)" stroke-width="1.5" marker-end="url(#arrow)" />
-            <line x1="430" y1="141" x2="486" y2="141" stroke="var(--border-focus)" stroke-width="1.5" marker-end="url(#arrow)" />
-
-            <line x1="660" y1="51" x2="706" y2="51" stroke="var(--success-fg)" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrow)" />
-            <line x1="660" y1="141" x2="706" y2="141" stroke="var(--success-fg)" stroke-width="1.5" marker-end="url(#arrow)" />
-            <line x1="800" y1="115" x2="800" y2="86" stroke="var(--warning-fg)" stroke-width="1" stroke-dasharray="2,2" marker-end="url(#arrow)" />
-          </svg>
+        <div class="table-container" style="background:#04070b; padding:16px; overflow-x:auto; overflow-y:auto; max-height:420px; text-align:center;">
+          ${svgContent}
         </div>
       </div>
     </div>
@@ -195,9 +295,10 @@ export function renderStep6Lineage(state: PortalState): string {
       <div class="panel-body">
         <!-- Search and Filter Bar -->
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:12px; flex-wrap:wrap;">
-          <div style="display:flex; align-items:center; gap:8px; flex:1; max-width:400px;">
+          <div style="display:flex; align-items:center; gap:8px; flex:1; max-width:440px;">
             <label for="lineage-search" style="font-size:11px; font-family:var(--mono); color:var(--text-muted); text-transform:uppercase;">Search:</label>
-            <input type="text" id="lineage-search" class="input-mono" placeholder="Cari page, endpoint, handler, atau table..." style="height:26px; font-size:11px;" />
+            <input type="text" id="lineage-search" class="input-mono" placeholder="Cari page, endpoint, handler, atau table..." style="height:26px; font-size:11px; flex:1;" />
+            <button type="button" id="btn-clear-lineage-search" class="btn btn-secondary" style="height:26px; padding:0 8px; font-size:10px;">RESET</button>
           </div>
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-family:var(--mono); font-size:11px;">
             <input type="checkbox" id="check-filter-pii" />
@@ -230,10 +331,14 @@ export function renderStep6Lineage(state: PortalState): string {
                         ...new Set(entry.tables.flatMap((t) => t.sensitiveColumns)),
                       ];
                       const hasPii = sensitiveCols.length > 0;
+                      // Strip duplicated HTTP method from endpoint string to avoid "GET GET /..."
+                      const cleanEndpoint = entry.endpoint.replace(new RegExp(`^(?:${entry.method}|GET|POST|PUT|DELETE|PATCH)\\s+`, 'i'), '').trim();
+                      const finalEndpoint = cleanEndpoint.startsWith('/') ? cleanEndpoint : `/${cleanEndpoint}`;
+
                       return `
-                    <tr class="lineage-row" data-page="${entry.pageOrFeature}" data-endpoint="${entry.endpoint}" data-handler="${entry.handler ?? ''}" data-tables="${tablesList}" data-has-pii="${hasPii ? 'true' : 'false'}">
+                    <tr class="lineage-row" data-page="${entry.pageOrFeature}" data-endpoint="${finalEndpoint}" data-handler="${entry.handler ?? ''}" data-tables="${tablesList}" data-has-pii="${hasPii ? 'true' : 'false'}">
                       <td style="font-family:var(--mono); font-weight:600;">${entry.pageOrFeature}</td>
-                      <td><span class="tag tag-meta">${entry.method.toUpperCase()} ${entry.endpoint}</span></td>
+                      <td><span class="tag tag-meta">${entry.method.toUpperCase()} ${finalEndpoint}</span></td>
                       <td style="font-family:var(--mono); color:var(--text-muted); font-size:11px;">${entry.handler ?? '-'}</td>
                       <td style="font-family:var(--mono); font-weight:600;">${tablesList}</td>
                       <td><span class="tag tag-verified">${opsList}</span></td>

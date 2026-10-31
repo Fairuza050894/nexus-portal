@@ -287,3 +287,134 @@ export function exportFindingToGitHubIssue(
     labels: ['qa-finding', finding.severity, `lane:${finding.lanes[0] ?? 'general'}`],
   };
 }
+
+export interface WebhookDispatchResult {
+  success: boolean;
+  channel: 'slack' | 'teams' | 'generic';
+  url: string;
+  statusCode?: number;
+  error?: string;
+}
+
+export interface NotificationDispatchSummary {
+  dispatched: number;
+  failed: number;
+  skipped: boolean;
+  results: WebhookDispatchResult[];
+}
+
+export interface NotificationConfig {
+  slackWebhookUrl?: string;
+  teamsWebhookUrl?: string;
+  genericWebhookUrl?: string;
+  onlyOnFailure?: boolean;
+  bundleUrl?: string;
+}
+
+export async function sendWebhookPayload(
+  url: string,
+  payload: unknown,
+  channel: 'slack' | 'teams' | 'generic' = 'generic',
+  options?: { timeoutMs?: number; fetchFn?: typeof fetch },
+): Promise<WebhookDispatchResult> {
+  const timeoutMs = options?.timeoutMs ?? 5000;
+  const fetchFn = options?.fetchFn ?? globalThis.fetch;
+
+  if (!url || typeof url !== 'string' || !url.startsWith('http')) {
+    return {
+      success: false,
+      channel,
+      url: url || 'empty',
+      error: 'Invalid or missing webhook URL',
+    };
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetchFn(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'nexus-portal-notifier/2.0',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timer);
+
+    return {
+      success: res.ok,
+      channel,
+      url,
+      statusCode: res.status,
+      ...(res.ok ? {} : { error: `HTTP ${res.status}: ${res.statusText || 'Webhook rejected'}` }),
+    };
+  } catch (err) {
+    clearTimeout(timer);
+    const isAbort = (err as Error).name === 'AbortError';
+    return {
+      success: false,
+      channel,
+      url,
+      error: isAbort ? `Webhook request timed out after ${timeoutMs}ms` : (err as Error).message,
+    };
+  }
+}
+
+export async function dispatchRunAlerts(
+  summary: RunSummary,
+  config?: NotificationConfig,
+  options?: { timeoutMs?: number; fetchFn?: typeof fetch },
+): Promise<NotificationDispatchSummary> {
+  if (!config) {
+    return { dispatched: 0, failed: 0, skipped: true, results: [] };
+  }
+
+  const isFailure = summary.gate.decision === 'NO-GO' || summary.gate.decision === 'GO WITH RISKS';
+  if (config.onlyOnFailure && !isFailure) {
+    return { dispatched: 0, failed: 0, skipped: true, results: [] };
+  }
+
+  const tasks: Array<Promise<WebhookDispatchResult>> = [];
+
+  if (config.slackWebhookUrl) {
+    const slackPayload = formatSlackNotification(summary, config.bundleUrl);
+    tasks.push(sendWebhookPayload(config.slackWebhookUrl, slackPayload, 'slack', options));
+  }
+
+  if (config.teamsWebhookUrl) {
+    const teamsPayload = formatTeamsNotification(summary, config.bundleUrl);
+    tasks.push(sendWebhookPayload(config.teamsWebhookUrl, teamsPayload, 'teams', options));
+  }
+
+  if (config.genericWebhookUrl) {
+    const genericPayload = {
+      event: 'qa.run.complete',
+      runId: summary.run.id,
+      mode: summary.run.mode,
+      gate: summary.gate,
+      totals: summary.totals,
+      summary: extractNotificationSummary(summary, config.bundleUrl),
+      timestamp: new Date().toISOString(),
+    };
+    tasks.push(sendWebhookPayload(config.genericWebhookUrl, genericPayload, 'generic', options));
+  }
+
+  if (tasks.length === 0) {
+    return { dispatched: 0, failed: 0, skipped: true, results: [] };
+  }
+
+  const results = await Promise.all(tasks);
+  const dispatched = results.filter((r) => r.success).length;
+  const failed = results.filter((r) => !r.success).length;
+
+  return {
+    dispatched,
+    failed,
+    skipped: false,
+    results,
+  };
+}

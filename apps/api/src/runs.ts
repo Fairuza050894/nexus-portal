@@ -8,6 +8,7 @@ import {
   QaConfigSchema,
   RunRequestSchema,
   RunStore,
+  dispatchRunAlerts,
   type QaConfig,
   type RunRequest,
   type RunSummary,
@@ -616,6 +617,26 @@ export class RunManager {
 
       // Read summary from store
       record.summary = RunStore.readSummaryById(this.rootDir, runId);
+
+      // Real-time notification dispatch (Fase 10)
+      if (record.summary) {
+        const notifyConfig = {
+          slackWebhookUrl:
+            this.config.notifications?.slackWebhookUrl ?? process.env.QA_SLACK_WEBHOOK,
+          teamsWebhookUrl:
+            this.config.notifications?.teamsWebhookUrl ?? process.env.QA_TEAMS_WEBHOOK,
+          genericWebhookUrl:
+            this.config.notifications?.genericWebhookUrl ?? process.env.QA_ALERT_WEBHOOK,
+          onlyOnFailure: this.config.notifications?.onlyOnFailure ?? false,
+        };
+        if (
+          notifyConfig.slackWebhookUrl ||
+          notifyConfig.teamsWebhookUrl ||
+          notifyConfig.genericWebhookUrl
+        ) {
+          void dispatchRunAlerts(record.summary, notifyConfig).catch(() => {});
+        }
+      }
 
       defaultEventStream.broadcast(runId, 'complete', {
         runId,

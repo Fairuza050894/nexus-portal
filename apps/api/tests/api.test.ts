@@ -317,4 +317,55 @@ describe('Apps API Server Endpoints & Security Guards', () => {
     expect(html).toContain('telemetry-requests');
     expect(html).toContain('telemetry-circuit');
   });
+
+  it('POST /api/webhooks/git triggers automated QA run from git push or PR event', async () => {
+    const res = await fetch(`${baseUrl}/api/webhooks/git`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ref: 'refs/heads/feature/login-redesign',
+        after: 'a1b2c3d4e5f6',
+        repository: { clone_url: 'fixtures/sample-todo-api' },
+        pusher: { name: 'developer-jane' },
+      }),
+    });
+
+    expect(res.status).toBe(202);
+    const json = (await res.json()) as {
+      ok: boolean;
+      runId: string;
+      status: string;
+      branch: string;
+      commit: string;
+    };
+    expect(json.ok).toBe(true);
+    expect(json.branch).toBe('feature/login-redesign');
+    expect(json.commit).toBe('a1b2c3d');
+    expect(json.runId).toBeDefined();
+    expect(json.status).toBe('reviewing-plan');
+  });
+
+  it('POST /api/notify/test dispatches test notification payload safely', async () => {
+    // 1. Missing webhookUrl validation
+    const badRes = await fetch(`${baseUrl}/api/notify/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel: 'slack' }),
+    });
+    expect(badRes.status).toBe(400);
+
+    // 2. Invalid webhookUrl returns 502 with error details
+    const invalidRes = await fetch(`${baseUrl}/api/notify/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel: 'slack',
+        webhookUrl: 'not-valid-url',
+      }),
+    });
+    expect(invalidRes.status).toBe(502);
+    const json = (await invalidRes.json()) as { success: boolean; error?: string };
+    expect(json.success).toBe(false);
+    expect(json.error).toContain('Invalid or missing webhook URL');
+  });
 });

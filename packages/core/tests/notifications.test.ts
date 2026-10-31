@@ -7,6 +7,8 @@ import {
   formatEmailNotification,
   exportFindingToJiraMarkdown,
   exportFindingToGitHubIssue,
+  sendWebhookPayload,
+  dispatchRunAlerts,
 } from '../src/index.js';
 
 describe('Sanitized Notifications & Issue Exports (7.3 & 7.4)', () => {
@@ -175,5 +177,90 @@ describe('Sanitized Notifications & Issue Exports (7.3 & 7.4)', () => {
     expect(ghIssue.labels).toContain('high');
     expect(ghIssue.labels).toContain('lane:api');
     expect(ghIssue.body).toContain('Endpoint accepts cross-origin POST without token');
+  });
+
+  describe('Real-Time Webhook Dispatcher (sendWebhookPayload & dispatchRunAlerts)', () => {
+    it('dispatches webhook successfully with mock fetch', async () => {
+      const mockFetch = async () =>
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          statusText: 'OK',
+        });
+
+      const res = await sendWebhookPayload(
+        'https://hooks.slack.com/services/T00/B00/X00',
+        { text: 'Hello' },
+        'slack',
+        { fetchFn: mockFetch as unknown as typeof fetch },
+      );
+
+      expect(res.success).toBe(true);
+      expect(res.channel).toBe('slack');
+      expect(res.statusCode).toBe(200);
+      expect(res.error).toBeUndefined();
+    });
+
+    it('handles HTTP error responses gracefully without throwing', async () => {
+      const mockFetch = async () =>
+        new Response('Service Unavailable', {
+          status: 503,
+          statusText: 'Service Unavailable',
+        });
+
+      const res = await sendWebhookPayload(
+        'https://outlook.office.com/webhook/test',
+        { text: 'Hello' },
+        'teams',
+        { fetchFn: mockFetch as unknown as typeof fetch },
+      );
+
+      expect(res.success).toBe(false);
+      expect(res.statusCode).toBe(503);
+      expect(res.error).toContain('HTTP 503');
+    });
+
+    it('rejects invalid or non-HTTP URLs safely', async () => {
+      const res = await sendWebhookPayload('not-a-valid-url', { text: 'test' });
+      expect(res.success).toBe(false);
+      expect(res.error).toContain('Invalid or missing webhook URL');
+    });
+
+    it('dispatches multiple alerts concurrently and tracks successes', async () => {
+      const calls: string[] = [];
+      const mockFetch = async (url: string | URL | Request) => {
+        calls.push(String(url));
+        return new Response('ok', { status: 200 });
+      };
+
+      const result = await dispatchRunAlerts(
+        mockSummary,
+        {
+          slackWebhookUrl: 'https://hooks.slack.com/services/1',
+          teamsWebhookUrl: 'https://outlook.office.com/webhook/2',
+          genericWebhookUrl: 'https://internal.company.local/api/qa-events',
+        },
+        { fetchFn: mockFetch as unknown as typeof fetch },
+      );
+
+      expect(result.skipped).toBe(false);
+      expect(result.dispatched).toBe(3);
+      expect(result.failed).toBe(0);
+      expect(calls.length).toBe(3);
+    });
+
+    it('respects onlyOnFailure filter when gate decision is GO', async () => {
+      const passingSummary: RunSummary = {
+        ...mockSummary,
+        gate: { decision: 'GO', reasons: ['All tests passed'] },
+      };
+
+      const result = await dispatchRunAlerts(passingSummary, {
+        slackWebhookUrl: 'https://hooks.slack.com/services/1',
+        onlyOnFailure: true,
+      });
+
+      expect(result.skipped).toBe(true);
+      expect(result.dispatched).toBe(0);
+    });
   });
 });

@@ -1,8 +1,13 @@
 import type { RepoAnalysis } from '@nexus/discover';
 import { toFindings } from './findings.js';
 import type { FindingDraft, LaneContext, LaneResult, LaneTestCase } from './types.js';
+import { scanFilesForMalware, type FileContentProvider } from './malware-scanner.js';
 
-export function runRepoLane(_context: LaneContext, repo: RepoAnalysis | undefined): LaneResult {
+export function runRepoLane(
+  _context: LaneContext,
+  repo: RepoAnalysis | undefined,
+  files?: FileContentProvider[],
+): LaneResult {
   const startedAt = Date.now();
   if (!repo) {
     return {
@@ -108,6 +113,66 @@ export function runRepoLane(_context: LaneContext, repo: RepoAnalysis | undefine
     durationMs: 0,
     reason: 'test execution inside the sandbox is deferred; static analysis only in this MVP',
   });
+
+  // Anti-Malware & Webshell Scan (Fase 13)
+  if (files && files.length > 0) {
+    const scanResult = scanFilesForMalware(files);
+    const malwareThreats = scanResult.items.filter(
+      (i) => i.kind === 'webshell' || i.kind === 'obfuscated-exec' || i.kind === 'command-injection-hook' || i.kind === 'cryptominer',
+    );
+    const frameworkThreats = scanResult.items.filter(
+      (i) => i.kind === 'laravel-debug-exposed' || i.kind === 'laravel-unprotected-model' || i.kind === 'php-cgi-vulnerability',
+    );
+
+    tests.push({
+      id: 'TC-REPO-006',
+      lane: 'repo',
+      name: 'anti-malware and webshell scan',
+      status: malwareThreats.length > 0 ? 'failed' : 'passed',
+      durationMs: 10,
+      expected: '0 webshells, backdoors, or cryptominers',
+      actual: `${malwareThreats.length} threat(s) detected across ${files.length} file(s)`,
+    });
+
+    tests.push({
+      id: 'TC-REPO-007',
+      lane: 'repo',
+      name: 'php & laravel cyber defense scan',
+      status: frameworkThreats.length > 0 ? 'failed' : 'passed',
+      durationMs: 5,
+      expected: '0 critical PHP/Laravel framework misconfigurations or RCE indicators',
+      actual: `${frameworkThreats.length} issue(s) detected`,
+    });
+
+    for (const item of scanResult.items) {
+      drafts.push({
+        title: `[Cyber Threat] ${item.description} in ${item.file}`,
+        ruleId: `malware:${item.kind}`,
+        severity: item.severity,
+        confidence: 'verified',
+        category: 'security',
+        lane: 'repo',
+        affected: [{ file: item.file, line: item.line }],
+        expected: 'Codebase free from backdoors and critical framework exploits',
+        actual: item.snippet ? `Matched: "${item.snippet}"` : item.description,
+        evidence: [
+          {
+            type: 'malware-detection',
+            file: item.file,
+            line: item.line,
+            kind: item.kind,
+            snippet: item.snippet,
+          },
+        ],
+        suggestedFix:
+          item.kind === 'webshell' || item.kind === 'cryptominer'
+            ? 'Quarantine file and inspect system access logs'
+            : item.kind === 'laravel-debug-exposed'
+              ? 'Set APP_DEBUG=false in environment'
+              : 'Review code security guidelines and enforce parameterization',
+      });
+    }
+  }
 
   return {
     lane: 'repo',

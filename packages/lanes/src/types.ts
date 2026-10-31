@@ -3,7 +3,7 @@ import type { DiscoveryResult } from '@nexus/discover';
 import type { AppMap } from '@nexus/app-map';
 import type { SessionResult } from '@nexus/session';
 
-export const LANE_NAMES = ['repo', 'api', 'e2e', 'a11y', 'visual', 'perf', 'security'] as const;
+export const LANE_NAMES = ['repo', 'api', 'e2e', 'a11y', 'visual', 'perf', 'security', 'mobile'] as const;
 export type LaneName = (typeof LANE_NAMES)[number];
 
 export type TestStatus = 'passed' | 'failed' | 'skipped';

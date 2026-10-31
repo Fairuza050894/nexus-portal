@@ -79,6 +79,7 @@ export function renderClientScript(state: PortalState): string {
       // Quick navigation buttons
       document.getElementById('btn-goto-builder')?.addEventListener('click', () => switchStep(2));
       document.getElementById('btn-builder-to-plan')?.addEventListener('click', () => switchStep(3));
+      document.getElementById('btn-back-to-builder')?.addEventListener('click', () => switchStep(2));
       document.getElementById('btn-view-results')?.addEventListener('click', () => switchStep(5));
       document.getElementById('btn-start-new-run')?.addEventListener('click', () => switchStep(1));
 
@@ -720,6 +721,27 @@ export function renderClientScript(state: PortalState): string {
         const titleEl = document.getElementById('live-run-id-title');
         if (titleEl) titleEl.textContent = runId;
 
+        // Reset stages indicators to initial pipeline state
+        const initialStages = ['preflight', 'discover', 'app-map', 'lanes', 'correlate', 'document'];
+        initialStages.forEach((st, idx) => {
+          const badge = document.getElementById('stage-badge-' + st);
+          if (badge) {
+            badge.textContent = idx === 0 ? 'running' : 'pending';
+            badge.className = 'tag ' + (idx === 0 ? 'tag-discovered' : 'tag-muted');
+          }
+          const dur = document.getElementById('stage-dur-' + st);
+          if (dur) dur.textContent = '-';
+        });
+
+        // Reset lanes progress to standby
+        const initialLanes = ['e2e', 'a11y', 'perf', 'security'];
+        initialLanes.forEach(lane => {
+          const statusEl = document.getElementById('lane-status-' + lane);
+          const barEl = document.getElementById('lane-progress-bar-' + lane);
+          if (statusEl) { statusEl.textContent = 'STANDBY'; statusEl.className = 'tag tag-muted'; }
+          if (barEl) { barEl.style.width = '0%'; barEl.className = 'progress-bar-fill'; }
+        });
+
         const terminal = document.getElementById('terminal-logs');
         if (terminal) {
           terminal.innerHTML = '<div class="log-line" data-kind="info">' +
@@ -1077,6 +1099,96 @@ export function renderClientScript(state: PortalState): string {
         setTimeout(() => { btn.textContent = oldText; }, 1500);
       });
 
+      // Findings Search, Filter & Pagination
+      let findingPageIndex = 0;
+      const FINDING_PAGE_SIZE = 8;
+
+      function renderFindingsPagination() {
+        const query = (document.getElementById('finding-search')?.value || '').trim().toLowerCase();
+        const severityFilter = (document.getElementById('filter-finding-severity')?.value || '').toLowerCase();
+        const laneFilter = (document.getElementById('filter-finding-lane')?.value || '').toLowerCase();
+        const confidenceFilter = (document.getElementById('filter-finding-confidence')?.value || '').toLowerCase();
+
+        const rows = Array.from(document.querySelectorAll('#findings-table tbody tr.finding-row'));
+        const matchingRows = [];
+
+        rows.forEach(row => {
+          const rowText = (row.textContent || '').toLowerCase();
+          const rowSev = (row.getAttribute('data-severity') || '').toLowerCase();
+          const rowLane = (row.getAttribute('data-lane') || '').toLowerCase();
+          const rowConf = (row.getAttribute('data-confidence') || '').toLowerCase();
+
+          const matchesQuery = !query || rowText.includes(query);
+          const matchesSev = !severityFilter || rowSev === severityFilter;
+          const matchesLane = !laneFilter || rowLane.includes(laneFilter);
+          const matchesConf = !confidenceFilter || rowConf === confidenceFilter;
+
+          if (matchesQuery && matchesSev && matchesLane && matchesConf) {
+            matchingRows.push(row);
+          }
+          row.style.display = 'none';
+        });
+
+        const totalMatching = matchingRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalMatching / FINDING_PAGE_SIZE));
+        if (findingPageIndex >= totalPages) findingPageIndex = totalPages - 1;
+        if (findingPageIndex < 0) findingPageIndex = 0;
+
+        const startIdx = findingPageIndex * FINDING_PAGE_SIZE;
+        const endIdx = Math.min(startIdx + FINDING_PAGE_SIZE, totalMatching);
+
+        for (let i = startIdx; i < endIdx; i++) {
+          matchingRows[i].style.display = '';
+        }
+
+        const infoEl = document.getElementById('finding-page-info');
+        if (infoEl) {
+          if (totalMatching === 0) {
+            infoEl.textContent = 'Tidak ada temuan yang cocok dengan filter';
+          } else {
+            infoEl.textContent = 'Menampilkan ' + (startIdx + 1) + '-' + endIdx + ' dari ' + totalMatching + ' temuan';
+          }
+        }
+
+        const pageNumEl = document.getElementById('finding-page-num');
+        if (pageNumEl) pageNumEl.textContent = 'Hal ' + (findingPageIndex + 1) + ' / ' + totalPages;
+
+        const prevBtn = document.getElementById('btn-finding-prev');
+        if (prevBtn) prevBtn.disabled = findingPageIndex <= 0;
+
+        const nextBtn = document.getElementById('btn-finding-next');
+        if (nextBtn) nextBtn.disabled = findingPageIndex >= totalPages - 1;
+      }
+
+      document.getElementById('finding-search')?.addEventListener('input', () => {
+        findingPageIndex = 0;
+        renderFindingsPagination();
+      });
+      document.getElementById('filter-finding-severity')?.addEventListener('change', () => {
+        findingPageIndex = 0;
+        renderFindingsPagination();
+      });
+      document.getElementById('filter-finding-lane')?.addEventListener('change', () => {
+        findingPageIndex = 0;
+        renderFindingsPagination();
+      });
+      document.getElementById('filter-finding-confidence')?.addEventListener('change', () => {
+        findingPageIndex = 0;
+        renderFindingsPagination();
+      });
+      document.getElementById('btn-finding-prev')?.addEventListener('click', () => {
+        if (findingPageIndex > 0) {
+          findingPageIndex--;
+          renderFindingsPagination();
+        }
+      });
+      document.getElementById('btn-finding-next')?.addEventListener('click', () => {
+        findingPageIndex++;
+        renderFindingsPagination();
+      });
+
+      renderFindingsPagination();
+
       // Lineage Table Search and PII Filter
       function filterLineageTable() {
         const query = (document.getElementById('lineage-search')?.value || '').trim().toLowerCase();
@@ -1116,6 +1228,14 @@ export function renderClientScript(state: PortalState): string {
             filterLineageTable();
           }
         });
+      });
+
+      document.getElementById('btn-clear-lineage-search')?.addEventListener('click', () => {
+        const searchInput = document.getElementById('lineage-search');
+        if (searchInput) {
+          searchInput.value = '';
+          filterLineageTable();
+        }
       });
 
 

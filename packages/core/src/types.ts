@@ -29,6 +29,7 @@ export const AuthorizationSchema = z
     approvedBy: z.string().min(1).optional(),
     ticket: z.string().min(1).optional(),
     perfApproved: z.boolean().optional(),
+    securityActiveApproved: z.boolean().optional(),
   })
   .strict();
 export type Authorization = z.infer<typeof AuthorizationSchema>;
@@ -61,6 +62,30 @@ export const ApiSchema = z
   })
   .strict();
 
+export const MobilePlatformSchema = z.enum(['android', 'ios']);
+export type MobilePlatform = z.infer<typeof MobilePlatformSchema>;
+
+export const MobileFrameworkSchema = z.enum(['maestro', 'appium', 'adb']);
+export type MobileFramework = z.infer<typeof MobileFrameworkSchema>;
+
+export const MobileDeviceTypeSchema = z.enum(['emulator', 'simulator', 'physical', 'simulated']);
+export type MobileDeviceType = z.infer<typeof MobileDeviceTypeSchema>;
+
+export const MobileSchema = z
+  .object({
+    platform: MobilePlatformSchema,
+    appPath: z.string().min(1).optional(),
+    bundleId: z.string().min(1).optional(),
+    deviceName: z.string().min(1).optional(),
+    framework: MobileFrameworkSchema.default('maestro'),
+    flowPath: z.string().min(1).optional(),
+    deviceType: MobileDeviceTypeSchema.default('simulated'),
+    manifestXml: z.string().optional(),
+    infoPlist: z.string().optional(),
+  })
+  .strict();
+export type MobileTarget = z.infer<typeof MobileSchema>;
+
 export const LanesSchema = z
   .object({
     repo: z.boolean().optional(),
@@ -70,6 +95,7 @@ export const LanesSchema = z
     visual: z.boolean().optional(),
     perf: z.boolean().optional(),
     security: z.boolean().optional(),
+    mobile: z.boolean().optional(),
   })
   .strict();
 export type Lanes = z.infer<typeof LanesSchema>;
@@ -107,6 +133,7 @@ export const RunRequestSchema = z
     repo: RepoSchema.optional(),
     web: WebSchema.optional(),
     api: ApiSchema.optional(),
+    mobile: MobileSchema.optional(),
     auth: AuthConfigSchema.optional(),
     requirements: z
       .object({ source: z.string().min(1), location: z.string().min(1) })

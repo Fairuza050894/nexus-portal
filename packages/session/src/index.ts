@@ -13,6 +13,18 @@ import axe from 'axe-core';
 import { isHostAllowed, resolveHost } from '@nexus/core';
 export { bootstrapAuthenticatedSession } from './auth-bootstrap.js';
 export type { BootstrapAuthOptions, BootstrapAuthResult } from './auth-bootstrap.js';
+export {
+  AutonomousQaAgent,
+  inspectPageElements,
+  classifyInputElement,
+  generateMockValueForSemanticKind,
+  type AutonomousAgentOptions,
+  type AutonomousJourneyResult,
+  type PageInspectionSummary,
+  type VisualLayoutAnomaly,
+  type AgentAction,
+  type DiscoveredInteractiveElement,
+} from './agent-driver.js';
 
 export interface SessionPageTarget {
   url: string;

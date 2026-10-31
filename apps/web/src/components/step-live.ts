@@ -78,19 +78,57 @@ export function renderStep4LiveRun(state: PortalState): string {
         </div>
         <div id="lane-progress-container" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-bottom:14px;">
           ${['e2e', 'a11y', 'perf', 'security']
-            .map(
-              (lane) => `
+            .map((lane) => {
+              const laneInfo = state.lanes?.find((l) => l.lane === lane);
+              let status = 'STANDBY';
+              let badgeClass = 'tag-muted';
+              let width = '0%';
+              let countText = '';
+
+              if (laneInfo) {
+                if (laneInfo.status === 'passed') {
+                  status = 'PASSED';
+                  badgeClass = 'tag-verified';
+                  width = '100%';
+                } else if (laneInfo.status === 'failed') {
+                  status = 'FAILED';
+                  badgeClass = 'tag-critical';
+                  width = '100%';
+                } else if (laneInfo.status === 'skipped') {
+                  status = 'SKIPPED';
+                  badgeClass = 'tag-muted';
+                  width = '100%';
+                } else {
+                  status = (laneInfo.status || 'RUNNING').toUpperCase();
+                  badgeClass = 'tag-discovered';
+                  width = '65%';
+                }
+                if (laneInfo.tests !== undefined) {
+                  countText = `${laneInfo.passed ?? 0}/${laneInfo.tests} passed${laneInfo.skipped ? ` (${laneInfo.skipped} skipped)` : ''}`;
+                }
+              } else if (state.stages['lanes'] === 'ok') {
+                status = 'PASSED';
+                badgeClass = 'tag-verified';
+                width = '100%';
+              } else if (state.stages['lanes'] === 'running') {
+                status = 'RUNNING';
+                badgeClass = 'tag-discovered';
+                width = '65%';
+              }
+
+              return `
             <div id="lane-card-${lane}" style="background:var(--bg); border:1px solid var(--border); border-radius:3px; padding:8px 10px;">
               <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-family:var(--mono);">
                 <span style="font-weight:700; color:var(--text-bright);">${lane.toUpperCase()}</span>
-                <span id="lane-status-${lane}" class="tag tag-muted" style="font-size:9px;">STANDBY</span>
+                <span id="lane-status-${lane}" class="tag ${badgeClass}" style="font-size:9px;">${status}</span>
               </div>
               <div class="progress-bar-bg">
-                <div id="lane-progress-bar-${lane}" class="progress-bar-fill" style="width:0%;"></div>
+                <div id="lane-progress-bar-${lane}" class="progress-bar-fill ${status === 'PASSED' ? 'complete' : ''}" style="width:${width};"></div>
               </div>
+              ${countText ? `<div style="font-size:9px; font-family:var(--mono); color:var(--text-muted); margin-top:3px; text-align:right;">${countText}</div>` : ''}
             </div>
-          `,
-            )
+          `;
+            })
             .join('')}
         </div>
 

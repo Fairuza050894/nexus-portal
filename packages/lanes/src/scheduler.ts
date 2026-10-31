@@ -9,6 +9,7 @@ import { runPerfLane } from './perf.js';
 import { runRepoLane } from './repo.js';
 import { runSecurityLane } from './security.js';
 import { runVisualLane } from './visual.js';
+import { runMobileLane } from './mobile.js';
 import type { LaneContext, LaneName, LaneResult, LaneRunResult } from './types.js';
 
 function errorLane(lane: LaneName, error: unknown, startedAt: number): LaneResult {
@@ -142,6 +143,14 @@ export async function runLanes(context: LaneContext, selected: LaneName[]): Prom
 
   if (selectedSet.has('visual')) {
     laneResults.push(runVisualLane(context, session));
+  }
+
+  if (selectedSet.has('mobile')) {
+    try {
+      laneResults.push(await runMobileLane(context));
+    } catch (error) {
+      laneResults.push(errorLane('mobile', error, Date.now()));
+    }
   }
 
   for (const lane of selected) {

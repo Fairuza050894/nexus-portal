@@ -16,12 +16,19 @@ export function renderStep3PlanReview(state: PortalState): string {
   return `
     <div class="panel">
       <div class="panel-header">
-        <span>Execution Plan & Case Approvals</span>
+        <span>Review Plan — Kurasi & Persetujuan Rencana Pengujian</span>
         <button id="btn-approve-all-safe" class="btn btn-secondary" style="height:24px; padding:0 8px; font-size:11px;">
-          ${t(lang, 'approveAllSafe')}
+          ✓ ${t(lang, 'approveAllSafe')}
         </button>
       </div>
       <div class="panel-body">
+        <!-- Guidance Banner for Step 3 -->
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px; padding:8px 12px; background:var(--bg); border:1px solid var(--border); border-radius:3px;">
+          <span>
+            🛡️ <strong>Tata Kelola QA & Sign-off:</strong> Tinjau dan kurasi seluruh kasus uji dari Discovery & Test Builder di bawah ini. Centang kasus yang diizinkan dieksekusi, lalu klik <strong>"Setujui dan Jalankan Rencana"</strong> untuk memulai eksekusi di Langkah 04.
+          </span>
+        </div>
+
         <!-- KPI Metrics (Scenario 3.1) -->
         <div class="kpi-grid">
           <div class="kpi-box">
@@ -118,9 +125,12 @@ export function renderStep3PlanReview(state: PortalState): string {
 
         ${state.validationErrors.plan ? `<div class="field-error" style="margin-bottom:12px;">${state.validationErrors.plan}</div>` : ''}
 
-        <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:10px; border-top:1px solid var(--border);">
+          <button type="button" id="btn-back-to-builder" class="btn btn-secondary">
+            &larr; Kembali ke Test Builder (Langkah 02)
+          </button>
           <button id="btn-approve-and-run" class="btn btn-primary">
-            ${t(lang, 'approveAndRun')}
+            ${t(lang, 'approveAndRun')} (Langkah 04) &rarr;
           </button>
         </div>
       </div>
